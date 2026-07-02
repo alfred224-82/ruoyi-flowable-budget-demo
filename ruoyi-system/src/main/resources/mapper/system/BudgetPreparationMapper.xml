@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.BudgetPreparationMapper">
+
+    <resultMap type="com.ruoyi.system.domain.BudgetPreparation" id="BudgetPreparationResult">
+        <result property="id" column="id"/>
+        <result property="sheetNo" column="sheet_no"/>
+        <result property="orgId" column="org_id"/>
+        <result property="orgName" column="org_name"/>
+        <result property="budgetYear" column="budget_year"/>
+        <result property="budgetMonth" column="budget_month"/>
+        <result property="budgetPeriod" column="budget_period"/>
+        <result property="status" column="status"/>
+        <result property="rejectLevel" column="reject_level"/>
+        <result property="rejectReason" column="reject_reason"/>
+        <result property="deadlineTime" column="deadline_time"/>
+        <result property="currentHandler" column="current_handler"/>
+        <result property="totalBudget" column="total_budget"/>
+        <result property="totalActual" column="total_actual"/>
+        <result property="varianceRate" column="variance_rate"/>
+        <result property="processInstanceId" column="process_instance_id"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+</mapper>

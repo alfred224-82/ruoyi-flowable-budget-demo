@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.BudgetRejectHistoryMapper">
+    <resultMap id="BudgetRejectHistoryResult" type="com.ruoyi.system.domain.BudgetRejectHistory">
+        <id property="id" column="id"/>
+        <result property="sheetId" column="sheet_id"/>
+        <result property="sheetNo" column="sheet_no"/>
+        <result property="rejectFromLevel" column="reject_from_level"/>
+        <result property="rejectFromUser" column="reject_from_user"/>
+        <result property="rejectFromName" column="reject_from_name"/>
+        <result property="rejectToLevel" column="reject_to_level"/>
+        <result property="rejectToUser" column="reject_to_user"/>
+        <result property="rejectToDeptId" column="reject_to_dept_id"/>
+        <result property="rejectToDeptName" column="reject_to_dept_name"/>
+        <result property="rejectReason" column="reject_reason"/>
+        <result property="deadlineTime" column="deadline_time"/>
+        <result property="rejectTime" column="reject_time"/>
+        <result property="handleTime" column="handle_time"/>
+        <result property="handleDurationHours" column="handle_duration_hours"/>
+        <result property="isTimeout" column="is_timeout"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+</mapper>

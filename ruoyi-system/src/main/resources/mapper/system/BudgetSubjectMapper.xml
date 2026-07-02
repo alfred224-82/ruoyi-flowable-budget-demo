@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.BudgetSubjectMapper">
+
+    <resultMap type="com.ruoyi.system.domain.BudgetSubject" id="BudgetSubjectResult">
+        <result property="id" column="id"/>
+        <result property="subjectCode" column="subject_code"/>
+        <result property="subjectName" column="subject_name"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="parentCode" column="parent_code"/>
+        <result property="level" column="level"/>
+        <result property="ancestors" column="ancestors"/>
+        <result property="isLeaf" column="is_leaf"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="isActive" column="is_active"/>
+        <result property="description" column="description"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+
+</mapper>
