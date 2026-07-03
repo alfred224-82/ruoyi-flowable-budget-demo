@@ -1,6 +1,6 @@
 # 企业全面预算管理系统 — 需求说明书
 
-**版本**：v1.1  
+**版本**：v1.2  
 **日期**：2026-07-03  
 **项目**：基于 RuoYi-Flowable-Plus 框架的企业级预算管理解决方案
 
@@ -59,22 +59,47 @@
 
 | 状态码 | 名称 | 颜色 | 说明 |
 |--------|------|------|------|
-| Draft | 草稿 | 绿色 | 可编辑，提交后变为待审核 |
-| Pending_Review | 待审核 | 蓝色 | 等待总公司审核 |
-| Branch_Pending | 分公司待处理 | 橙色 | 总公司驳回后，分公司可自行修改或打回部门 |
-| Pending_Revision | 待重新编制 | 黄色 | 分公司打回部门后，部门修改后重新提交 |
-| Approved | 审核通过 | 灰色 | 预算锁定，不可修改 |
+| Draft | 草稿 | 绿色 | 可编辑，提交后变为待部门领导审核 |
+| Pending_Dept_Review | 待部门领导审核 | 橙色 | 第1级审批，部门领导审批 |
+| Pending_Branch_Review | 待分公司领导审核 | 橙色 | 第2级审批，分公司领导审批 |
+| Pending_HQ_Review | 待总公司领导审核 | 橙色 | 第3级审批，总公司领导审批 |
+| Approved | 审核通过 | 灰色 | 三级审批全部通过，预算锁定，不可修改 |
 
 #### 状态流转规则
 
 ```
-Draft → Pending_Review（提交审核）
-Pending_Review → Approved（总公司通过）
-Pending_Review → Branch_Pending（总公司驳回）
-Branch_Pending → Draft（分公司自行修改后重新提交）
-Branch_Pending → Pending_Revision（分公司打回部门）
-Pending_Revision → Draft（部门修改后重新提交）
+Draft → Pending_Dept_Review（提交审核，启动Flowable流程）
+Pending_Dept_Review → Pending_Branch_Review（部门领导通过，流转到分公司领导）
+Pending_Branch_Review → Pending_HQ_Review（分公司领导通过，流转到总公司领导）
+Pending_HQ_Review → Approved（总公司领导通过，预算锁定）
+任意审批级 → Draft（任一级别驳回，回退到编制人员重新修改）
 ```
+
+#### 三级审批流程说明
+
+1. **第1级：部门领导审批**
+   - 编制人员提交审核后，流程流转到部门领导
+   - 部门领导可以选择通过或驳回
+   - 驳回必须填写原因（5-500字符）
+   - 通过可以批量操作
+   - 通过后流程流转到分公司领导
+
+2. **第2级：分公司领导审批**
+   - 部门领导通过后，流程流转到分公司领导
+   - 分公司领导可以选择通过或驳回
+   - 驳回必须填写原因
+   - 通过后流程流转到总公司领导
+
+3. **第3级：总公司领导审批**
+   - 分公司领导通过后，流程流转到总公司领导
+   - 总公司领导可以选择通过或驳回
+   - 通过后预算锁定，不可再编制
+   - 驳回回退到编制人员
+
+4. **驳回处理**
+   - 任何级别驳回都会回退到编制人员（状态变为 Draft）
+   - 编制人员可以修改后重新提交审核
+   - 驳回历史记录会保存到驳回历史表中
 
 ---
 
@@ -145,46 +170,66 @@ Pending_Revision → Draft（部门修改后重新提交）
 #### 3.2.2 审核详情页
 
 - 基础信息展示（el-descriptions）
+- **当前审批阶段显示**（显示当前是第几级审批：部门领导/分公司领导/总公司领导）
 - 校验结果展示（风控警告）
 - 科目预算明细（按科目类型分Tab）
-- 审核操作（通过/驳回）
+- 审核操作（通过/驳回）- 仅当前审批级别对应的角色可以看到操作按钮
 - 驳回理由必填（5-500字符）
+- 审批意见会作为 Flowable 任务评论保存
 
-#### 3.2.3 多级打回机制
+#### 3.2.3 审批与驳回机制
 
-**总公司驳回分公司**：
-- 状态变为 Branch_Pending
-- 截止时间：次月7日 12:00
-- 分公司可选：自行修改 或 打回部门
+**驳回规则**：
+- 任何级别（部门领导/分公司领导/总公司领导）驳回都直接打回给编制人员
+- 编制记录状态回退为 Draft，编制人员可修改后重新提交审核
+- 驳回时必须填写驳回原因（5-500字符）
+- 驳回历史记录自动保存到驳回历史表
 
-**分公司打回部门**：
-- 状态变为 Pending_Revision
-- 截止时间：次月7日 18:00
-- 部门修改后重新提交
+**审批通过截止日期**：
+- 每级审批通过后，系统记录当前审批时间
+- 总公司领导最终通过后，预算锁定不可再编制
+- 审批流程需在编制期内完成（本月26日 - 次月3日）
 
 ### 3.3 智能风控
 
-#### 风控规则
+#### 规则引擎说明
 
-| 规则类别 | 校验项 | 阈值 | 风险等级 |
-|---------|-------|------|---------|
-| 预算超标 | 部门预算 vs 上月实际 | 偏差>±20% | 高危 |
-| 汇总逻辑 | 明细合计 vs 汇总金额 | 不相等 | 高危 |
-| 科目归类 | 科目编码有效性 | 不存在于科目表 | 中危 |
-| 关键指标 | 必填字段完整性 | 存在空值 | 中危 |
-| 历史对比 | 本期 vs 上期同期 | 波动>±30% | 低危 |
+校验规则存储在 `budget_validation_rule` 表中，支持动态配置。每条规则包含：规则编码、规则类型、严重级别、适用科目类型/编码、阈值、规则表达式、错误提示等。
 
-#### 校验规则清单（7条）
+#### 规则类型说明
 
-| 编码 | 名称 | 类别 | 阈值 | 范围 | 严格 |
-|------|------|------|------|------|------|
-| VAL_001 | 预算超标检查 | BUDGET_OVER | 20% | ALL | 否 |
-| VAL_002 | 汇总逻辑检查 | LOGIC_ERROR | - | ALL | 是 |
-| VAL_003 | 科目有效性检查 | SUBJECT_ERROR | - | ALL | 是 |
-| VAL_004 | 必填字段完整性 | MISSING_DATA | - | ALL | 是 |
-| VAL_005 | 历史数据对比 | HISTORICAL_COMPARE | 30% | EXPENSE | 否 |
-| VAL_006 | 收入类公式校验 | FORMULA_CHECK | - | INCOME | 否 |
-| VAL_007 | 费用合理性检查 | BUDGET_OVER | 50% | EXPENSE | 否 |
+| 规则类型 | 说明 |
+|---------|------|
+| REQUIRED | 必填校验 |
+| MIN_AMOUNT | 最低金额校验 |
+| MAX_AMOUNT | 最高金额预警 |
+| RATIO_LIMIT | 比例限制校验 |
+| SUM_CHECK | 合计校验 |
+| FORMULA | 公式/建议性规则 |
+
+#### 严重级别
+
+| 级别 | 颜色 | 行为 |
+|------|------|------|
+| ERROR | 红色 | 阻断，必须修正后才能提交 |
+| WARNING | 黄色 | 警告，提示但不阻断 |
+| INFO | 蓝色 | 建议性提示 |
+
+#### 初始化规则清单（11条）
+
+| 编码 | 名称 | 类型 | 级别 | 适用科目 | 阈值 | 表达式 |
+|------|------|------|------|---------|------|--------|
+| REQ_ALL | 所有叶子科目必须填写预算金额 | REQUIRED | ERROR | 全部 | - | - |
+| MIN_INCOME | 收入类科目预算金额不得为负 | MIN_AMOUNT | ERROR | INCOME | 0 | amount >= 0 |
+| MIN_COST | 成本类科目预算金额不得为负 | MIN_AMOUNT | ERROR | COST | 0 | amount >= 0 |
+| MIN_EXPENSE | 费用类科目预算金额不得为负 | MIN_AMOUNT | ERROR | EXPENSE | 0 | amount >= 0 |
+| MAX_SINGLE_EXPENSE | 单项费用预算超过100万 | MAX_AMOUNT | WARNING | EXPENSE | 1,000,000 | amount <= 1000000 |
+| MAX_SINGLE_COST | 单项成本预算超过200万 | MAX_AMOUNT | WARNING | COST | 2,000,000 | amount <= 2000000 |
+| RATIO_ADMIN_FEE | 管理费用占费用类总额比例不超过40% | RATIO_LIMIT | WARNING | EXPENSE (3002) | 40% | subject_sum / type_total <= 0.4 |
+| RATIO_SALES_FEE | 销售费用占收入类总额比例不超过15% | RATIO_LIMIT | INFO | EXPENSE (3001) | 15% | sales_fee / income_total <= 0.15 |
+| SUM_INCOME_NOT_ZERO | 收入类预算总额不能为零 | SUM_CHECK | ERROR | INCOME | - | type_total > 0 |
+| INFO_ZERO_BASED | 建议采用零基预算法逐项审核 | FORMULA | INFO | 全部 | - | - |
+| INFO_ROUND_CHECK | 预算金额建议取整到百位 | FORMULA | INFO | 全部 | - | amount % 100 == 0 |
 
 ### 3.4 邮件通知
 
@@ -205,106 +250,13 @@ Pending_Revision → Draft（部门修改后重新提交）
 
 ### 3.5 报表系统
 
-#### 核心报表
-
-| 报表名称 | 数据粒度 | 可见角色 |
-|---------|---------|---------|
-| 预算汇总表 | 组织层级 | 总公司、分公司 |
-| 预算明细表 | 科目层级 | 全部角色（脱敏） |
-| 执行对比表 | 月度对比 | 总公司、分公司 |
-| 驳回记录统计表 | 驳回维度 | 总公司、分公司 |
-| 趋势分析表 | 历史趋势 | 总公司 |
-
-#### 导出规范
-
-- 格式：PDF、Excel(.xlsx)
-- 水印：`机密 - [用户名] - [导出时间]`，45°倾斜，透明度30%
-- 权限：仅授权角色可导出，操作记录日志
+> 待后续开发
 
 ---
 
 ## 四、数据模型
 
-### 4.1 核心表结构
-
-#### budget_sheet（预算表头表）
-
-| 字段名 | 类型 | 说明 |
-|--------|------|------|
-| id | BIGINT | 主键ID |
-| sheet_no | VARCHAR(50) | 预算单号（唯一，BG-YYYYMM-XXX） |
-| org_id | BIGINT | 组织ID |
-| org_name | VARCHAR(100) | 组织名称 |
-| budget_month | VARCHAR(7) | 预算月份（YYYY-MM） |
-| status | VARCHAR(20) | 状态码 |
-| reject_level | VARCHAR(10) | 驳回来源（HQ/Branch/None） |
-| reject_reason | TEXT | 驳回理由 |
-| deadline_time | DATETIME | 截止时间 |
-| current_handler | VARCHAR(50) | 当前处理人 |
-| total_budget | DECIMAL(18,2) | 预算总额 |
-| total_actual | DECIMAL(18,2) | 实际总额 |
-| variance_rate | DECIMAL(5,2) | 差异率 |
-
-#### budget_detail（预算明细表）
-
-| 字段名 | 类型 | 说明 |
-|--------|------|------|
-| id | BIGINT | 主键ID |
-| sheet_id | BIGINT | 表头ID（外键） |
-| subject_code | VARCHAR(20) | 科目编码 |
-| subject_name | VARCHAR(100) | 科目名称 |
-| budget_amount | DECIMAL(18,2) | 预算金额 |
-| actual_amount | DECIMAL(18,2) | 实际金额 |
-| variance_amount | DECIMAL(18,2) | 差异金额 |
-| variance_rate | DECIMAL(5,2) | 差异率 |
-| dept_id | BIGINT | 部门ID |
-| dept_name | VARCHAR(100) | 部门名称 |
-
-#### budget_reject_history（驳回历史记录表）
-
-| 字段名 | 类型 | 说明 |
-|--------|------|------|
-| id | BIGINT | 主键ID |
-| sheet_id | BIGINT | 预算单ID |
-| sheet_no | VARCHAR(50) | 预算单号 |
-| reject_from_level | VARCHAR(10) | 驳回方层级 |
-| reject_from_user | VARCHAR(50) | 驳回人工号 |
-| reject_to_level | VARCHAR(10) | 被驳回方层级 |
-| reject_to_dept_id | BIGINT | 被驳回部门ID |
-| reject_reason | TEXT | 驳回理由 |
-| deadline_time | DATETIME | 截止时间 |
-| reject_time | DATETIME | 驳回时间 |
-| handle_time | DATETIME | 处理时间 |
-| is_timeout | TINYINT(1) | 是否超时 |
-
-#### budget_subject（预算科目表）
-
-| 字段名 | 类型 | 说明 |
-|--------|------|------|
-| id | BIGINT | 主键ID |
-| subject_code | VARCHAR(20) | 科目编码（唯一） |
-| subject_name | VARCHAR(100) | 科目名称 |
-| parent_code | VARCHAR(20) | 父级科目编码 |
-| level | INT | 科目层级（1/2/3） |
-| is_leaf | TINYINT(1) | 是否叶子节点 |
-| sort_order | INT | 排序号 |
-| is_active | TINYINT(1) | 是否启用 |
-
-### 4.2 实际已落地的表名映射
-
-| 需求文档表名 | 实际代码表名 | 说明 |
-|-------------|-------------|------|
-| budget_sheet | budget_preparation | 预算编制主表 |
-| budget_detail | budget_preparation_detail | 预算编制明细表 |
-| budget_reject_history | （未建表） | 驳回历史记录 |
-| budget_subject | budget_subject | 预算科目表 |
-| （无） | budget_validation_rule | 校验规则表 |
-
-### 4.3 特殊字段处理
-
-| 字段 | 表名 | 类型 | 处理方式 |
-|------|------|------|----------|
-| budget_period | budget_preparation | MySQL GENERATED ALWAYS AS 生成列 | MyBatis-Plus 实体使用 `@TableField(insertStrategy=NEVER, updateStrategy=NEVER)` 禁止框架写入，由数据库自动生成 |
+> 表结构详见 SQL 脚本（`script/sql/mysql/budget/`）
 
 ---
 
@@ -385,11 +337,24 @@ Pending_Revision → Draft（部门修改后重新提交）
 
 | 修改项 | 说明 |
 |--------|------|
-| 预算总额展示优化 | 移至页面右上角卡片头部，千位符格式化，去掉"返回查询页面"按钮 |
+| 预算总额展示优化 | 移至页面右上角卡片头部，千位符格式化，去掉“返回查询页面”按钮 |
 | 新增接口返回ID | `POST /system/preparation` 返回类型从 `R<Void>` 改为 `R<Long>`，返回新建记录主键ID |
 | 明细保存逻辑 | 第2步下一步时统一调用批量保存接口，后端先删后插并自动汇总更新编制总额 |
 | budget_period 生成列 | 使用 `@TableField(insertStrategy=NEVER, updateStrategy=NEVER)` 避免 MyBatis-Plus 写入生成列导致 SQL 错误 3105 |
 | 金额类型安全 | 前端 `calculateTotalBudget` 使用 `parseFloat` 确保数值类型，模板渲染加 `isNaN` 兜底 |
+
+### 4.5 2026-07-03 三级审批流程实现
+
+| 修改项 | 说明 |
+|--------|------|
+| BPMN流程定义 | 更新为三级审批流程：部门领导 → 分公司领导 → 总公司领导，每级通过/驳回网关 |
+| 状态模型重构 | 新增 `Pending_Dept_Review`、`Pending_Branch_Review`、`Pending_HQ_Review` 三个待审核状态，替代原 `Pending_Review` |
+| Flowable集成 | `approve`/`reject` 方法集成 Flowable TaskService，完成任务时设置流程变量 `result=pass/reject` |
+| 角色配置 | 新增分公司领导（role_id=4, role_key='branch_leader'）、总公司领导（role_id=5, role_key='hq_leader'）角色 |
+| 候选组映射 | 部门领导=ROLE3、分公司领导=ROLE4、总公司领导=ROLE5，通过流程变量传入BPMN |
+| 驳回逻辑 | 任何级别驳回都回退到编制人员（状态变为Draft），记录驳回历史 |
+| 前端适配 | index.vue/approval.vue/approvalDetail.vue 更新状态显示，审批详情页根据角色判断是否显示操作按钮 |
+| 流程部署器 | BudgetProcessDeployer 改为始终部署最新版本（移除跳过已存在的逻辑） |
 
 ---
 
