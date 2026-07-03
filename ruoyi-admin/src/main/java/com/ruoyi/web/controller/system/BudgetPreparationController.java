@@ -115,6 +115,16 @@ public class BudgetPreparationController extends BaseController {
     }
 
     /**
+     * 完成编制
+     */
+    @SaCheckPermission("system:preparation:submit")
+    @Log(title = "预算编制", businessType = BusinessType.UPDATE)
+    @PostMapping("/complete/{id}")
+    public R<Void> complete(@NotNull(message = "主键不能为空") @PathVariable Long id) {
+        return toAjax(budgetPreparationService.completePreparation(id));
+    }
+
+    /**
      * 提交审核（单个）
      */
     @SaCheckPermission("system:preparation:submit")
@@ -136,8 +146,8 @@ public class BudgetPreparationController extends BaseController {
 
     /**
      * 批量审批通过
+     * 权限校验由 Service 层 checkCurrentUserCanApprove 按审批阶段+角色匹配
      */
-    @SaCheckPermission("system:preparation:approve")
     @Log(title = "预算编制", businessType = BusinessType.UPDATE)
     @PostMapping("/batchApprove")
     public R<Void> batchApprove(@RequestBody BatchApproveRequest request) {
@@ -146,8 +156,8 @@ public class BudgetPreparationController extends BaseController {
 
     /**
      * 审批通过（单个）
+     * 权限校验由 Service 层 checkCurrentUserCanApprove 按审批阶段+角色匹配
      */
-    @SaCheckPermission("system:preparation:approve")
     @Log(title = "预算编制", businessType = BusinessType.UPDATE)
     @PostMapping("/approve/{id}")
     public R<Void> approve(@NotNull(message = "主键不能为空") @PathVariable Long id,
@@ -157,8 +167,8 @@ public class BudgetPreparationController extends BaseController {
 
     /**
      * 审批驳回（单个）
+     * 权限校验由 Service 层 checkCurrentUserCanApprove 按审批阶段+角色匹配
      */
-    @SaCheckPermission("system:preparation:reject")
     @Log(title = "预算编制", businessType = BusinessType.UPDATE)
     @PostMapping("/reject/{id}")
     public R<Void> reject(@NotNull(message = "主键不能为空") @PathVariable Long id,

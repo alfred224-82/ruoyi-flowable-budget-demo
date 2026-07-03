@@ -61,10 +61,16 @@ public class BudgetPreparationVo {
     private String budgetPeriod;
 
     /**
-     * 状态（Draft-草稿，Pending_Review-待审核，Branch_Pending-分公司待审，Pending_Revision-待修订，Approved-已批准，Rejected-已驳回）
+     * 生命周期状态（Draft-草稿，Pending_Review-待审核，Pending_Revision-待修订，Approved-已批准，Rejected-已驳回）
      */
     @ExcelProperty(value = "状态")
     private String status;
+
+    /**
+     * 审批阶段（None-无，Dept-部门领导，Branch-分公司领导，HQ-总公司领导）
+     */
+    @ExcelProperty(value = "审批阶段")
+    private String approvalStage;
 
     /**
      * 驳回来源（HQ-总部，Branch-分公司，None-无）

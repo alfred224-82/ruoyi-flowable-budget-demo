@@ -77,6 +77,14 @@
           </el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="审批阶段" align="center" prop="approvalStage" width="130">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.approvalStage && scope.row.approvalStage !== 'None'" :type="getStageType(scope.row.approvalStage)" size="small">
+            {{ getStageLabel(scope.row.approvalStage) }}
+          </el-tag>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="当前处理人" align="center" prop="currentHandler" width="120" />
       <el-table-column label="创建时间" align="center" prop="createTime" width="160">
         <template slot-scope="scope">
@@ -239,7 +247,7 @@ export default {
     },
     /** 查看/审核按钮操作 */
     handleView(row) {
-      this.$router.push({ path: '/system/preparation/approval', query: { id: row.id } });
+      this.$router.push({ path: '/system/preparation/approvalDetail', query: { id: row.id } });
     },
     /** 批量审批按钮操作 */
     handleBatchApprove() {
@@ -267,10 +275,10 @@ export default {
     getStatusType(status) {
       const statusMap = {
         'Draft': 'info',
-        'Pending_Dept_Review': 'warning',
-        'Pending_Branch_Review': 'warning',
-        'Pending_HQ_Review': 'warning',
-        'Approved': 'success'
+        'Pending_Review': 'warning',
+        'Approved': 'success',
+        'Rejected': 'danger',
+        'Pending_Revision': 'warning'
       };
       return statusMap[status] || 'info';
     },
@@ -278,12 +286,25 @@ export default {
     getStatusLabel(status) {
       const statusMap = {
         'Draft': '草稿',
-        'Pending_Dept_Review': '待部门领导审核',
-        'Pending_Branch_Review': '待分公司领导审核',
-        'Pending_HQ_Review': '待总公司领导审核',
-        'Approved': '已通过'
+        'Pending_Review': '待审核',
+        'Approved': '已通过',
+        'Rejected': '已驳回',
+        'Pending_Revision': '待修订'
       };
       return statusMap[status] || status;
+    },
+    /** 获取审批阶段标签 */
+    getStageLabel(stage) {
+      const stageMap = {
+        'Dept': '部门领导',
+        'Branch': '分公司领导',
+        'HQ': '总公司领导'
+      };
+      return stageMap[stage] || stage;
+    },
+    /** 获取审批阶段标签类型 */
+    getStageType(stage) {
+      return 'warning';
     },
     /** 格式化金额（千位符，2位小数） */
     formatAmount(val) {

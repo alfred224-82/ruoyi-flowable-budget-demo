@@ -4,7 +4,7 @@
       <div slot="header" class="clearfix">
         <span>预算审核详情</span>
         <el-button style="float: right; padding: 3px 0" type="text" @click="handleReturn">
-          <i class="el-icon-back"></i> 返回查询页面
+          <i class="el-icon-back"></i> {{ isWorkflow ? '返回待办' : '返回查询页面' }}
         </el-button>
       </div>
 
@@ -95,7 +95,7 @@
 
       <!-- 底部按钮 -->
       <div style="margin-top: 30px; text-align: center;">
-        <el-button @click="handleReturn">返 回</el-button>
+        <el-button @click="handleReturn">{{ isWorkflow ? '返回待办' : '返 回' }}</el-button>
         <el-button 
           v-if="canApprove()" 
           type="danger" 
@@ -143,6 +143,7 @@
 <script>
 import { getPreparation, listPreparationDetail, approvePreparation, rejectPreparation, getValidationResults } from "@/api/system/preparation";
 import { listFirstLevelSubject, listSecondLevelSubject } from "@/api/system/preparation";
+import { complete, rejectTask } from '@/api/workflow/task';
 import BudgetCountdown from '@/components/BudgetCountdown';
 import BudgetRejectTimeline from '@/components/BudgetRejectTimeline';
 
@@ -151,6 +152,13 @@ export default {
   components: { BudgetCountdown, BudgetRejectTimeline },
   data() {
     return {
+      // 是否为工作流上下文
+      isWorkflow: false,
+      // 工作流参数
+      workflowParams: {
+        procInsId: '',
+        taskId: ''
+      },
       // 当前激活的tab
       activeTab: '',
       // 预算类型列表
@@ -183,6 +191,14 @@ export default {
     };
   },
   created() {
+    // 检查是否为工作流上下文
+    const procInsId = this.$route.query.procInsId;
+    const taskId = this.$route.query.taskId;
+    if (procInsId && taskId) {
+      this.isWorkflow = true;
+      this.workflowParams.procInsId = procInsId;
+      this.workflowParams.taskId = taskId;
+    }
     this.loadData();
   },
   methods: {
@@ -318,7 +334,17 @@ export default {
     /** 审核通过 */
     handleApprove() {
       this.$modal.confirm('确认审核通过该预算编制？').then(() => {
-        return approvePreparation(this.preparationData.id, '');
+        if (this.isWorkflow) {
+          // 工作流上下文：使用工作流API完成任务
+          return complete({
+            procInsId: this.workflowParams.procInsId,
+            taskId: this.workflowParams.taskId,
+            comment: '审核通过'
+          });
+        } else {
+          // 非工作流上下文：使用原有API
+          return approvePreparation(this.preparationData.id, '');
+        }
       }).then(() => {
         this.$modal.msgSuccess("审核通过");
         setTimeout(() => {
@@ -336,7 +362,17 @@ export default {
       this.$refs.rejectForm.validate(valid => {
         if (valid) {
           this.$modal.confirm('确认驳回该预算编制？').then(() => {
-            return rejectPreparation(this.preparationData.id, this.rejectForm.reason);
+            if (this.isWorkflow) {
+              // 工作流上下文：使用工作流API驳回
+              return rejectTask({
+                procInsId: this.workflowParams.procInsId,
+                taskId: this.workflowParams.taskId,
+                comment: this.rejectForm.reason
+              });
+            } else {
+              // 非工作流上下文：使用原有API
+              return rejectPreparation(this.preparationData.id, this.rejectForm.reason);
+            }
           }).then(() => {
             this.rejectOpen = false;
             this.$modal.msgSuccess("已驳回");
@@ -349,30 +385,40 @@ export default {
     },
     /** 返回查询页面 */
     handleReturn() {
-      this.$router.push('/system/preparation/approval');
+      if (this.isWorkflow) {
+        // 工作流上下文：返回待办页面
+        this.$router.push('/work/todo');
+      } else {
+        this.$router.push('/system/preparation/approval');
+      }
     },
     /** 判断是否为待审核状态 */
     isPendingReview() {
-      const status = this.preparationData.status;
-      return ['Pending_Dept_Review', 'Pending_Branch_Review', 'Pending_HQ_Review'].includes(status);
+      return this.preparationData.status === 'Pending_Review';
     },
     /** 判断当前用户是否可以审批 */
     canApprove() {
+      // 无论哪种上下文，都必须先检查状态是否为待审核
       if (!this.isPendingReview()) return false;
+      // 工作流上下文：有待办任务且状态为待审核即可审批
+      if (this.isWorkflow) return true;
       
-      const status = this.preparationData.status;
+      const stage = this.preparationData.approvalStage;
       const userRoles = this.$store.state.user.roles || [];
       
-      // 部门领导只能审批第1级
-      if (status === 'Pending_Dept_Review' && userRoles.some(r => r.roleKey === 'dept_leader')) {
+      // admin 拥有所有审批权限
+      if (userRoles.includes('admin')) return true;
+      
+      // 部门经理只能审批第1级
+      if (stage === 'Dept' && userRoles.includes('deptManager')) {
         return true;
       }
-      // 分公司领导只能审批第2级
-      if (status === 'Pending_Branch_Review' && userRoles.some(r => r.roleKey === 'branch_leader')) {
+      // 分公司本部只能审批第2级
+      if (stage === 'Branch' && userRoles.includes('branch')) {
         return true;
       }
-      // 总公司领导只能审批第3级
-      if (status === 'Pending_HQ_Review' && userRoles.some(r => r.roleKey === 'hq_leader')) {
+      // 总公司本部只能审批第3级
+      if (stage === 'HQ' && userRoles.includes('headquarters')) {
         return true;
       }
       
@@ -380,25 +426,25 @@ export default {
     },
     /** 获取当前审批阶段标签 */
     getApprovalStageLabel() {
+      const stage = this.preparationData.approvalStage;
       const status = this.preparationData.status;
+      if (status === 'Approved') return '审批完成';
+      if (status === 'Rejected') return '部门编制人员编制';
+      if (status === 'Completed') return '待提交审核';
       const stageMap = {
-        'Pending_Dept_Review': '第1级：部门领导审批',
-        'Pending_Branch_Review': '第2级：分公司领导审批',
-        'Pending_HQ_Review': '第3级：总公司领导审批',
-        'Approved': '审批完成'
+        'Dept': '第1级：部门领导审批',
+        'Branch': '第2级：分公司领导审批',
+        'HQ': '第3级：总公司领导审批'
       };
-      return stageMap[status] || status;
+      return stageMap[stage] || '-';
     },
     /** 获取当前审批阶段标签类型 */
     getApprovalStageType() {
       const status = this.preparationData.status;
-      const typeMap = {
-        'Pending_Dept_Review': 'warning',
-        'Pending_Branch_Review': 'warning',
-        'Pending_HQ_Review': 'warning',
-        'Approved': 'success'
-      };
-      return typeMap[status] || 'info';
+      if (status === 'Approved') return 'success';
+      if (status === 'Rejected') return 'danger';
+      if (status === 'Completed') return 'primary';
+      return 'warning';
     },
     /** 获取风险等级标签类型 */
     getRiskLevelType(level) {

@@ -103,7 +103,7 @@ public class BranchGatewayListener implements ExecutionListener {
 
         log.info("========== 分公司审核通过 ==========");
 
-        // 1. 更新预算单状态为 Pending_Review（待总部审核）
+        // 1. 更新预算单状态为 Pending_Review（待审核，继续流转）
         updateBudgetSheetStatus(execution, "Pending_Review", "分公司审核通过，提交总部审核");
 
         // 2. 记录操作日志
@@ -136,8 +136,8 @@ public class BranchGatewayListener implements ExecutionListener {
 
         log.info("驳回理由: {}", rejectReason);
 
-        // 2. 更新预算单状态为 Pending_Revision（待修改）
-        updateBudgetSheetStatus(execution, "Pending_Revision", rejectReason);
+        // 2. 更新预算单状态为 Rejected（已驳回）
+        updateBudgetSheetStatus(execution, "Rejected", rejectReason);
 
         // 3. 设置驳回来源
         execution.setVariable("rejectLevel", "Branch");

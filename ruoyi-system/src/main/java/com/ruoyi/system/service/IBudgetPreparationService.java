@@ -51,6 +51,11 @@ public interface IBudgetPreparationService {
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
 
     /**
+     * 完成编制（将状态设置为 Completed，只有 Completed 才能提交审核）
+     */
+    Boolean completePreparation(Long id);
+
+    /**
      * 提交审核（单个）
      */
     Boolean submitForReview(Long id);

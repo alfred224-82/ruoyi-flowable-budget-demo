@@ -30,10 +30,17 @@
       <el-form-item label="编制状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 150px">
           <el-option label="草稿" value="Draft" />
-          <el-option label="待部门领导审核" value="Pending_Dept_Review" />
-          <el-option label="待分公司领导审核" value="Pending_Branch_Review" />
-          <el-option label="待总公司领导审核" value="Pending_HQ_Review" />
+          <el-option label="完成编制" value="Completed" />
+          <el-option label="待审核" value="Pending_Review" />
           <el-option label="已通过" value="Approved" />
+          <el-option label="已驳回" value="Rejected" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="审批阶段" prop="approvalStage">
+        <el-select v-model="queryParams.approvalStage" placeholder="请选择阶段" clearable style="width: 150px">
+          <el-option label="部门领导" value="Dept" />
+          <el-option label="分公司领导" value="Branch" />
+          <el-option label="总公司领导" value="HQ" />
         </el-select>
       </el-form-item>
       <el-form-item>
@@ -74,11 +81,27 @@
           {{ scope.row.budgetYear }}年{{ scope.row.budgetMonth ? String(scope.row.budgetMonth).padStart(2, '0') : '' }}月
         </template>
       </el-table-column>
-      <el-table-column label="编制状态" align="center" prop="status" width="120">
+      <el-table-column label="编制状态" align="center" prop="status" width="160">
         <template slot-scope="scope">
           <el-tag :type="getStatusType(scope.row.status)">
             {{ getStatusLabel(scope.row.status) }}
           </el-tag>
+          <el-tooltip
+            v-if="scope.row.status === 'Rejected' && scope.row.rejectReason"
+            :content="'驳回原因：' + scope.row.rejectReason"
+            placement="top"
+            effect="dark"
+          >
+            <i class="el-icon-question" style="color: #F56C6C; margin-left: 4px; cursor: pointer; font-size: 14px;"></i>
+          </el-tooltip>
+        </template>
+      </el-table-column>
+      <el-table-column label="审批阶段" align="center" prop="approvalStage" width="130">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.status === 'Pending_Review'" :type="getStageType(scope.row.approvalStage)" size="small">
+            {{ getStageLabel(scope.row.approvalStage) }}
+          </el-tag>
+          <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="预算总额" align="center" prop="totalBudget" width="150">
@@ -88,7 +111,7 @@
       </el-table-column>
       <el-table-column label="预算单号" align="center" prop="sheetNo" width="180" />
       <el-table-column label="组织名称" align="center" prop="orgName" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="250">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300">
         <template slot-scope="scope">
           <el-button
             v-if="scope.row.status === 'Draft' || scope.row.status === 'Rejected'"
@@ -102,15 +125,23 @@
             v-if="scope.row.status === 'Draft' || scope.row.status === 'Rejected'"
             size="mini"
             type="text"
+            icon="el-icon-check"
+            @click="handleComplete(scope.row)"
+            v-hasPermi="['system:preparation:submit']"
+          >完成编制</el-button>
+          <el-button
+            v-if="scope.row.status === 'Draft'"
+            size="mini"
+            type="text"
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['system:preparation:remove']"
           >删除</el-button>
           <el-button
-            v-if="scope.row.status === 'Draft'"
+            v-if="scope.row.status === 'Completed'"
             size="mini"
             type="text"
-            icon="el-icon-check"
+            icon="el-icon-s-promotion"
             @click="handleSubmit(scope.row)"
             v-hasPermi="['system:preparation:submit']"
           >提交审核</el-button>
@@ -165,7 +196,8 @@ export default {
         pageSize: 10,
         budgetYear: undefined,
         budgetMonth: undefined,
-        status: undefined
+        status: undefined,
+        approvalStage: undefined
       }
     };
   },
@@ -198,9 +230,9 @@ export default {
       this.selectedRows = selection;
       this.multiple = !selection.length;
       
-      // 检查是否所有选中的记录都可以批量提交（只有草稿和驳回状态可以）
+      // 检查是否可以批量提交（只有完成编制状态可以）
       this.canBatchSubmit = selection.length > 0 && 
-        selection.every(item => item.status === 'Draft' || item.status === 'Rejected');
+        selection.every(item => item.status === 'Completed');
     },
     /** 新增按钮操作 - 进入向导页面 */
     handleAdd() {
@@ -248,14 +280,20 @@ export default {
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
     },
+    /** 完成编制 */
+    handleComplete(row) {
+      const id = row.id;
+      this.$router.push({ path: '/system/preparation/wizard', query: { id: id, complete: 'true' } });
+    },
     /** 获取状态标签类型 */
     getStatusType(status) {
       const statusMap = {
         'Draft': 'info',
-        'Pending_Dept_Review': 'warning',
-        'Pending_Branch_Review': 'warning',
-        'Pending_HQ_Review': 'warning',
-        'Approved': 'success'
+        'Completed': 'primary',
+        'Pending_Review': 'warning',
+        'Approved': 'success',
+        'Rejected': 'danger',
+        'Pending_Revision': 'warning'
       };
       return statusMap[status] || 'info';
     },
@@ -263,16 +301,30 @@ export default {
     getStatusLabel(status) {
       const statusMap = {
         'Draft': '草稿',
-        'Pending_Dept_Review': '待部门领导审核',
-        'Pending_Branch_Review': '待分公司领导审核',
-        'Pending_HQ_Review': '待总公司领导审核',
-        'Approved': '已通过'
+        'Completed': '完成编制',
+        'Pending_Review': '待审核',
+        'Approved': '已通过',
+        'Rejected': '已驳回',
+        'Pending_Revision': '待修订'
       };
       return statusMap[status] || status;
     },
+    /** 获取审批阶段标签 */
+    getStageLabel(stage) {
+      const stageMap = {
+        'Dept': '部门领导',
+        'Branch': '分公司领导',
+        'HQ': '总公司领导'
+      };
+      return stageMap[stage] || stage;
+    },
+    /** 获取审批阶段标签类型 */
+    getStageType(stage) {
+      return 'warning';
+    },
     /** 判断是否为待审核状态 */
     isPendingReview(status) {
-      return ['Pending_Dept_Review', 'Pending_Branch_Review', 'Pending_HQ_Review'].includes(status);
+      return status === 'Pending_Review';
     },
     /** 格式化金额（千位符，2位小数） */
     formatAmount(val) {

@@ -5,6 +5,7 @@ import com.ruoyi.flowable.core.FormConf;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 流程详情视图对象
@@ -36,6 +37,16 @@ public class WfDetailVo {
     private String bpmnXml;
 
     private WfViewerVo flowViewer;
+
+    /**
+     * 流程分类
+     */
+    private String category;
+
+    /**
+     * 流程变量
+     */
+    private Map<String, Object> processVariables;
 
     /**
      * 是否存在任务表单信息
