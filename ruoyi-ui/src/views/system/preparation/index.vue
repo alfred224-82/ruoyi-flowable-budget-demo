@@ -30,8 +30,9 @@
       <el-form-item label="编制状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 150px">
           <el-option label="草稿" value="Draft" />
-          <el-option label="审批中" value="Pending_Review" />
-          <el-option label="已驳回" value="Rejected" />
+          <el-option label="待部门领导审核" value="Pending_Dept_Review" />
+          <el-option label="待分公司领导审核" value="Pending_Branch_Review" />
+          <el-option label="待总公司领导审核" value="Pending_HQ_Review" />
           <el-option label="已通过" value="Approved" />
         </el-select>
       </el-form-item>
@@ -82,7 +83,7 @@
       </el-table-column>
       <el-table-column label="预算总额" align="center" prop="totalBudget" width="150">
         <template slot-scope="scope">
-          {{ scope.row.totalBudget ? Number(scope.row.totalBudget).toFixed(2) : '0.00' }}
+          {{ formatAmount(scope.row.totalBudget) }}
         </template>
       </el-table-column>
       <el-table-column label="预算单号" align="center" prop="sheetNo" width="180" />
@@ -106,7 +107,7 @@
             v-hasPermi="['system:preparation:remove']"
           >删除</el-button>
           <el-button
-            v-if="scope.row.status === 'Draft' || scope.row.status === 'Rejected'"
+            v-if="scope.row.status === 'Draft'"
             size="mini"
             type="text"
             icon="el-icon-check"
@@ -114,7 +115,7 @@
             v-hasPermi="['system:preparation:submit']"
           >提交审核</el-button>
           <el-button
-            v-if="scope.row.status === 'Pending_Review'"
+            v-if="isPendingReview(scope.row.status)"
             size="mini"
             type="text"
             icon="el-icon-view"
@@ -251,8 +252,9 @@ export default {
     getStatusType(status) {
       const statusMap = {
         'Draft': 'info',
-        'Pending_Review': 'warning',
-        'Rejected': 'danger',
+        'Pending_Dept_Review': 'warning',
+        'Pending_Branch_Review': 'warning',
+        'Pending_HQ_Review': 'warning',
         'Approved': 'success'
       };
       return statusMap[status] || 'info';
@@ -261,11 +263,25 @@ export default {
     getStatusLabel(status) {
       const statusMap = {
         'Draft': '草稿',
-        'Pending_Review': '审批中',
-        'Rejected': '已驳回',
+        'Pending_Dept_Review': '待部门领导审核',
+        'Pending_Branch_Review': '待分公司领导审核',
+        'Pending_HQ_Review': '待总公司领导审核',
         'Approved': '已通过'
       };
       return statusMap[status] || status;
+    },
+    /** 判断是否为待审核状态 */
+    isPendingReview(status) {
+      return ['Pending_Dept_Review', 'Pending_Branch_Review', 'Pending_HQ_Review'].includes(status);
+    },
+    /** 格式化金额（千位符，2位小数） */
+    formatAmount(val) {
+      const num = parseFloat(val);
+      if (isNaN(num)) return '0.00';
+      const fixed = num.toFixed(2);
+      const parts = fixed.split('.');
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      return parts.join('.');
     }
   }
 };

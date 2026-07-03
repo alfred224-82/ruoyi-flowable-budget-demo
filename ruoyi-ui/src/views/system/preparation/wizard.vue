@@ -165,7 +165,7 @@
               <el-table-column label="科目名称" prop="subjectName" width="200" align="center" />
               <el-table-column label="预算金额" prop="budgetAmount" align="center">
                 <template slot-scope="scope">
-                  {{ (Number(scope.row.budgetAmount) || 0).toFixed(2) }}
+                  {{ formatAmount(scope.row.budgetAmount) }}
                 </template>
               </el-table-column>
               <el-table-column label="说明" prop="remark" align="center" />
@@ -239,7 +239,7 @@
                   <span v-if="result.subjectCode">[{{ result.subjectCode }} {{ result.subjectName || '' }}] </span>
                   {{ result.message }}
                   <span v-if="result.budgetAmount !== null && result.budgetAmount !== undefined" style="color: #909399; margin-left: 8px;">
-                    (金额: {{ Number(result.budgetAmount).toFixed(2) }})
+                    (金额: {{ formatAmount(result.budgetAmount) }})
                   </span>
                 </div>
               </div>
@@ -272,7 +272,7 @@
 </template>
 
 <script>
-import { addPreparation, updatePreparation, getPreparation, batchSavePreparationDetail, listPreparationDetail, listAllSubjects, executeValidation } from "@/api/system/preparation";
+import { addPreparation, updatePreparation, getPreparation, batchSavePreparationDetail, listPreparationDetail, listAllSubjects, executeValidation, getPreviousMonthDetails } from "@/api/system/preparation";
 import { getInfo } from "@/api/login";
 
 export default {
@@ -331,10 +331,7 @@ export default {
     },
     /** 安全格式化预算总额，避免 NaN，带千位符 */
     totalBudgetDisplay() {
-      const raw = this.totalBudget;
-      const val = parseFloat(raw);
-      if (isNaN(val)) return '0.00';
-      return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return this.formatAmount(this.totalBudget);
     }
   },
   created() {
@@ -359,6 +356,8 @@ export default {
         await this.loadExistingData(id);
       } else {
         await this.loadSubjectsByType();
+        // 新建模式：尝试加载上月已审批数据初始化金额
+        await this.loadPreviousMonthData();
       }
     },
 
@@ -417,6 +416,47 @@ export default {
       } catch (error) {
         this.$modal.msgError("加载科目数据失败");
         console.error(error);
+      }
+    },
+
+    /** 加载上月已审批通过的预算数据，初始化本月金额 */
+    async loadPreviousMonthData() {
+      if (!this.basicForm.orgId || !this.basicForm.budgetYear || !this.basicForm.budgetMonth) {
+        return;
+      }
+      try {
+        const response = await getPreviousMonthDetails(
+          this.basicForm.orgId,
+          parseInt(this.basicForm.budgetYear),
+          this.basicForm.budgetMonth
+        );
+        const prevDetails = response.data || [];
+        if (prevDetails.length === 0) {
+          return;
+        }
+
+        // 构建科目编码到叶子节点的映射
+        const leafMap = {};
+        this.budgetTypes.forEach(t => {
+          this.collectLeaves(this.subjectsByType[t.value] || []).forEach(leaf => {
+            leafMap[leaf.subjectCode] = leaf;
+          });
+        });
+
+        // 将上月数据填充到当前表单
+        prevDetails.forEach(detail => {
+          const leaf = leafMap[detail.subjectCode];
+          if (leaf) {
+            leaf.budgetAmount = Number(detail.budgetAmount) || 0;
+            leaf.remark = detail.remark || '';
+          }
+        });
+
+        // 重新计算总额
+        this.calculateTotalBudget();
+        this.$modal.msgSuccess(`已加载上月预算数据（${prevDetails.length}个科目），请根据实际情况调整`);
+      } catch (error) {
+        console.log('加载上月数据失败或上月无已审批数据', error);
       }
     },
 
@@ -757,6 +797,15 @@ export default {
 
     handleReturn() {
       this.$router.push('/system/preparation');
+    },
+    /** 格式化金额（千位符，2位小数） */
+    formatAmount(val) {
+      const num = parseFloat(val);
+      if (isNaN(num)) return '0.00';
+      const fixed = num.toFixed(2);
+      const parts = fixed.split('.');
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      return parts.join('.');
     }
   }
 };

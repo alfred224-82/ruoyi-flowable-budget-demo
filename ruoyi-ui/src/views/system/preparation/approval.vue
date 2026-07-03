@@ -67,7 +67,7 @@
       <el-table-column label="组织名称" align="center" prop="orgName" width="150" />
       <el-table-column label="预算总额" align="center" prop="totalBudget" width="150">
         <template slot-scope="scope">
-          {{ scope.row.totalBudget ? scope.row.totalBudget.toFixed(2) : '0.00' }}
+          {{ formatAmount(scope.row.totalBudget) }}
         </template>
       </el-table-column>
       <el-table-column label="状态" align="center" prop="status" width="120">
@@ -161,7 +161,7 @@ export default {
         budgetYear: undefined,
         budgetMonth: undefined,
         orgId: undefined,
-        status: 'Pending_Review' // 默认查询待审核状态
+        status: undefined // 默认查询所有待审核状态
       },
       // 批量审批对话框
       batchApproveOpen: false,
@@ -223,7 +223,7 @@ export default {
     resetQuery() {
       this.resetForm("queryForm");
       // 重新设置默认状态
-      this.queryParams.status = 'Pending_Review';
+      this.queryParams.status = undefined;
       // 如果是部门领导，恢复部门限制
       if (!this.userRoles.includes('admin') && 
           !this.userRoles.includes('hq_manager') && 
@@ -267,8 +267,9 @@ export default {
     getStatusType(status) {
       const statusMap = {
         'Draft': 'info',
-        'Pending_Review': 'warning',
-        'Rejected': 'danger',
+        'Pending_Dept_Review': 'warning',
+        'Pending_Branch_Review': 'warning',
+        'Pending_HQ_Review': 'warning',
         'Approved': 'success'
       };
       return statusMap[status] || 'info';
@@ -277,11 +278,21 @@ export default {
     getStatusLabel(status) {
       const statusMap = {
         'Draft': '草稿',
-        'Pending_Review': '待审核',
-        'Rejected': '已驳回',
+        'Pending_Dept_Review': '待部门领导审核',
+        'Pending_Branch_Review': '待分公司领导审核',
+        'Pending_HQ_Review': '待总公司领导审核',
         'Approved': '已通过'
       };
       return statusMap[status] || status;
+    },
+    /** 格式化金额（千位符，2位小数） */
+    formatAmount(val) {
+      const num = parseFloat(val);
+      if (isNaN(num)) return '0.00';
+      const fixed = num.toFixed(2);
+      const parts = fixed.split('.');
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      return parts.join('.');
     }
   }
 };

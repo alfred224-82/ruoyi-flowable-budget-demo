@@ -2,6 +2,7 @@ package com.ruoyi.system.service;
 
 import com.ruoyi.system.domain.BudgetPreparation;
 import com.ruoyi.system.domain.vo.BudgetPreparationVo;
+import com.ruoyi.system.domain.vo.BudgetPreparationDetailVo;
 import com.ruoyi.system.domain.vo.BudgetRejectHistoryVo;
 import com.ruoyi.system.domain.vo.ValidationResultVo;
 import com.ruoyi.system.domain.bo.BudgetPreparationBo;
@@ -92,4 +93,13 @@ public interface IBudgetPreparationService {
      * @param sheetId 预算单ID
      */
     List<BudgetRejectHistoryVo> queryRejectHistory(Long sheetId);
+
+    /**
+     * 获取上月已审批通过的预算明细（用于初始化本月预算金额）
+     * @param orgId 部门ID
+     * @param budgetYear 预算年度
+     * @param budgetMonth 预算月份
+     * @return 上月已审批的预算明细列表
+     */
+    List<BudgetPreparationDetailVo> getPreviousMonthApprovedDetails(Long orgId, Integer budgetYear, Integer budgetMonth);
 }

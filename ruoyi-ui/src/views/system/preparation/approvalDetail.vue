@@ -18,7 +18,12 @@
           {{ parseTime(preparationData.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}
         </el-descriptions-item>
         <el-descriptions-item label="预算总额">
-          <span style="color: #409EFF; font-weight: bold;">{{ preparationData.totalBudget ? preparationData.totalBudget.toFixed(2) : '0.00' }} 元</span>
+          <span style="color: #409EFF; font-weight: bold;">{{ formatAmount(preparationData.totalBudget) }} 元</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="当前审批阶段" :span="2">
+          <el-tag :type="getApprovalStageType()" size="medium">
+            {{ getApprovalStageLabel() }}
+          </el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="备注" :span="3">{{ preparationData.remark || '无' }}</el-descriptions-item>
         <el-descriptions-item label="截止时间" v-if="preparationData.deadlineTime">
@@ -56,10 +61,9 @@
             <el-table-column label="科目名称" prop="subjectName" width="150" />
             <el-table-column label="预算金额" width="120">
               <template slot-scope="scope">
-                {{ scope.row.budgetAmount ? scope.row.budgetAmount.toFixed(2) : '0.00' }}
+                {{ formatAmount(scope.row.budgetAmount) }}
               </template>
             </el-table-column>
-            <el-table-column label="问题描述" prop="errorMessage" />
           </el-table>
         </div>
       </el-alert>
@@ -82,10 +86,9 @@
             <el-table-column label="科目名称" prop="subjectName" width="200" align="center" />
             <el-table-column label="预算金额" prop="budgetAmount" align="center">
               <template slot-scope="scope">
-                {{ scope.row.budgetAmount ? scope.row.budgetAmount.toFixed(2) : '0.00' }}
+                {{ formatAmount(scope.row.budgetAmount) }}
               </template>
             </el-table-column>
-            <el-table-column label="说明" prop="remark" align="center" />
           </el-table>
         </el-tab-pane>
       </el-tabs>
@@ -93,12 +96,25 @@
       <!-- 底部按钮 -->
       <div style="margin-top: 30px; text-align: center;">
         <el-button @click="handleReturn">返 回</el-button>
-        <el-button type="danger" @click="handleReject">
+        <el-button 
+          v-if="canApprove()" 
+          type="danger" 
+          @click="handleReject">
           <i class="el-icon-close"></i> 审核驳回
         </el-button>
-        <el-button type="success" @click="handleApprove">
+        <el-button 
+          v-if="canApprove()" 
+          type="success" 
+          @click="handleApprove">
           <i class="el-icon-check"></i> 审核通过
         </el-button>
+        <el-tag 
+          v-if="!canApprove() && isPendingReview()" 
+          type="info" 
+          size="medium" 
+          style="margin-left: 10px;">
+          当前阶段无需您审批
+        </el-tag>
       </div>
     </el-card>
 
@@ -335,6 +351,55 @@ export default {
     handleReturn() {
       this.$router.push('/system/preparation/approval');
     },
+    /** 判断是否为待审核状态 */
+    isPendingReview() {
+      const status = this.preparationData.status;
+      return ['Pending_Dept_Review', 'Pending_Branch_Review', 'Pending_HQ_Review'].includes(status);
+    },
+    /** 判断当前用户是否可以审批 */
+    canApprove() {
+      if (!this.isPendingReview()) return false;
+      
+      const status = this.preparationData.status;
+      const userRoles = this.$store.state.user.roles || [];
+      
+      // 部门领导只能审批第1级
+      if (status === 'Pending_Dept_Review' && userRoles.some(r => r.roleKey === 'dept_leader')) {
+        return true;
+      }
+      // 分公司领导只能审批第2级
+      if (status === 'Pending_Branch_Review' && userRoles.some(r => r.roleKey === 'branch_leader')) {
+        return true;
+      }
+      // 总公司领导只能审批第3级
+      if (status === 'Pending_HQ_Review' && userRoles.some(r => r.roleKey === 'hq_leader')) {
+        return true;
+      }
+      
+      return false;
+    },
+    /** 获取当前审批阶段标签 */
+    getApprovalStageLabel() {
+      const status = this.preparationData.status;
+      const stageMap = {
+        'Pending_Dept_Review': '第1级：部门领导审批',
+        'Pending_Branch_Review': '第2级：分公司领导审批',
+        'Pending_HQ_Review': '第3级：总公司领导审批',
+        'Approved': '审批完成'
+      };
+      return stageMap[status] || status;
+    },
+    /** 获取当前审批阶段标签类型 */
+    getApprovalStageType() {
+      const status = this.preparationData.status;
+      const typeMap = {
+        'Pending_Dept_Review': 'warning',
+        'Pending_Branch_Review': 'warning',
+        'Pending_HQ_Review': 'warning',
+        'Approved': 'success'
+      };
+      return typeMap[status] || 'info';
+    },
     /** 获取风险等级标签类型 */
     getRiskLevelType(level) {
       const levelMap = {
@@ -352,6 +417,15 @@ export default {
         'LOW': '低'
       };
       return levelMap[level] || level;
+    },
+    /** 格式化金额（千位符，2位小数） */
+    formatAmount(val) {
+      const num = parseFloat(val);
+      if (isNaN(num)) return '0.00';
+      const fixed = num.toFixed(2);
+      const parts = fixed.split('.');
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      return parts.join('.');
     }
   }
 };

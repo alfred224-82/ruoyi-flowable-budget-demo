@@ -13,9 +13,14 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.*;
 import com.ruoyi.system.domain.bo.BudgetPreparationBo;
 import com.ruoyi.system.domain.vo.*;
+import com.ruoyi.system.config.BudgetProcessDeployer;
 import com.ruoyi.system.mapper.*;
 import com.ruoyi.system.service.IBudgetPreparationService;
 import lombok.RequiredArgsConstructor;
+import org.flowable.engine.RuntimeService;
+import org.flowable.engine.TaskService;
+import org.flowable.engine.runtime.ProcessInstance;
+import org.flowable.task.api.Task;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +44,8 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
     private final BudgetValidationRuleMapper validationRuleMapper;
     private final BudgetPreparationDetailMapper detailMapper;
     private final BudgetSubjectMapper subjectMapper;
+    private final RuntimeService runtimeService;
+    private final TaskService taskService;
 
     /**
      * 查询预算编制
@@ -227,12 +234,46 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
             throw new ServiceException("存在未填写预算金额的科目，请补充完整");
         }
         
-        // 更新状态为待审核
-        preparation.setStatus("Pending_Review");
+        // 启动 Flowable 审批流程
+        startApprovalProcess(preparation);
+        
+        // 更新状态为待部门领导审核（第1级）
+        preparation.setStatus("Pending_Dept_Review");
         preparation.setRejectLevel("None");
         preparation.setRejectReason(null);
         
         return baseMapper.updateById(preparation) > 0;
+    }
+
+    /**
+     * 启动预算审批流程
+     */
+    private void startApprovalProcess(BudgetPreparation preparation) {
+        try {
+            Map<String, Object> variables = new HashMap<>();
+            // 设置三级审批候选组（ROLE + roleId）
+            variables.put("deptLeaderGroup", Collections.singletonList("ROLE3"));   // 部门领导
+            variables.put("branchLeaderGroup", Collections.singletonList("ROLE4")); // 分公司领导
+            variables.put("hqLeaderGroup", Collections.singletonList("ROLE5"));     // 总公司领导
+            // 设置流程变量
+            variables.put("sheetId", preparation.getId());
+            variables.put("sheetNo", preparation.getSheetNo());
+            variables.put("createBy", LoginHelper.getUsername());
+            variables.put("orgId", preparation.getOrgId());
+            variables.put("totalBudget", preparation.getTotalBudget());
+
+            // 启动流程实例
+            ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(
+                BudgetProcessDeployer.PROCESS_KEY,
+                preparation.getSheetNo(),
+                variables
+            );
+
+            // 保存流程实例ID
+            preparation.setProcessInstanceId(processInstance.getId());
+        } catch (Exception e) {
+            throw new ServiceException("启动审批流程失败：" + e.getMessage());
+        }
     }
 
     /**
@@ -268,7 +309,8 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
     }
 
     /**
-     * 审批通过（单个）
+     * 审批通过（单个）- 集成 Flowable 任务完成
+     * 三级审批流转：部门领导 → 分公司领导 → 总公司领导
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -278,20 +320,37 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
             throw new ServiceException("预算编制不存在");
         }
         
-        // 校验状态：只有待审核状态可以审批
-        if (!"Pending_Review".equals(preparation.getStatus())) {
+        String status = preparation.getStatus();
+        // 校验状态：只有三级待审核状态可以审批
+        if (!isPendingReviewStatus(status)) {
             throw new ServiceException("预算编制状态不是待审核，不能审批");
         }
         
-        // 更新状态为已通过
-        preparation.setStatus("Approved");
-        preparation.setRemark(remark);
+        // 完成 Flowable 任务（通过）
+        completeFlowableTask(preparation.getProcessInstanceId(), "pass", remark);
+        
+        // 状态流转：部门领导 → 分公司领导 → 总公司领导 → 已通过
+        if ("Pending_Dept_Review".equals(status)) {
+            preparation.setStatus("Pending_Branch_Review");
+            preparation.setCurrentHandler("branch_leader");
+        } else if ("Pending_Branch_Review".equals(status)) {
+            preparation.setStatus("Pending_HQ_Review");
+            preparation.setCurrentHandler("hq_leader");
+        } else if ("Pending_HQ_Review".equals(status)) {
+            preparation.setStatus("Approved");
+            preparation.setCurrentHandler(null);
+        }
+        
+        if (StringUtils.isNotBlank(remark)) {
+            preparation.setRemark(remark);
+        }
         
         return baseMapper.updateById(preparation) > 0;
     }
 
     /**
-     * 审批驳回（单个）
+     * 审批驳回（单个）- 集成 Flowable 任务完成
+     * 任何级别驳回都回退到编制人员（状态重置为 Draft）
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -301,8 +360,9 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
             throw new ServiceException("预算编制不存在");
         }
         
-        // 校验状态：只有待审核状态可以驳回
-        if (!"Pending_Review".equals(preparation.getStatus())) {
+        String status = preparation.getStatus();
+        // 校验状态：只有三级待审核状态可以驳回
+        if (!isPendingReviewStatus(status)) {
             throw new ServiceException("预算编制状态不是待审核，不能驳回");
         }
         
@@ -311,10 +371,13 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
             throw new ServiceException("驳回时必须填写驳回意见");
         }
         
-        // 更新主表状态
-        preparation.setStatus("Rejected");
+        // 完成 Flowable 任务（驳回）
+        completeFlowableTask(preparation.getProcessInstanceId(), "reject", reason);
+        
+        // 驳回后状态回退到草稿，由编制人员重新修改提交
+        preparation.setStatus("Draft");
         preparation.setRejectReason(reason);
-        preparation.setRejectLevel("HQ");
+        preparation.setRejectLevel(getRejectLevelFromStatus(status));
         preparation.setCurrentHandler(LoginHelper.getUsername());
         boolean result = baseMapper.updateById(preparation) > 0;
         
@@ -323,13 +386,13 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
             BudgetRejectHistory history = new BudgetRejectHistory();
             history.setSheetId(id);
             history.setSheetNo(preparation.getSheetNo());
-            history.setRejectFromLevel("HQ");
+            history.setRejectFromLevel(getRejectLevelFromStatus(status));
             history.setRejectFromUser(LoginHelper.getUsername());
             history.setRejectFromName(LoginHelper.getNickName());
-            history.setRejectToLevel("Branch");
+            history.setRejectToLevel("Dept");
             history.setRejectReason(reason);
             history.setRejectTime(new Date());
-            history.setDeadlineTime(calculateDeadline("HQ"));
+            history.setDeadlineTime(calculateDeadline(getRejectLevelFromStatus(status)));
             rejectHistoryMapper.insert(history);
         }
         
@@ -554,5 +617,111 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
         String seqNo = String.format("%03d", count + 1);
         
         return "BG-" + dateStr + "-" + seqNo;
+    }
+
+    /**
+     * 完成 Flowable 任务（审批通过或驳回）
+     * @param processInstanceId 流程实例ID
+     * @param result 审批结果：pass/reject
+     * @param comment 审批意见
+     */
+    private void completeFlowableTask(String processInstanceId, String result, String comment) {
+        if (StringUtils.isBlank(processInstanceId)) {
+            throw new ServiceException("流程实例ID为空，无法完成审批任务");
+        }
+        
+        Task task = taskService.createTaskQuery()
+            .processInstanceId(processInstanceId)
+            .singleResult();
+            
+        if (task == null) {
+            throw new ServiceException("未找到待审批的任务");
+        }
+        
+        // 添加任务评论（审批意见）
+        if (StringUtils.isNotBlank(comment)) {
+            taskService.addComment(task.getId(), processInstanceId, comment);
+        }
+        
+        // 完成任务，设置流程变量 result
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("result", result);
+        taskService.complete(task.getId(), variables);
+    }
+
+    /**
+     * 判断是否为待审核状态（三级审批中的任意一级）
+     */
+    private boolean isPendingReviewStatus(String status) {
+        return "Pending_Dept_Review".equals(status) 
+            || "Pending_Branch_Review".equals(status) 
+            || "Pending_HQ_Review".equals(status);
+    }
+
+    /**
+     * 根据当前状态获取驳回来源级别
+     */
+    private String getRejectLevelFromStatus(String status) {
+        if ("Pending_Dept_Review".equals(status)) {
+            return "Dept";
+        } else if ("Pending_Branch_Review".equals(status)) {
+            return "Branch";
+        } else if ("Pending_HQ_Review".equals(status)) {
+            return "HQ";
+        }
+        return "Unknown";
+    }
+
+    /**
+     * 获取上月已审批通过的预算明细（用于初始化本月预算金额）
+     * 实现「上月实绩驱动下月预算」：取本部门上月审核通过的科目金额作为本月初始值
+     *
+     * @param orgId 部门ID
+     * @param budgetYear 预算年度
+     * @param budgetMonth 预算月份
+     * @return 上月已审批的预算明细列表
+     */
+    @Override
+    public List<BudgetPreparationDetailVo> getPreviousMonthApprovedDetails(Long orgId, Integer budgetYear, Integer budgetMonth) {
+        // 计算上月的年度和月份
+        Integer prevYear = budgetYear;
+        Integer prevMonth = budgetMonth - 1;
+        if (prevMonth <= 0) {
+            prevMonth = 12;
+            prevYear = budgetYear - 1;
+        }
+
+        // 查询上月本部门已审批通过的编制记录（状态为 Approved）
+        LambdaQueryWrapper<BudgetPreparation> lqw = Wrappers.lambdaQuery();
+        lqw.eq(BudgetPreparation::getOrgId, orgId);
+        lqw.eq(BudgetPreparation::getBudgetYear, prevYear);
+        lqw.eq(BudgetPreparation::getBudgetMonth, prevMonth);
+        lqw.eq(BudgetPreparation::getStatus, "Approved");
+        lqw.orderByDesc(BudgetPreparation::getUpdateTime);
+        lqw.last("LIMIT 1");
+
+        BudgetPreparation prevPreparation = baseMapper.selectOne(lqw);
+        if (prevPreparation == null) {
+            return Collections.emptyList();
+        }
+
+        // 查询该编制记录的明细数据
+        List<BudgetPreparationDetail> prevDetails = detailMapper.selectList(
+            Wrappers.<BudgetPreparationDetail>lambdaQuery()
+                .eq(BudgetPreparationDetail::getSheetId, prevPreparation.getId())
+        );
+
+        // 转换为 VO 列表
+        List<BudgetPreparationDetailVo> result = new ArrayList<>();
+        for (BudgetPreparationDetail detail : prevDetails) {
+            BudgetPreparationDetailVo vo = new BudgetPreparationDetailVo();
+            vo.setSubjectCode(detail.getSubjectCode());
+            vo.setSubjectName(detail.getSubjectName());
+            vo.setSubjectType(detail.getSubjectType());
+            vo.setBudgetAmount(detail.getBudgetAmount());
+            result.add(vo);
+        }
+
+        return result;
     }
 }
