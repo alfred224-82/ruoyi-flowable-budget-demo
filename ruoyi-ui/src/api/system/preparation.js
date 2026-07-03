@@ -170,3 +170,12 @@ export function getRejectHistory(sheetId) {
     method: 'get'
   })
 }
+
+// 获取上月已审批通过的预算明细（用于初始化本月预算金额）
+export function getPreviousMonthDetails(orgId, budgetYear, budgetMonth) {
+  return request({
+    url: '/system/preparation/previousMonthDetails',
+    method: 'get',
+    params: { orgId, budgetYear, budgetMonth }
+  })
+}
