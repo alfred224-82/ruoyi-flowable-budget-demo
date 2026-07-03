@@ -10,6 +10,21 @@
         </div>
       </div>
 
+      <!-- 驳回原因提示 -->
+      <el-alert
+        v-if="preparationData.status === 'Rejected' && preparationData.rejectReason"
+        title="该预算编制已被驳回，请根据驳回原因修改后重新提交"
+        type="error"
+        :closable="true"
+        show-icon
+        style="margin-bottom: 20px;"
+      >
+        <div style="margin-top: 8px;">
+          <span style="font-weight: bold; margin-right: 8px;">驳回原因：</span>
+          <span>{{ preparationData.rejectReason }}</span>
+        </div>
+      </el-alert>
+
       <!-- 步骤条 -->
       <el-steps :active="currentStep" finish-status="success" align-center style="margin-bottom: 30px;">
         <el-step title="基础信息" description="填写预算年度、月份等基本信息"></el-step>
@@ -272,7 +287,7 @@
 </template>
 
 <script>
-import { addPreparation, updatePreparation, getPreparation, batchSavePreparationDetail, listPreparationDetail, listAllSubjects, executeValidation, getPreviousMonthDetails } from "@/api/system/preparation";
+import { addPreparation, updatePreparation, getPreparation, batchSavePreparationDetail, listPreparationDetail, listAllSubjects, executeValidation, getPreviousMonthDetails, completePreparation } from "@/api/system/preparation";
 import { getInfo } from "@/api/login";
 
 export default {
@@ -281,6 +296,7 @@ export default {
     return {
       currentStep: 0,
       viewOnly: false,
+      isCompleteMode: false,
       activeTab: '',
       budgetTypes: [
         { value: 'INCOME', label: '收入类' },
@@ -351,6 +367,7 @@ export default {
 
       const id = this.$route.query.id;
       this.viewOnly = this.$route.query.viewOnly === 'true';
+      this.isCompleteMode = this.$route.query.complete === 'true';
 
       if (id) {
         await this.loadExistingData(id);
@@ -378,7 +395,14 @@ export default {
 
         // 修改模式：直接进入第2步，不可返回第1步
         if (this.viewOnly) {
+          // 查看模式：直接进入第3步，需要先填充汇总数据
+          this.prepareSummaryData();
           this.currentStep = 2;
+        } else if (this.isCompleteMode) {
+          // 完成编制模式：直接进入第3步（汇总确认页），并自动执行规则校验
+          this.prepareSummaryData();
+          this.currentStep = 2;
+          await this.runValidation();
         } else {
           this.currentStep = 1;
         }
@@ -785,6 +809,9 @@ export default {
 
         // 保存明细数据（后端自动汇总更新编制总额）
         await batchSavePreparationDetail(details);
+
+        // 调用完成编制接口，将状态设置为 Completed
+        await completePreparation(this.preparationData.id);
 
         this.$modal.msgSuccess("预算编制完成！");
         this.$router.push('/system/preparation');

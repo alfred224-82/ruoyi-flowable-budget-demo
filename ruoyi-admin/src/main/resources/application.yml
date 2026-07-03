@@ -14,6 +14,7 @@ ruoyi:
   cacheLazy: false
 
 captcha:
+  enabled: false  # 新增这一行，false=关闭验证码，true=开启
   # 页面 <参数设置> 可开启关闭 验证码校验
   # 验证码类型 math 数组计算 char 字符验证
   type: MATH
@@ -284,3 +285,8 @@ flowable:
   check-process-definitions: false
   # 关闭历史任务定时任务job
   async-history-executor-activate: false
+
+--- # 预算审批流程配置
+budget:
+  # 流程定义标识（与BPMN文件中process id保持一致）
+  process-key: Process_1783061114424

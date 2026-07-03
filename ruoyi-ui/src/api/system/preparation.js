@@ -43,6 +43,14 @@ export function delPreparation(id) {
   })
 }
 
+// 完成编制
+export function completePreparation(id) {
+  return request({
+    url: '/system/preparation/complete/' + id,
+    method: 'post'
+  })
+}
+
 // 提交审核
 export function submitPreparation(id) {
   return request({

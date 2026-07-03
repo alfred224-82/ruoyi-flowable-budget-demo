@@ -17,8 +17,11 @@ import com.ruoyi.system.config.BudgetProcessDeployer;
 import com.ruoyi.system.mapper.*;
 import com.ruoyi.system.service.IBudgetPreparationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.flowable.engine.RepositoryService;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.TaskService;
+import org.flowable.engine.repository.ProcessDefinition;
 import org.flowable.engine.runtime.ProcessInstance;
 import org.flowable.task.api.Task;
 import org.springframework.stereotype.Service;
@@ -35,6 +38,7 @@ import java.util.stream.Collectors;
  * @author ruoyi
  * @date 2026-06-19
  */
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
@@ -46,6 +50,8 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
     private final BudgetSubjectMapper subjectMapper;
     private final RuntimeService runtimeService;
     private final TaskService taskService;
+    private final RepositoryService repositoryService;
+    private final BudgetProcessDeployer budgetProcessDeployer;
 
     /**
      * 查询预算编制
@@ -87,6 +93,9 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
         // 状态筛选
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), BudgetPreparation::getStatus, bo.getStatus());
         
+        // 审批阶段筛选
+        lqw.eq(StringUtils.isNotBlank(bo.getApprovalStage()), BudgetPreparation::getApprovalStage, bo.getApprovalStage());
+        
         // 组织ID筛选（部门权限控制）
         lqw.eq(bo.getOrgId() != null, BudgetPreparation::getOrgId, bo.getOrgId());
         
@@ -126,6 +135,9 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
         // 设置初始状态为草稿
         if (StringUtils.isBlank(add.getStatus())) {
             add.setStatus("Draft");
+        }
+        if (StringUtils.isBlank(add.getApprovalStage())) {
+            add.setApprovalStage("None");
         }
         
         // 设置当前处理人为创建人
@@ -167,6 +179,8 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
             if (!"Draft".equals(status) && !"Rejected".equals(status)) {
                 throw new ServiceException("只有草稿和驳回状态的预算编制可以修改");
             }
+            // 编辑后重置状态为草稿，需要重新完成编制后才能提交审核
+            update.setStatus("Draft");
         }
         
         validEntityBeforeSave(update);
@@ -187,18 +201,48 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
         if (isValid) {
-            // 校验：只有草稿和驳回状态可以删除
+            // 校验：只有草稿状态可以删除
             for (Long id : ids) {
                 BudgetPreparation preparation = baseMapper.selectById(id);
                 if (preparation != null) {
                     String status = preparation.getStatus();
-                    if (!"Draft".equals(status) && !"Rejected".equals(status)) {
-                        throw new ServiceException("预算单号[" + preparation.getSheetNo() + "]不是草稿或驳回状态，不能删除");
+                    if (!"Draft".equals(status)) {
+                        throw new ServiceException("预算单号[" + preparation.getSheetNo() + "]不是草稿状态，不能删除");
                     }
                 }
             }
         }
         return baseMapper.deleteBatchIds(ids) > 0;
+    }
+
+    /**
+     * 完成编制（将状态设置为 Completed）
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean completePreparation(Long id) {
+        BudgetPreparation preparation = baseMapper.selectById(id);
+        if (preparation == null) {
+            throw new ServiceException("预算编制不存在");
+        }
+        
+        // 只有草稿和驳回状态可以执行完成编制
+        String status = preparation.getStatus();
+        if (!"Draft".equals(status) && !"Rejected".equals(status)) {
+            throw new ServiceException("只有草稿和驳回状态的预算编制可以执行完成编制");
+        }
+        
+        // 校验明细数据完整性
+        List<BudgetPreparationDetail> details = detailMapper.selectList(
+            Wrappers.<BudgetPreparationDetail>lambdaQuery()
+                .eq(BudgetPreparationDetail::getSheetId, id));
+        if (details == null || details.isEmpty()) {
+            throw new ServiceException("预算编制明细为空，请先填写预算数据");
+        }
+        
+        // 更新状态为完成编制
+        preparation.setStatus("Completed");
+        return baseMapper.updateById(preparation) > 0;
     }
 
     /**
@@ -212,10 +256,10 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
             throw new ServiceException("预算编制不存在");
         }
         
-        // 校验状态：只有草稿和驳回状态可以提交
+        // 校验状态：只有完成编制状态可以提交
         String status = preparation.getStatus();
-        if (!"Draft".equals(status) && !"Rejected".equals(status)) {
-            throw new ServiceException("预算编制状态不是草稿或驳回，不能提交审核");
+        if (!"Completed".equals(status)) {
+            throw new ServiceException("预算编制状态不是完成编制，不能提交审核");
         }
         
         // 校验明细数据完整性
@@ -237,8 +281,9 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
         // 启动 Flowable 审批流程
         startApprovalProcess(preparation);
         
-        // 更新状态为待部门领导审核（第1级）
-        preparation.setStatus("Pending_Dept_Review");
+        // 更新状态为待审核，审批阶段为部门领导
+        preparation.setStatus("Pending_Review");
+        preparation.setApprovalStage("Dept");
         preparation.setRejectLevel("None");
         preparation.setRejectReason(null);
         
@@ -250,6 +295,9 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
      */
     private void startApprovalProcess(BudgetPreparation preparation) {
         try {
+            // 确保流程定义处于激活状态（防止因被挂起而无法启动流程实例）
+            ensureProcessDefinitionActive();
+
             Map<String, Object> variables = new HashMap<>();
             // 设置三级审批候选组（ROLE + roleId）
             variables.put("deptLeaderGroup", Collections.singletonList("ROLE3"));   // 部门领导
@@ -264,7 +312,7 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
 
             // 启动流程实例
             ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(
-                BudgetProcessDeployer.PROCESS_KEY,
+                budgetProcessDeployer.getProcessKey(),
                 preparation.getSheetNo(),
                 variables
             );
@@ -273,6 +321,21 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
             preparation.setProcessInstanceId(processInstance.getId());
         } catch (Exception e) {
             throw new ServiceException("启动审批流程失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 确保预算审批流程定义处于激活状态
+     * 如果流程定义被挂起（例如通过工作流管理界面操作），则自动激活
+     */
+    private void ensureProcessDefinitionActive() {
+        ProcessDefinition processDef = repositoryService.createProcessDefinitionQuery()
+            .processDefinitionKey(budgetProcessDeployer.getProcessKey())
+            .latestVersion()
+            .singleResult();
+        if (processDef != null && processDef.isSuspended()) {
+            repositoryService.activateProcessDefinitionById(processDef.getId(), true, null);
+            log.info("流程定义 {} 已被挂起，已自动激活", processDef.getId());
         }
     }
 
@@ -309,6 +372,35 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
     }
 
     /**
+     * 校验当前用户是否为当前审批阶段对应的角色
+     * 部门领导(deptManager) → Dept阶段
+     * 分公司领导(branch) → Branch阶段
+     * 总公司领导(headquarters) → HQ阶段
+     * admin 可审批所有阶段
+     */
+    private void checkCurrentUserCanApprove(BudgetPreparation preparation) {
+        if (LoginHelper.isAdmin()) {
+            return;
+        }
+        Set<String> roleKeys = LoginHelper.getLoginUser().getRolePermission();
+        if (roleKeys == null) {
+            roleKeys = Collections.emptySet();
+        }
+        String stage = preparation.getApprovalStage();
+        boolean canApprove = false;
+        if ("Dept".equals(stage) && roleKeys.contains("deptManager")) {
+            canApprove = true;
+        } else if ("Branch".equals(stage) && roleKeys.contains("branch")) {
+            canApprove = true;
+        } else if ("HQ".equals(stage) && roleKeys.contains("headquarters")) {
+            canApprove = true;
+        }
+        if (!canApprove) {
+            throw new ServiceException("当前用户不是该审批阶段的审批人，无权操作");
+        }
+    }
+
+    /**
      * 审批通过（单个）- 集成 Flowable 任务完成
      * 三级审批流转：部门领导 → 分公司领导 → 总公司领导
      */
@@ -321,23 +413,28 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
         }
         
         String status = preparation.getStatus();
-        // 校验状态：只有三级待审核状态可以审批
-        if (!isPendingReviewStatus(status)) {
+        // 校验状态：只有待审核状态可以审批
+        if (!"Pending_Review".equals(status)) {
             throw new ServiceException("预算编制状态不是待审核，不能审批");
         }
+        
+        // 校验当前用户是否为当前审批阶段的审批人
+        checkCurrentUserCanApprove(preparation);
         
         // 完成 Flowable 任务（通过）
         completeFlowableTask(preparation.getProcessInstanceId(), "pass", remark);
         
-        // 状态流转：部门领导 → 分公司领导 → 总公司领导 → 已通过
-        if ("Pending_Dept_Review".equals(status)) {
-            preparation.setStatus("Pending_Branch_Review");
+        // 审批阶段流转：Dept → Branch → HQ → Approved
+        String stage = preparation.getApprovalStage();
+        if ("Dept".equals(stage)) {
+            preparation.setApprovalStage("Branch");
             preparation.setCurrentHandler("branch_leader");
-        } else if ("Pending_Branch_Review".equals(status)) {
-            preparation.setStatus("Pending_HQ_Review");
+        } else if ("Branch".equals(stage)) {
+            preparation.setApprovalStage("HQ");
             preparation.setCurrentHandler("hq_leader");
-        } else if ("Pending_HQ_Review".equals(status)) {
+        } else if ("HQ".equals(stage)) {
             preparation.setStatus("Approved");
+            preparation.setApprovalStage("None");
             preparation.setCurrentHandler(null);
         }
         
@@ -361,10 +458,13 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
         }
         
         String status = preparation.getStatus();
-        // 校验状态：只有三级待审核状态可以驳回
-        if (!isPendingReviewStatus(status)) {
+        // 校验状态：只有待审核状态可以驳回
+        if (!"Pending_Review".equals(status)) {
             throw new ServiceException("预算编制状态不是待审核，不能驳回");
         }
+        
+        // 校验当前用户是否为当前审批阶段的审批人
+        checkCurrentUserCanApprove(preparation);
         
         // 校验驳回理由
         if (StringUtils.isBlank(reason)) {
@@ -374,10 +474,12 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
         // 完成 Flowable 任务（驳回）
         completeFlowableTask(preparation.getProcessInstanceId(), "reject", reason);
         
-        // 驳回后状态回退到草稿，由编制人员重新修改提交
-        preparation.setStatus("Draft");
+        // 驳回后状态回退到已驳回，由编制人员重新修改提交
+        String currentStage = preparation.getApprovalStage();
+        preparation.setStatus("Rejected");
+        preparation.setApprovalStage("None");
         preparation.setRejectReason(reason);
-        preparation.setRejectLevel(getRejectLevelFromStatus(status));
+        preparation.setRejectLevel(currentStage);
         preparation.setCurrentHandler(LoginHelper.getUsername());
         boolean result = baseMapper.updateById(preparation) > 0;
         
@@ -386,13 +488,13 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
             BudgetRejectHistory history = new BudgetRejectHistory();
             history.setSheetId(id);
             history.setSheetNo(preparation.getSheetNo());
-            history.setRejectFromLevel(getRejectLevelFromStatus(status));
+            history.setRejectFromLevel(currentStage);
             history.setRejectFromUser(LoginHelper.getUsername());
             history.setRejectFromName(LoginHelper.getNickName());
             history.setRejectToLevel("Dept");
             history.setRejectReason(reason);
             history.setRejectTime(new Date());
-            history.setDeadlineTime(calculateDeadline(getRejectLevelFromStatus(status)));
+            history.setDeadlineTime(calculateDeadline(currentStage));
             rejectHistoryMapper.insert(history);
         }
         
@@ -539,16 +641,17 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
             throw new ServiceException("预算编制不存在");
         }
         
-        // 校验状态：必须是 Branch_Pending
-        if (!"Branch_Pending".equals(preparation.getStatus())) {
-            throw new ServiceException("只有分公司待处理状态才能打回部门");
+        // 校验状态：必须是待审核且审批阶段为分公司
+        if (!"Pending_Review".equals(preparation.getStatus()) || !"Branch".equals(preparation.getApprovalStage())) {
+            throw new ServiceException("只有分公司待审核状态才能打回部门");
         }
         if (StringUtils.isBlank(reason)) {
             throw new ServiceException("打回理由不能为空");
         }
         
-        // 更新状态
+        // 更新状态为待修订
         preparation.setStatus("Pending_Revision");
+        preparation.setApprovalStage("None");
         preparation.setRejectLevel("Branch");
         preparation.setRejectReason(reason);
         preparation.setCurrentHandler(LoginHelper.getUsername());
@@ -647,29 +750,6 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
         Map<String, Object> variables = new HashMap<>();
         variables.put("result", result);
         taskService.complete(task.getId(), variables);
-    }
-
-    /**
-     * 判断是否为待审核状态（三级审批中的任意一级）
-     */
-    private boolean isPendingReviewStatus(String status) {
-        return "Pending_Dept_Review".equals(status) 
-            || "Pending_Branch_Review".equals(status) 
-            || "Pending_HQ_Review".equals(status);
-    }
-
-    /**
-     * 根据当前状态获取驳回来源级别
-     */
-    private String getRejectLevelFromStatus(String status) {
-        if ("Pending_Dept_Review".equals(status)) {
-            return "Dept";
-        } else if ("Pending_Branch_Review".equals(status)) {
-            return "Branch";
-        } else if ("Pending_HQ_Review".equals(status)) {
-            return "HQ";
-        }
-        return "Unknown";
     }
 
     /**

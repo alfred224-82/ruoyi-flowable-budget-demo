@@ -80,7 +80,10 @@ public class WfDeployFormServiceImpl implements IWfDeployFormService {
                 }
             }
         }
-        // 批量新增部署流程和表单关联信息
+        // 批量新增部署流程和表单关联信息（若无表单配置则跳过）
+        if (CollUtil.isEmpty(deployFormList)) {
+            return true;
+        }
         return baseMapper.insertBatch(deployFormList);
     }
 

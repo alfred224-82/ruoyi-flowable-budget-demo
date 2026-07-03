@@ -140,8 +140,8 @@ public class HqGatewayListener implements ExecutionListener {
 
         log.info("驳回理由: {}", rejectReason);
 
-        // 2. 更新预算单状态为 Pending_Revision（待修改）
-        updateBudgetSheetStatus(execution, "Pending_Revision", rejectReason);
+        // 2. 更新预算单状态为 Rejected（已驳回）
+        updateBudgetSheetStatus(execution, "Rejected", rejectReason);
 
         // 3. 设置驳回来源为 HQ（总部）
         execution.setVariable("rejectLevel", "HQ");

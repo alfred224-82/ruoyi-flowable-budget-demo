@@ -426,6 +426,19 @@ export default {
       const params = {procInsId: procInsId, taskId: taskId}
       detailProcess(params).then(res => {
         const data = res.data;
+        // 如果是预算编制审批流程，跳转到审核明细页面
+        if (data.category === 'planflow') {
+          const sheetId = data.processVariables ? data.processVariables.sheetId : null;
+          this.$router.replace({
+            path: '/system/preparation/approvalDetail',
+            query: {
+              id: sheetId,
+              procInsId: procInsId,
+              taskId: taskId
+            }
+          });
+          return;
+        }
         this.xmlData = data.bpmnXml;
         this.processFormList = data.processFormList;
         this.taskFormOpen = data.existTaskForm;

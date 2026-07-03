@@ -673,6 +673,14 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         detailVo.setHistoryProcNodeList(historyProcNodeList(historicProcIns));
         detailVo.setProcessFormList(processFormList(bpmnModel, historicProcIns));
         detailVo.setFlowViewer(getFlowViewer(bpmnModel, procInsId));
+        // 设置流程分类
+        Deployment deployment = repositoryService.createDeploymentQuery()
+            .deploymentId(historicProcIns.getDeploymentId()).singleResult();
+        if (deployment != null) {
+            detailVo.setCategory(deployment.getCategory());
+        }
+        // 设置流程变量
+        detailVo.setProcessVariables(historicProcIns.getProcessVariables());
         return detailVo;
     }
 

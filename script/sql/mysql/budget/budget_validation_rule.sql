@@ -34,7 +34,7 @@ CREATE TABLE `budget_validation_rule` (
 -- ----------------------------
 INSERT INTO `budget_validation_rule` (`rule_code`, `rule_name`, `rule_type`, `severity_level`, `subject_type`, `subject_code`, `threshold_value`, `threshold_value2`, `rule_expression`, `error_message`, `is_active`, `sort_order`, `description`, `create_by`, `create_time`) VALUES
 -- 必填校验
-('REQ_ALL', '所有叶子科目必须填写预算金额', 'REQUIRED', 'ERROR', NULL, NULL, NULL, NULL, NULL, '存在未填写预算金额的叶子科目，请补充完整', 1, 1, '检查所有叶子科目是否已填写预算金额', 'admin', NOW()),
+('REQ_ALL', '所有叶子科目必须填写预算金额', 'REQUIRED', 'INFO', NULL, NULL, NULL, NULL, NULL, '存在未填写预算金额的叶子科目，请补充完整', 1, 1, '检查所有叶子科目是否已填写预算金额', 'admin', NOW()),
 
 -- 最低金额校验
 ('MIN_INCOME', '收入类科目预算金额不得为负', 'MIN_AMOUNT', 'ERROR', 'INCOME', NULL, 0, NULL, 'amount >= 0', '收入类科目预算金额不能为负数', 1, 2, '收入类科目金额必须 >= 0', 'admin', NOW()),
