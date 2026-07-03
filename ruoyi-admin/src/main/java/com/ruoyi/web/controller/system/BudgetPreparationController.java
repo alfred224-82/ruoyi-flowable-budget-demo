@@ -85,8 +85,9 @@ public class BudgetPreparationController extends BaseController {
     @Log(title = "棰勭畻缂栧埗", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping()
-    public R<Void> add(@Validated(AddGroup.class) @RequestBody BudgetPreparationBo bo) {
-        return toAjax(budgetPreparationService.insertByBo(bo));
+    public R<Long> add(@Validated(AddGroup.class) @RequestBody BudgetPreparationBo bo) {
+        budgetPreparationService.insertByBo(bo);
+        return R.ok(bo.getId());
     }
 
     /**

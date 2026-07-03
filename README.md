@@ -1,7 +1,7 @@
 # 企业全面预算管理系统 — 需求说明书
 
-**版本**：v1.0  
-**日期**：2026-07-02  
+**版本**：v1.1  
+**日期**：2026-07-03  
 **项目**：基于 RuoYi-Flowable-Plus 框架的企业级预算管理解决方案
 
 ---
@@ -96,6 +96,13 @@ Pending_Revision → Draft（部门修改后重新提交）
 - 修改已有记录时，直接进入第2步（科目预算明细），不可返回第1步
 - 查看模式（审批中记录）直接进入第3步，只读展示
 
+**预算总额实时展示**：
+- 预算总额显示在页面右上角（卡片头部区域），全程可见
+- 金额使用千位符格式化显示（如 5,290.00）
+- 第2步录入金额时实时计算并更新总额显示
+- 第3步汇总区同步展示预算总额
+- 安全处理 NaN 值，确保异常情况下显示 `0.00`
+
 **重复校验规则**：
 - 新建编制点击第1步「下一步」时，自动校验同一部门在同一月份是否已存在编制记录
 - 若已存在，弹出警告提示并阻止进入下一步，不保存数据
@@ -121,7 +128,9 @@ Pending_Revision → Draft（部门修改后重新提交）
 - 删除草稿/已驳回状态的编制
 - 提交审核（单个/批量）
 - 自动计算差异金额和差异率
-- 预算总额自动汇总（第2步完成后更新到编制主表）
+- 预算总额自动汇总（第2步点击下一步时保存明细，后端自动汇总更新到编制主表）
+- 明细数据保存策略：明细表无数据则新增，有数据则先删后插（全量更新）
+- 前端金额输入确保数值类型，防止字符串拼接导致后端 BigDecimal 反序列化失败
 - 部门+月份重复校验（防止同一部门同一月份重复创建）
 
 ### 3.2 预算审核模块
@@ -291,6 +300,12 @@ Pending_Revision → Draft（部门修改后重新提交）
 | budget_subject | budget_subject | 预算科目表 |
 | （无） | budget_validation_rule | 校验规则表 |
 
+### 4.3 特殊字段处理
+
+| 字段 | 表名 | 类型 | 处理方式 |
+|------|------|------|----------|
+| budget_period | budget_preparation | MySQL GENERATED ALWAYS AS 生成列 | MyBatis-Plus 实体使用 `@TableField(insertStrategy=NEVER, updateStrategy=NEVER)` 禁止框架写入，由数据库自动生成 |
+
 ---
 
 ## 五、接口规范
@@ -301,7 +316,7 @@ Pending_Revision → Draft（部门修改后重新提交）
 |---------|------|------|------|
 | /system/preparation/list | GET | 分页查询列表 | system:preparation:list |
 | /system/preparation/{id} | GET | 查询详情 | system:preparation:query |
-| /system/preparation | POST | 新增 | system:preparation:add |
+| /system/preparation | POST | 新增（返回新建记录ID） | system:preparation:add |
 | /system/preparation | PUT | 修改 | system:preparation:edit |
 | /system/preparation/{ids} | DELETE | 删除 | system:preparation:remove |
 | /system/preparation/submit/{id} | POST | 提交审核 | system:preparation:submit |
@@ -363,6 +378,18 @@ Pending_Revision → Draft（部门修改后重新提交）
 | Actuals | Actuals | 实绩数据（实际财务数据） |
 | Budget Sheet | Budget Sheet | 预算单 |
 | Variance Rate | Variance Rate | 差异率 |
+
+---
+
+### 4.4 2026-07-03 更新记录
+
+| 修改项 | 说明 |
+|--------|------|
+| 预算总额展示优化 | 移至页面右上角卡片头部，千位符格式化，去掉"返回查询页面"按钮 |
+| 新增接口返回ID | `POST /system/preparation` 返回类型从 `R<Void>` 改为 `R<Long>`，返回新建记录主键ID |
+| 明细保存逻辑 | 第2步下一步时统一调用批量保存接口，后端先删后插并自动汇总更新编制总额 |
+| budget_period 生成列 | 使用 `@TableField(insertStrategy=NEVER, updateStrategy=NEVER)` 避免 MyBatis-Plus 写入生成列导致 SQL 错误 3105 |
+| 金额类型安全 | 前端 `calculateTotalBudget` 使用 `parseFloat` 确保数值类型，模板渲染加 `isNaN` 兜底 |
 
 ---
 

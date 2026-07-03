@@ -3,9 +3,11 @@
     <el-card class="box-card">
       <div slot="header" class="clearfix">
         <span>预算编制向导</span>
-        <el-button style="float: right; padding: 3px 0" type="text" @click="handleReturn">
-          <i class="el-icon-back"></i> 返回查询页面
-        </el-button>
+        <div style="float: right; display: flex; align-items: center; gap: 15px;">
+          <span style="font-size: 15px; font-weight: bold; color: #303133;">
+            预算总额：<span style="color: #E6A23C; font-size: 18px;">{{ totalBudgetDisplay }}</span> 元
+          </span>
+        </div>
       </div>
 
       <!-- 步骤条 -->
@@ -129,9 +131,6 @@
           </el-tab-pane>
         </el-tabs>
 
-        <div style="margin-top: 20px; text-align: right; font-size: 16px; font-weight: bold;">
-          预算总额：<span style="color: #409EFF;">{{ totalBudget.toFixed(2) }}</span> 元
-        </div>
       </div>
 
       <!-- 第三步：完成编制（含规则校验） -->
@@ -147,7 +146,7 @@
             <el-descriptions-item label="组织名称">{{ basicForm.orgName }}</el-descriptions-item>
             <el-descriptions-item label="编制人">{{ basicForm.createBy }}</el-descriptions-item>
             <el-descriptions-item label="预算总额" :span="2">
-              <span style="color: #409EFF; font-size: 18px; font-weight: bold;">{{ totalBudget.toFixed(2) }} 元</span>
+              <span style="color: #E6A23C; font-size: 18px; font-weight: bold;">{{ totalBudgetDisplay }} 元</span>
             </el-descriptions-item>
             <el-descriptions-item label="备注" :span="2">
               {{ basicForm.remark || '无' }}
@@ -166,7 +165,7 @@
               <el-table-column label="科目名称" prop="subjectName" width="200" align="center" />
               <el-table-column label="预算金额" prop="budgetAmount" align="center">
                 <template slot-scope="scope">
-                  {{ scope.row.budgetAmount ? scope.row.budgetAmount.toFixed(2) : '0.00' }}
+                  {{ (Number(scope.row.budgetAmount) || 0).toFixed(2) }}
                 </template>
               </el-table-column>
               <el-table-column label="说明" prop="remark" align="center" />
@@ -329,6 +328,13 @@ export default {
     },
     infoCount() {
       return this.validationResults.filter(r => !r.passed && r.severityLevel === 'INFO').length;
+    },
+    /** 安全格式化预算总额，避免 NaN，带千位符 */
+    totalBudgetDisplay() {
+      const raw = this.totalBudget;
+      const val = parseFloat(raw);
+      if (isNaN(val)) return '0.00';
+      return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
   },
   created() {
@@ -462,7 +468,7 @@ export default {
         details.forEach(detail => {
           const leaf = leafMap[detail.subjectCode];
           if (leaf) {
-            leaf.budgetAmount = detail.budgetAmount || 0;
+            leaf.budgetAmount = Number(detail.budgetAmount) || 0;
             leaf.remark = detail.remark || '';
           }
         });
@@ -478,21 +484,37 @@ export default {
     },
 
     handleAmountChange(row) {
+      // 确保行级金额是数值类型
+      row.budgetAmount = Number(row.budgetAmount) || 0;
       this.calculateTotalBudget();
     },
 
     calculateTotalBudget() {
       let total = 0;
       this.budgetTypes.forEach(t => {
-        this.collectLeaves(this.subjectsByType[t.value] || []).forEach(leaf => {
-          total += leaf.budgetAmount || 0;
-        });
+        const tree = this.subjectsByType[t.value];
+        if (tree) {
+          this.collectLeaves(tree).forEach(leaf => {
+            const amt = parseFloat(leaf.budgetAmount);
+            if (!isNaN(amt)) {
+              total += amt;
+            }
+          });
+        }
       });
-      this.totalBudget = total;
+      this.totalBudget = parseFloat(total.toFixed(2));
     },
 
-    handlePrevStep() {
+    async handlePrevStep() {
       if (this.currentStep > 0) {
+        // 修改模式下，禁止从第二步返回第一步（基础信息不可修改）
+        if (this.preparationData.id && this.currentStep === 1) {
+          return;
+        }
+        // 从第三步返回第二步时，从数据库加载明细数据回填表单
+        if (this.currentStep === 2 && this.preparationData.id) {
+          await this.reloadDetailDataFromDb();
+        }
         this.currentStep--;
       }
     },
@@ -518,6 +540,8 @@ export default {
           return;
         }
         this.prepareSummaryData();
+        // 保存明细数据（后端会自动判断：无数据则新增，有数据则先删后插；同时自动更新编制总额）
+        await this.saveDetailDataToDb();
         this.currentStep++;
         // 进入第三步时自动执行规则校验
         await this.runValidation();
@@ -543,11 +567,66 @@ export default {
           response = await updatePreparation(data);
         } else {
           response = await addPreparation(data);
-          this.preparationData = response.data || {};
+          // 后端返回新建记录的 ID
+          const newId = response.data;
+          this.preparationData = { id: newId };
         }
         this.$modal.msgSuccess("基础信息保存成功");
       } catch (error) {
         this.$modal.msgError("保存失败：" + (error.message || '未知错误'));
+        throw error;
+      }
+    },
+
+    /** 保存明细数据到数据库 */
+    async saveDetailDataToDb() {
+      try {
+        const details = this.allDetailData.map(item => ({
+          sheetId: this.preparationData.id,
+          subjectCode: item.subjectCode,
+          subjectName: item.subjectName,
+          subjectType: item.subjectType,
+          budgetAmount: Number(item.budgetAmount) || 0,
+          remark: item.remark
+        }));
+        await batchSavePreparationDetail(details);
+      } catch (error) {
+        console.error('保存明细数据失败', error);
+        this.$modal.msgError("保存明细数据失败：" + (error.message || '未知错误'));
+        throw error;
+      }
+    },
+
+    /** 从数据库加载明细数据回填到第二步表单 */
+    async reloadDetailDataFromDb() {
+      try {
+        // 先清空当前表单中所有叶子节点的金额
+        this.budgetTypes.forEach(t => {
+          this.collectLeaves(this.subjectsByType[t.value] || []).forEach(leaf => {
+            leaf.budgetAmount = 0;
+            leaf.remark = '';
+          });
+        });
+        // 从数据库重新加载明细数据
+        await this.loadDetailData(this.preparationData.id);
+      } catch (error) {
+        console.error('重新加载明细数据失败', error);
+      }
+    },
+
+    /** 汇总所有科目金额并更新到编制主表的预算总额字段 */
+    async updateTotalBudgetToPreparation() {
+      try {
+        await updatePreparation({
+          id: this.preparationData.id,
+          totalBudget: Number(this.totalBudget) || 0,
+          orgId: this.basicForm.orgId,
+          budgetYear: parseInt(this.basicForm.budgetYear),
+          budgetMonth: this.basicForm.budgetMonth
+        });
+      } catch (error) {
+        console.error('更新预算总额失败', error);
+        this.$modal.msgError("更新预算总额失败：" + (error.message || '未知错误'));
         throw error;
       }
     },
@@ -653,7 +732,6 @@ export default {
       }
 
       try {
-        await this.$modal.confirm('确认完成预算编制？完成后可以提交审核。');
         this.submitLoading = true;
 
         const details = this.allDetailData.map(item => ({
@@ -665,35 +743,20 @@ export default {
           remark: item.remark
         }));
 
-        // 保存明细数据
+        // 保存明细数据（后端自动汇总更新编制总额）
         await batchSavePreparationDetail(details);
 
-        // 更新编制表的总金额
-        await updatePreparation({
-          id: this.preparationData.id,
-          totalBudget: this.totalBudget,
-          orgId: this.basicForm.orgId,  // 确保orgId也传递
-          budgetYear: parseInt(this.basicForm.budgetYear),
-          budgetMonth: this.basicForm.budgetMonth
-        });
-
         this.$modal.msgSuccess("预算编制完成！");
-        setTimeout(() => {
-          this.$router.push('/system/preparation');
-        }, 1500);
+        this.$router.push('/system/preparation');
       } catch (error) {
-        if (error !== 'cancel') {
-          this.$modal.msgError("保存失败：" + (error.message || '未知错误'));
-        }
+        this.$modal.msgError("保存失败：" + (error.message || '未知错误'));
       } finally {
         this.submitLoading = false;
       }
     },
 
     handleReturn() {
-      this.$modal.confirm('确认返回？未保存的数据将丢失。').then(() => {
-        this.$router.push('/system/preparation');
-      }).catch(() => {});
+      this.$router.push('/system/preparation');
     }
   }
 };

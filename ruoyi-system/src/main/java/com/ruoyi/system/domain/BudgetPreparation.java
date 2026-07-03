@@ -56,6 +56,7 @@ public class BudgetPreparation extends BaseEntity {
     /**
      * 预算期间（格式：YYYY-MM，自动生成）
      */
+    @TableField(insertStrategy = FieldStrategy.NEVER, updateStrategy = FieldStrategy.NEVER)
     private String budgetPeriod;
 
     /**
