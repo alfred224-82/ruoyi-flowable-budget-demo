@@ -158,6 +158,11 @@ mail:
   # Socket连接超时值，单位毫秒，缺省值不超时
   connectionTimeout: 0
 
+--- # 预算通知配置
+budget:
+  # 系统访问地址（用于邮件中的操作链接）
+  system-url: http://localhost:80
+
 --- # sms 短信
 sms:
   enabled: false

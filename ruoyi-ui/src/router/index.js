@@ -100,6 +100,19 @@ export const constantRoutes = [
         meta: { title: '个人中心', icon: 'user' }
       }
     ]
+  },
+  {
+    path: '/system/message',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/system/message/index'),
+        name: 'Message',
+        meta: { title: '消息中心', icon: 'message' }
+      }
+    ]
   }
 ]
 
@@ -218,6 +231,20 @@ export const dynamicRoutes = [
         component: () => import('@/views/system/preparation/approvalDetail'),
         name: 'PreparationApprovalDetail',
         meta: { title: '预算审核详情', activeMenu: '/system/preparation' }
+      }
+    ]
+  },
+  {
+    path: '/system/ai-chat',
+    component: Layout,
+    hidden: true,
+    permissions: ['system:ai:chat'],
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/system/ai/chat'),
+        name: 'AiChat',
+        meta: { title: 'AI报表助手', activeMenu: '/system/ai-chat' }
       }
     ]
   },

@@ -117,6 +117,10 @@
 <!--        </encoder>-->
 <!--    </appender>-->
 
+    <!-- AI HTTP请求调试日志 -->
+    <logger name="okhttp3" level="DEBUG" />
+    <logger name="dev.ai4j.openai4j" level="DEBUG" />
+
     <!--系统操作日志-->
     <root level="info">
         <appender-ref ref="console" />

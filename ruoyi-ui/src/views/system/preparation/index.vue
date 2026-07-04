@@ -122,13 +122,13 @@
             v-hasPermi="['system:preparation:edit']"
           >修改</el-button>
           <el-button
-            v-if="scope.row.status === 'Draft' || scope.row.status === 'Rejected'"
+            v-if="scope.row.status === 'Completed'"
             size="mini"
             type="text"
-            icon="el-icon-check"
-            @click="handleComplete(scope.row)"
+            icon="el-icon-s-promotion"
+            @click="handleSubmit(scope.row)"
             v-hasPermi="['system:preparation:submit']"
-          >完成编制</el-button>
+          >提交审核</el-button>
           <el-button
             v-if="scope.row.status === 'Draft'"
             size="mini"
@@ -137,14 +137,6 @@
             @click="handleDelete(scope.row)"
             v-hasPermi="['system:preparation:remove']"
           >删除</el-button>
-          <el-button
-            v-if="scope.row.status === 'Completed'"
-            size="mini"
-            type="text"
-            icon="el-icon-s-promotion"
-            @click="handleSubmit(scope.row)"
-            v-hasPermi="['system:preparation:submit']"
-          >提交审核</el-button>
           <el-button
             v-if="isPendingReview(scope.row.status)"
             size="mini"
@@ -279,11 +271,6 @@ export default {
         this.getList();
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
-    },
-    /** 完成编制 */
-    handleComplete(row) {
-      const id = row.id;
-      this.$router.push({ path: '/system/preparation/wizard', query: { id: id, complete: 'true' } });
     },
     /** 获取状态标签类型 */
     getStatusType(status) {

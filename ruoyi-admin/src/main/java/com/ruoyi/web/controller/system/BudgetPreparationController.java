@@ -262,7 +262,6 @@ public class BudgetPreparationController extends BaseController {
      */
     @SaCheckPermission("system:preparation:edit")
     @Log(title = "预算编制明细", businessType = BusinessType.INSERT)
-    @RepeatSubmit()
     @PostMapping("/detail/batch")
     public R<Void> batchSaveDetail(@Validated @RequestBody List<BudgetPreparationDetailBo> detailList) {
         return toAjax(budgetPreparationDetailService.batchSave(detailList));

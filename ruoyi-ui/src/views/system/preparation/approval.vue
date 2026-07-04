@@ -52,7 +52,6 @@
           plain
           icon="el-icon-check"
           size="mini"
-          :disabled="multiple"
           @click="handleBatchApprove"
           v-hasPermi="['system:preparation:approve']"
         >批量审批</el-button>
@@ -61,7 +60,7 @@
     </el-row>
 
     <el-table v-loading="loading" :data="preparationList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column type="selection" width="55" align="center" :selectable="isSelectable" />
       <el-table-column label="预算单号" align="center" prop="sheetNo" width="180" />
       <el-table-column label="年月" align="center" prop="budgetPeriod" width="120" />
       <el-table-column label="组织名称" align="center" prop="orgName" width="150" />
@@ -99,7 +98,7 @@
             icon="el-icon-view"
             @click="handleView(scope.row)"
             v-hasPermi="['system:preparation:query']"
-          >审核</el-button>
+          >{{ scope.row.status === 'Approved' || scope.row.status === 'Rejected' ? '查看' : '审核' }}</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -175,7 +174,9 @@ export default {
       batchApproveOpen: false,
       batchApproveForm: {
         remark: ''
-      }
+      },
+      // 选中的行数据（用于校验）
+      selectedRows: []
     };
   },
   created() {
@@ -244,6 +245,13 @@ export default {
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.id);
       this.multiple = !selection.length;
+      
+      // 保存选中的完整数据用于校验
+      this.selectedRows = selection;
+    },
+    /** 判断行是否可勾选（仅待审核状态可勾选） */
+    isSelectable(row) {
+      return row.status === 'Pending_Review';
     },
     /** 查看/审核按钮操作 */
     handleView(row) {
@@ -255,6 +263,15 @@ export default {
         this.$modal.msgWarning("请选择要审批的编制");
         return;
       }
+      
+      // 校验选中的记录是否都是待审核状态
+      const nonPendingItems = this.selectedRows.filter(row => row.status !== 'Pending_Review');
+      if (nonPendingItems.length > 0) {
+        const invalidStatuses = nonPendingItems.map(row => this.getStatusLabel(row.status)).join('、');
+        this.$modal.msgError(`只能审批“待审核”状态的记录，当前选中包含 ${invalidStatuses} 状态的记录`);
+        return;
+      }
+      
       this.batchApproveForm.remark = '';
       this.batchApproveOpen = true;
     },
