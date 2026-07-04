@@ -23,6 +23,12 @@
             <artifactId>ruoyi-common</artifactId>
         </dependency>
 
+        <!-- 系统模块（预算通知需要访问预算数据） -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-system</artifactId>
+        </dependency>
+
         <!-- xxl-job-core -->
         <dependency>
             <groupId>com.xuxueli</groupId>

@@ -115,6 +115,20 @@
           style="margin-left: 10px;">
           当前阶段无需您审批
         </el-tag>
+        <el-tag 
+          v-if="preparationData.status === 'Approved'" 
+          type="success" 
+          size="medium" 
+          style="margin-left: 10px;">
+          该预算单已审批通过，仅可查看
+        </el-tag>
+        <el-tag 
+          v-if="preparationData.status === 'Rejected'" 
+          type="danger" 
+          size="medium" 
+          style="margin-left: 10px;">
+          该预算单已被驳回
+        </el-tag>
       </div>
     </el-card>
 
@@ -333,6 +347,12 @@ export default {
     },
     /** 审核通过 */
     handleApprove() {
+      // 额外校验：确保状态为待审核
+      if (this.preparationData.status !== 'Pending_Review') {
+        this.$modal.msgError("该预算单状态已变更，无法继续审批");
+        return;
+      }
+      
       this.$modal.confirm('确认审核通过该预算编制？').then(() => {
         if (this.isWorkflow) {
           // 工作流上下文：使用工作流API完成任务
@@ -354,6 +374,12 @@ export default {
     },
     /** 审核驳回 */
     handleReject() {
+      // 额外校验：确保状态为待审核
+      if (this.preparationData.status !== 'Pending_Review') {
+        this.$modal.msgError("该预算单状态已变更，无法继续审批");
+        return;
+      }
+      
       this.rejectForm.reason = '';
       this.rejectOpen = true;
     },

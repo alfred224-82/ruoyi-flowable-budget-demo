@@ -40,6 +40,8 @@
         <flowable.version>6.8.0</flowable.version>
         <!-- 离线IP地址定位库 -->
         <ip2region.version>2.7.0</ip2region.version>
+        <!-- LangChain4j AI框架 -->
+        <langchain4j.version>0.35.0</langchain4j.version>
 
         <!-- 临时修复 snakeyaml 漏洞 -->
         <snakeyaml.version>1.33</snakeyaml.version>
@@ -352,6 +354,26 @@
                 <version>${ruoyi-flowable-plus.version}</version>
             </dependency>
 
+            <!-- AI模块 -->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-ai</artifactId>
+                <version>${ruoyi-flowable-plus.version}</version>
+            </dependency>
+
+            <!-- LangChain4j 核心 -->
+            <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j</artifactId>
+                <version>${langchain4j.version}</version>
+            </dependency>
+            <!-- LangChain4j OpenAI集成 -->
+            <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j-open-ai</artifactId>
+                <version>${langchain4j.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -367,6 +389,7 @@
         <module>ruoyi-oss</module>
         <module>ruoyi-sms</module>
         <module>ruoyi-system</module>
+        <module>ruoyi-ai</module>
     </modules>
     <packaging>pom</packaging>
 

@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.PageQuery;
 import com.ruoyi.common.core.page.TableDataInfo;
+import com.ruoyi.common.core.domain.entity.SysRole;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.helper.LoginHelper;
 import com.ruoyi.common.utils.StringUtils;
@@ -15,7 +16,9 @@ import com.ruoyi.system.domain.bo.BudgetPreparationBo;
 import com.ruoyi.system.domain.vo.*;
 import com.ruoyi.system.config.BudgetProcessDeployer;
 import com.ruoyi.system.mapper.*;
+import com.ruoyi.system.service.IBudgetNotificationService;
 import com.ruoyi.system.service.IBudgetPreparationService;
+import com.ruoyi.system.service.ISysMessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.engine.RepositoryService;
@@ -52,6 +55,11 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
     private final TaskService taskService;
     private final RepositoryService repositoryService;
     private final BudgetProcessDeployer budgetProcessDeployer;
+    private final SysUserMapper sysUserMapper;
+    private final SysRoleMapper sysRoleMapper;
+    private final SysUserRoleMapper sysUserRoleMapper;
+    private final ISysMessageService sysMessageService;
+    private final IBudgetNotificationService budgetNotificationService;
 
     /**
      * 查询预算编制
@@ -278,16 +286,96 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
             throw new ServiceException("存在未填写预算金额的科目，请补充完整");
         }
         
-        // 启动 Flowable 审批流程
+        // 查询最近的驳回记录，确定重新提交后应从哪个审批阶段恢复
+        String resubmitStage = getResubmitStage(id);
+
+        // 启动 Flowable 审批流程（驳回后重新提交不新增流程，复用原有审批链路）
         startApprovalProcess(preparation);
-        
-        // 更新状态为待审核，审批阶段为部门领导
+
+        // 驳回后重新提交：将 Flowable 流程跳转到被驳回的审批级别，跳过已通过的审批
+        if (resubmitStage != null && !"Dept".equals(resubmitStage)) {
+            moveFlowToStage(preparation.getProcessInstanceId(), resubmitStage);
+        }
+
+        // 更新状态为待审核，审批阶段为驳回级别（非驳回重新提交则为部门领导）
         preparation.setStatus("Pending_Review");
-        preparation.setApprovalStage("Dept");
+        preparation.setApprovalStage(resubmitStage != null ? resubmitStage : "Dept");
         preparation.setRejectLevel("None");
         preparation.setRejectReason(null);
         
-        return baseMapper.updateById(preparation) > 0;
+        boolean result = baseMapper.updateById(preparation) > 0;
+
+        // 给对应审批阶段的角色用户发送系统消息，通知其进行审核
+        if (result) {
+            String approvalStage = preparation.getApprovalStage();
+            sendApprovalNotifyToApprovers(preparation, approvalStage);
+        }
+
+        return result;
+    }
+
+    /**
+     * 提交审核时给对应审批角色的用户发送系统消息通知
+     *
+     * @param preparation     预算编制单
+     * @param approvalStage   当前审批阶段（Dept/Branch/HQ）
+     */
+    private void sendApprovalNotifyToApprovers(BudgetPreparation preparation, String approvalStage) {
+        try {
+            String roleKey = getRoleKeyByStage(approvalStage);
+            if (roleKey == null) {
+                return;
+            }
+
+            // 根据 roleKey 查询角色
+            SysRole role = sysRoleMapper.selectOne(
+                Wrappers.<SysRole>lambdaQuery()
+                    .eq(SysRole::getRoleKey, roleKey)
+                    .eq(SysRole::getStatus, "0"));
+            if (role == null) {
+                log.warn("提交审核通知：未找到角色 {}", roleKey);
+                return;
+            }
+
+            // 根据角色ID查询关联的用户ID列表
+            List<Long> userIds = sysUserRoleMapper.selectUserIdsByRoleId(role.getRoleId());
+            if (userIds == null || userIds.isEmpty()) {
+                log.warn("提交审核通知：角色 {} 下没有用户", roleKey);
+                return;
+            }
+
+            // 构建消息内容
+            String stageLabel = getStageLabel(approvalStage);
+            String submitter = LoginHelper.getNickName();
+            String title = "待审批通知";
+            String content = submitter + " 提交了预算单 " + preparation.getSheetNo()
+                + "（" + preparation.getOrgName() + "），请您及时审核。";
+
+            sysMessageService.sendBatchMessage(userIds, title, content, "APPROVAL", "budget_preparation", preparation.getId());
+            log.info("提交审核通知已发送: sheetNo={}, stage={}, userIds={}", preparation.getSheetNo(), stageLabel, userIds);
+        } catch (Exception e) {
+            log.error("发送审批通知消息失败: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 根据审批阶段获取对应的角色key
+     */
+    private String getRoleKeyByStage(String stage) {
+        if ("Dept".equals(stage)) return "deptManager";
+        if ("Branch".equals(stage)) return "branch";
+        if ("HQ".equals(stage)) return "headquarters";
+        return null;
+    }
+
+    /**
+     * 根据审批阶段获取中文标签
+     */
+    private String getStageLabel(String stage) {
+        if ("Dept".equals(stage)) return "部门领导";
+        if ("Branch".equals(stage)) return "分公司领导";
+        if ("HQ".equals(stage)) return "总公司领导";
+        return stage;
     }
 
     /**
@@ -497,8 +585,47 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
             history.setDeadlineTime(calculateDeadline(currentStage));
             rejectHistoryMapper.insert(history);
         }
+
+        // 发送驳回通知（系统消息 + 邮件）
+        if (result) {
+            sendRejectNotification(preparation, currentStage, reason);
+        }
         
         return result;
+    }
+
+    /**
+     * 发送驳回通知：系统消息 + 邮件通知
+     */
+    private void sendRejectNotification(BudgetPreparation preparation, String rejectStage, String reason) {
+        try {
+            // 查找编制人员
+            com.ruoyi.common.core.domain.entity.SysUser creator = sysUserMapper.selectUserByUserName(preparation.getCreateBy());
+            if (creator == null) {
+                log.warn("驳回通知：未找到编制人员 {}", preparation.getCreateBy());
+                return;
+            }
+
+            // 驳回级别中文映射
+            String stageLabel = "Dept".equals(rejectStage) ? "部门领导" : "Branch".equals(rejectStage) ? "分公司领导" : "总公司领导";
+            String rejectBy = LoginHelper.getNickName();
+
+            // 1. 发送系统消息（站内信）
+            String title = "预算编制被驳回";
+            String content = "您编制的预算单 " + preparation.getSheetNo() + " 已被" + stageLabel + "（" + rejectBy + "）驳回。\n驳回理由：" + reason;
+            sysMessageService.sendMessage(creator.getUserId(), title, content, "REJECT", "budget_preparation", preparation.getId());
+
+            // 2. 发送邮件通知
+            Date deadline = calculateDeadline(rejectStage);
+            budgetNotificationService.sendRejectNotify(
+                preparation.getSheetNo(), stageLabel, reason, deadline, preparation.getId()
+            );
+
+            log.info("驳回通知已发送: sheetNo={}, creator={}, stage={}", preparation.getSheetNo(), creator.getNickName(), stageLabel);
+        } catch (Exception e) {
+            // 通知发送失败不影响主流程
+            log.error("发送驳回通知失败: {}", e.getMessage(), e);
+        }
     }
 
     /**
@@ -720,6 +847,51 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
         String seqNo = String.format("%03d", count + 1);
         
         return "BG-" + dateStr + "-" + seqNo;
+    }
+
+    /**
+     * 查询驳回后重新提交应恢复的审批阶段
+     * 驳回后重新提交时不从头开始，而是从被驳回的级别继续审批
+     *
+     * @param sheetId 预算单ID
+     * @return 应恢复的审批阶段（Dept/Branch/HQ），null 表示首次提交
+     */
+    private String getResubmitStage(Long sheetId) {
+        List<BudgetRejectHistory> histories = rejectHistoryMapper.selectList(
+            Wrappers.<BudgetRejectHistory>lambdaQuery()
+                .eq(BudgetRejectHistory::getSheetId, sheetId)
+                .orderByDesc(BudgetRejectHistory::getRejectTime)
+                .last("LIMIT 1")
+        );
+        if (histories != null && !histories.isEmpty()) {
+            return histories.get(0).getRejectFromLevel();
+        }
+        return null;
+    }
+
+    /**
+     * 将 Flowable 流程实例跳转到指定审批阶段
+     * 用于驳回后重新提交时跳过已通过的审批节点，直接到达被驳回的审批级别
+     *
+     * @param processInstanceId 流程实例ID
+     * @param targetStage 目标审批阶段（Branch/HQ）
+     */
+    private void moveFlowToStage(String processInstanceId, String targetStage) {
+        String targetActivityId;
+        if ("Branch".equals(targetStage)) {
+            targetActivityId = "branchLeaderApproval";
+        } else if ("HQ".equals(targetStage)) {
+            targetActivityId = "hqLeaderApproval";
+        } else {
+            return; // Dept 不需要跳转，新流程默认就在部门领导节点
+        }
+
+        // 将流程从部门领导审批节点跳转到目标审批节点
+        runtimeService.createChangeActivityStateBuilder()
+            .processInstanceId(processInstanceId)
+            .moveActivityIdTo("deptLeaderApproval", targetActivityId)
+            .changeState();
+        log.info("流程实例 {} 已从部门领导审批跳转至 {} 审批", processInstanceId, targetStage);
     }
 
     /**
