@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             targetNamespace="http://www.ruoyi.com/budget"
+             xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL http://www.omg.org/spec/BPMN/20100501/BPMN20.xsd">
+
+  <process id="Process_1783061114424" name="预算编制三级审批流程" isExecutable="true">
+    <documentation>预算编制提交后依次流转到部门领导、分公司领导、总公司领导审批</documentation>
+
+    <!-- 开始事件 -->
+    <startEvent id="startEvent" name="开始"/>
+
+    <!-- 第1级：部门领导审批 -->
+    <userTask id="deptLeaderApproval" name="部门领导审批" flowable:candidateGroups="${deptLeaderGroup}">
+      <documentation>部门领导审核预算编制</documentation>
+    </userTask>
+    <exclusiveGateway id="deptGateway"/>
+
+    <!-- 第2级：分公司领导审批 -->
+    <userTask id="branchLeaderApproval" name="分公司领导审批" flowable:candidateGroups="${branchLeaderGroup}">
+      <documentation>分公司领导审核预算编制</documentation>
+    </userTask>
+    <exclusiveGateway id="branchGateway"/>
+
+    <!-- 第3级：总公司领导审批 -->
+    <userTask id="hqLeaderApproval" name="总公司领导审批" flowable:candidateGroups="${hqLeaderGroup}">
+      <documentation>总公司领导审核预算编制</documentation>
+    </userTask>
+    <exclusiveGateway id="hqGateway"/>
+
+    <!-- 审批通过结束 -->
+    <endEvent id="endEventApproved" name="审批通过"/>
+
+    <!-- 审批驳回结束（流转到编制人员） -->
+    <endEvent id="endEventRejected" name="审批驳回"/>
+
+    <!-- 连线 -->
+    <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="deptLeaderApproval"/>
+    
+    <!-- 部门领导审批后网关 -->
+    <sequenceFlow id="flow2" sourceRef="deptLeaderApproval" targetRef="deptGateway"/>
+    <sequenceFlow id="flow3" name="通过" sourceRef="deptGateway" targetRef="branchLeaderApproval">
+      <conditionExpression xsi:type="tFormalExpression">${result == 'pass'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow4" name="驳回" sourceRef="deptGateway" targetRef="endEventRejected">
+      <conditionExpression xsi:type="tFormalExpression">${result == 'reject'}</conditionExpression>
+    </sequenceFlow>
+    
+    <!-- 分公司领导审批后网关 -->
+    <sequenceFlow id="flow5" sourceRef="branchLeaderApproval" targetRef="branchGateway"/>
+    <sequenceFlow id="flow6" name="通过" sourceRef="branchGateway" targetRef="hqLeaderApproval">
+      <conditionExpression xsi:type="tFormalExpression">${result == 'pass'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow7" name="驳回" sourceRef="branchGateway" targetRef="endEventRejected">
+      <conditionExpression xsi:type="tFormalExpression">${result == 'reject'}</conditionExpression>
+    </sequenceFlow>
+    
+    <!-- 总公司领导审批后网关 -->
+    <sequenceFlow id="flow8" sourceRef="hqLeaderApproval" targetRef="hqGateway"/>
+    <sequenceFlow id="flow9" name="通过" sourceRef="hqGateway" targetRef="endEventApproved">
+      <conditionExpression xsi:type="tFormalExpression">${result == 'pass'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow10" name="驳回" sourceRef="hqGateway" targetRef="endEventRejected">
+      <conditionExpression xsi:type="tFormalExpression">${result == 'reject'}</conditionExpression>
+    </sequenceFlow>
+  </process>
+
+</definitions>
