@@ -1,7 +1,7 @@
 # 企业全面预算管理系统 — 需求说明书
 
-**版本**：v1.4  
-**日期**：2026-07-03  
+**版本**：v1.5  
+**日期**：2026-07-04  
 **项目**：基于 RuoYi-Flowable-Plus 框架的企业级预算管理解决方案
 
 | 角色分类 | 对应员工编号 |
@@ -376,6 +376,130 @@ Draft/Rejected → Completed（再次通过向导「完成编制」）
 
 > 待后续开发
 
+### 3.7 AI 智能助手
+
+#### 功能概述
+
+系统内置 AI 智能助手，基于大语言模型（LLM）为用户提供对话式交互能力，辅助预算数据分析、报表摘要生成、预算管理问题解答及编制建议。AI 功能为可选模块，通过配置开关 `ai.enabled=true` 控制启用状态。
+
+#### 核心功能
+
+| 功能 | 说明 |
+|------|------|
+| 预算数据分析 | 自动读取当前查看的预算单数据（表头+明细），按科目类型分组汇总，进行差异分析 |
+| 报表摘要生成 | 根据预算明细生成按科目类型的汇总摘要，金额使用千位符格式化 |
+| 预算管理问答 | 解答审批流程、状态含义、风控规则等预算管理相关问题 |
+| 编制建议 | 基于风控规则和财务最佳实践，提供预算编制优化建议 |
+
+#### 对话模式
+
+| 模式 | 说明 | 适用场景 |
+|------|------|----------|
+| 同步对话 | 一次性返回完整回复 | 简单问答、快速查询 |
+| 流式对话（SSE） | 通过 Server-Sent Events 逐字推送，前端实时渲染 | 长文本生成、报表摘要 |
+
+#### 会话记忆机制
+
+- 支持多轮对话上下文保持，默认记忆窗口为最近 **20 轮**对话（可配置）
+- 每个会话分配唯一 `sessionId`，前端可主动清除会话记忆
+- 超出记忆窗口的历史消息自动淘汰（FIFO）
+
+#### 预算数据上下文注入
+
+当用户在查看某张预算单时发起 AI 对话（携带 `sheetId`），系统自动将以下数据注入 AI 上下文：
+
+| 注入数据 | 内容 |
+|---------|------|
+| 表头信息 | 预算单号、组织名称、预算期间、状态、预算总额、实际总额、差异率 |
+| 明细数据 | 按科目类型（收入/成本/费用/资产/负债/权益）分组，列出每个科目的编码、名称、预算金额、实际金额及小计 |
+
+> 数据注入遵循现有数据脱敏规则，不同角色看到的上下文数据范围与前端一致。
+
+#### 系统提示词（System Prompt）
+
+```
+你是一个企业全面预算管理系统的AI助手。你可以帮助用户：
+1. 分析预算数据（收入、成本、费用、资产、负债、权益各类科目的预算金额）
+2. 生成预算报表摘要（按科目类型汇总、差异分析等）
+3. 解答预算管理相关问题（审批流程、状态含义等）
+4. 提供预算编制建议（基于风控规则和财务最佳实践）
+
+请用中文回答，回答要专业、简洁、易懂。涉及金额时使用千位符格式化。
+```
+
+#### 配置参数
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `ai.enabled` | 是否启用 AI 功能 | `false` |
+| `ai.api-key` | OpenAI API Key（兼容第三方 API） | 无（必填） |
+| `ai.base-url` | API Base URL | `https://api.openai.com/v1` |
+| `ai.model-name` | 模型名称 | `gpt-3.5-turbo` |
+| `ai.temperature` | 温度参数（0-2，越高越随机） | `0.7` |
+| `ai.max-tokens` | 最大生成 token 数 | `2048` |
+| `ai.memory-window-size` | 聊天记忆窗口大小（轮数） | `20` |
+| `ai.system-prompt` | 系统提示词 | 见上方 |
+
+#### 技术实现
+
+| 组件 | 技术选型 | 说明 |
+|------|---------|------|
+| AI 框架 | OkHttp + DashScope Responses API | 绕过 LangChain4j，直接对接 DashScope 以支持 qwen3.7-max 等新模型 |
+| 模型接口 | DashScope Responses API | 阿里云百炼平台，使用 `previous_response_id` 实现服务端多轮对话 |
+| 流式推送 | SSE（Server-Sent Events） | 基于 Spring SseEmitter，逐字推送 |
+| 会话存储 | 内存（ConcurrentHashMap） | 当前版本存储于应用内存，重启后丢失 |
+| 条件装配 | `@ConditionalOnProperty` | AI 模块按需启用，未配置时不加载 Bean |
+
+#### 接口设计
+
+| 接口路径 | 方法 | 说明 | 权限 |
+|---------|------|------|------|
+| `/ai/chat` | POST | 同步对话（一次性返回） | 已登录用户 |
+| `/ai/chat/stream` | POST | 流式对话（SSE 逐字推送） | 已登录用户 |
+| `/ai/chat/session/{sessionId}` | DELETE | 清除会话记忆 | 已登录用户 |
+| `/ai/chat/status` | GET | 检查 AI 服务是否可用 | 已登录用户 |
+
+**请求示例**：
+```json
+POST /ai/chat
+{
+  "sessionId": "可选，为空则创建新会话",
+  "message": "帮我分析一下这张预算单的费用类科目",
+  "sheetId": 123,
+  "stream": false
+}
+```
+
+**响应示例**：
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "sessionId": "a1b2c3d4e5f6",
+    "reply": "根据您正在查看的预算单，费用类科目汇总如下：\n\n- 办公费：预算 15,000.00 元\n- 差旅费：预算 28,500.00 元\n\n费用类合计：53,500.00 元",
+    "finished": true
+  }
+}
+```
+
+#### 前端交互规范
+
+- **入口位置**：预算编制向导页和预算审核详情页右下角 AI 助手悬浮按钮
+- **对话面板**：点击弹出，支持最小化/关闭
+- **消息展示**：用户消息右对齐（蓝色气泡），AI 回复左对齐（灰色气泡），流式模式逐字显示
+- **关联预算单**：在特定预算单页面发起对话时自动携带 `sheetId`
+- **加载状态**：AI 思考中显示「正在思考...」动画
+
+#### 异常处理
+
+| 异常场景 | 处理方式 |
+|---------|----------|
+| AI 服务不可用 | 返回友好提示，不阻断用户其他操作 |
+| 预算单不存在或无权限 | 上下文注入返回空，AI 按通用知识回答 |
+| SSE 连接超时（2分钟） | 自动断开，前端提示用户重试 |
+| 记忆窗口溢出 | 自动淘汰最早的历史消息 |
+
 ---
 
 ## 四、数据模型
@@ -462,7 +586,7 @@ Draft/Rejected → Completed（再次通过向导「完成编制」）
 
 | 修改项 | 说明 |
 |--------|------|
-| 预算总额展示优化 | 移至页面右上角卡片头部，千位符格式化，去掉"返回查询页面"按钮 |
+| 预算总额展示优化 | 移至页面右上角卡片头部，千位符格式化，去掉“返回查询页面”按钮 |
 | 新增接口返回ID | `POST /system/preparation` 返回类型从 `R<Void>` 改为 `R<Long>`，返回新建记录主键ID |
 | 明细保存逻辑 | 第2步下一步时统一调用批量保存接口，后端先删后插并自动汇总更新编制总额 |
 | budget_period 生成列 | 使用 `@TableField(insertStrategy=NEVER, updateStrategy=NEVER)` 避免 MyBatis-Plus 写入生成列导致 SQL 错误 3105 |
@@ -502,12 +626,37 @@ Draft/Rejected → Completed（再次通过向导「完成编制」）
 | 新增完成编制接口 | `POST /system/preparation/complete/{id}`，校验明细完整性后将状态设置为 Completed |
 | 状态流转调整 | 编制流程变更为：Draft → Completed → Pending_Review，驳回后：Rejected → Draft → Completed |
 
+### 4.8 2026-07-04 AI智能助手、系统消息与邮件通知模块实现
+
+| 修改项 | 说明 |
+|--------|------|
+| ruoyi-ai 模块新增 | 新增 AI 智能助手独立模块，包含 AiChatController、AiChatService、AiChatServiceImpl、AiProperties 配置类、DTO 等 |
+| DashScope Responses API 对接 | AiChatServiceImpl 使用 OkHttp 直接调用 DashScope Responses API（绕过 LangChain4j），支持 qwen3.7-max 等新模型 |
+| 多轮对话上下文 | 使用 `previous_response_id` 实现服务端多轮对话管理，客户端 ConcurrentHashMap 存储会话记忆 |
+| 预算数据上下文注入 | 对话时携带 sheetId 自动注入预算单表头+明细数据到 AI 上下文；无 sheetId 时按预算关键词匹配全局数据 |
+| AI 前端页面 | 新增 `views/system/ai/chat.vue` 对话页面、`api/system/ai.js` 接口、路由注册 |
+| AI 菜单 SQL | 新增 `script/sql/mysql/ai_menu.sql` 菜单初始化脚本 |
+| 系统消息通知模块 | 新增 SysMessage 实体/VO/Mapper/Service/Controller，支持 APPROVAL/REJECT/SYSTEM 三种消息类型 |
+| 消息铃铛组件 | 新增 `components/MessageBell/index.vue`，导航栏右上角铃铛图标+未读数角标，点击展开消息面板 |
+| 消息中心页面 | 新增 `views/system/message/index.vue` 消息列表页面、`api/system/message.js` 接口 |
+| 邮件通知服务 | 新增 BudgetNotificationService/Impl，支持审批通知、驳回通知、编制期提醒、超时告警等邮件发送 |
+| 邮件模板 | 新增 6 个 Thymeleaf 邮件模板：approval-notify、approved-notify、period-start-notify、reject-notify、timeout-alert、timeout-remind |
+| 预算定时任务 | 新增 BudgetNotificationJob（ruoyi-job 模块），用于截止前提醒和超时告警 |
+| BPMN 流程部署器 | 新增 BudgetProcessDeployer，应用启动时自动部署三级审批 BPMN 流程定义 |
+| BPMN 流程 SQL | 新增 `budget_process_deploy.sql` 流程部署相关 SQL |
+| 首页改造 | `views/index.vue` 大幅改造（424 行变更），适配预算管理主题 |
+| 导航栏优化 | `Navbar.vue` 集成消息铃铛组件，右侧新增消息入口 |
+| 路由新增 | `router/index.js` 新增 AI 对话、消息中心等路由 |
+| 配置新增 | `application.yml` 新增 AI 配置段（ai.enabled/apiKey/baseUrl/modelName 等）和邮件配置 |
+| Java 8 兼容性修复 | AiChatServiceImpl 中 `Map.of()` 替换为 `new HashMap<>()` + `put()`，兼容 Java 8 |
+| OkHttp 4.x 兼容 | `RequestBody.create(MediaType, String)` 参数顺序修正为 OkHttp 4.x API |
+
 ---
 
 **文档来源**：综合自 需求文档.md、预算编制审核API接口文档.md、预算编制审核后端实现说明.md、预算编制前端开发说明.md、预算审核前端开发说明.md、预算编制向导式表单设计方案.md、预算编制按科目类型分Tab改造说明.md、预算编制审核功能测试指南.md
 **文档作者**：alfred224-82
-**文档版本**：1.0
-**文档生成日期**：2023-07-03
-**文档更新日期**：2023-07-03
+**文档版本**：1.1
+**文档生成日期**：2026-07-03
+**文档更新日期**：2026-07-04
 **文档状态**：完成
 **文档说明**：本文档为预算编制系统需求说明书，详细描述了系统功能、数据模型、接口规范、非功能需求、术语表等内容。
