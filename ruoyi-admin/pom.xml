@@ -119,6 +119,12 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <fork>true</fork> <!-- 如果没有该配置，devtools不会生效 -->
+                    <!-- JDK 17 需要开放模块访问，否则 CGLib 代理会报 InaccessibleObjectException -->
+                    <jvmArguments>
+                        --add-opens java.base/java.lang=ALL-UNNAMED
+                        --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+                        --add-opens java.base/java.util=ALL-UNNAMED
+                    </jvmArguments>
                 </configuration>
                 <executions>
                     <execution>

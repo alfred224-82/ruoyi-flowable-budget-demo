@@ -39,6 +39,13 @@
           style="width: 250px"
         />
       </el-form-item>
+      <el-form-item label="状态" prop="status">
+        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 150px">
+          <el-option label="待审核" value="Pending_Review" />
+          <el-option label="已通过" value="Approved" />
+          <el-option label="已驳回" value="Rejected" />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -168,7 +175,7 @@ export default {
         budgetYear: undefined,
         budgetMonth: undefined,
         orgId: undefined,
-        status: undefined // 默认查询所有待审核状态
+        status: 'Pending_Review' // 默认只显示待审核状态
       },
       // 批量审批对话框
       batchApproveOpen: false,
@@ -232,7 +239,7 @@ export default {
     resetQuery() {
       this.resetForm("queryForm");
       // 重新设置默认状态
-      this.queryParams.status = undefined;
+      this.queryParams.status = 'Pending_Review';
       // 如果是部门领导，恢复部门限制
       if (!this.userRoles.includes('admin') && 
           !this.userRoles.includes('hq_manager') && 
