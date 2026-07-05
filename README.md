@@ -6,7 +6,7 @@
 
 ## 在线演示
 
-> 演示地址：https://450f50d6.r7.cpolar.top/login?redirect=%2Findex
+> 演示地址：http://118.89.133.114/
 
 ![系统登录页面](./imgs/login.png)
 
@@ -105,106 +105,6 @@
 2. 金额敏感数据脱敏、页面水印、全量操作日志追溯
 3. Sa-Token 登录鉴权，菜单、按钮、接口三级权限控制
 
-## 快速开始
-
-### 环境要求
-
-| 组件 | 版本要求 | 说明 |
-|------|---------|------|
-| JDK | 1.8+ | 后端运行环境 |
-| MySQL | 8.0+ | 数据库 |
-| Redis | 6.0+ | 缓存 |
-| Node.js | 14+ | 前端构建 |
-| Maven | 3.6+ | 后端构建 |
-| Nginx | 任意版本 | 前端部署 / 反向代理（可选） |
-
-### 1. 克隆项目
-
-```bash
-git clone https://github.com/alfred224-82/ruoyi-flowable-budget-demo.git
-cd ruoyi-flowable-budget-demo
-```
-
-### 2. 初始化数据库
-
-```bash
-# 创建数据库
-mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS \`ry-flowable-plus\` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"
-
-# 按顺序导入 SQL 脚本（位于 script/sql/mysql/ 目录）
-# 基础表：mysql_ry_v0.8.X.sql
-# Flowable 引擎：flowable_6.7.2_mysql*.sql
-# 预算业务表：budget/budget.sql、budget_menu.sql、budget_process_deploy.sql 等
-# AI 菜单：ai_menu.sql
-```
-
-> 详细 SQL 导入顺序见 `docs/一键部署说明.md`
-
-### 3. 修改后端配置
-
-编辑 `ruoyi-admin/src/main/resources/application-dev.yml`：
-
-```yaml
-# 数据库连接
-spring:
-  datasource:
-    dynamic:
-      datasource:
-        master:
-          url: jdbc:mysql://127.0.0.1:3306/ry-flowable-plus?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
-          username: root
-          password: root          # ← 改为你的密码
-
-# Redis
-spring:
-  redis:
-    host: 127.0.0.1
-    port: 6379
-
-# AI 助手（可选，按需开启）
-ai:
-  enabled: false
-
-# 邮件通知（可选，按需开启）
-mail:
-  enabled: false
-```
-
-### 4. 启动后端
-
-```bash
-# 编译打包
-mvn clean package -DskipTests
-
-# 启动服务
-cd ruoyi-admin
-java -jar target/ruoyi-admin.jar
-```
-
-后端默认端口 `8080`，启动成功后访问 `http://localhost:8080` 验证。
-
-### 5. 启动前端
-
-```bash
-cd ruoyi-ui
-npm install
-npm run dev
-```
-
-前端默认端口 `80`，访问 `http://localhost` 即可看到登录页面。
-
-### 6. 验证部署
-
-| 访问地址 | 说明 |
-|---------|------|
-| `http://localhost` | 前端登录页 |
-| `http://localhost:8080` | 后端 API（直连） |
-| `http://localhost/swagger-ui/index.html` | 接口文档 |
-
-**默认管理员账号**：`admin` / `admin123`
-
-> 生产环境部署（Nginx 反向代理、jar 包部署、邮件配置等）详见 `docs/一键部署说明.md`
-
 ## 技术栈
 
 ### 后端
@@ -225,24 +125,16 @@ npm run dev
 
 ```
 ruoyi-flowable-budget-demo
-├── docs                # 需求文档、部署手册、业务操作手册
-├── imgs                # 功能截图（README 配图）
-├── script              # 数据库初始化 SQL、流程部署脚本
-├── ruoyi-admin         # 项目启动入口（SpringBoot 主模块）
-├── ruoyi-ai            # AI 智能预算助手模块（DashScope 大模型对接）
-├── ruoyi-common        # 通用工具模块（注解、异常、工具类）
-├── ruoyi-demo          # 功能演示模块
-├── ruoyi-extend        # 扩展模块（监控管理、XXL-JOB 调度中心）
-├── ruoyi-flowable      # Flowable 工作流封装（审批引擎、流程部署）
-├── ruoyi-framework     # 框架核心（安全、拦截器、定时任务、AOP）
-├── ruoyi-generator     # 代码生成器模块
-├── ruoyi-job           # 定时任务（邮件定时提醒、超时告警）
-├── ruoyi-oss           # 对象存储模块（文件上传）
-├── ruoyi-sms           # 短信服务模块
-├── ruoyi-system        # 预算编制、审批、消息核心业务模块
-├── ruoyi-ui            # Vue 前端工程
-├── pom.xml             # 项目依赖管理
-└── LICENSE             # MIT 开源协议
+├── docs              # 需求文档、部署手册、业务操作手册
+├── script            # 数据库初始化 SQL、流程部署脚本
+├── ruoyi-admin       # 项目启动入口
+├── ruoyi-ai          # AI 智能助手模块
+├── ruoyi-flowable    # Flowable 工作流封装
+├── ruoyi-job         # 定时任务（邮件定时提醒）
+├── ruoyi-system      # 预算编制、审批、消息核心业务模块
+├── ruoyi-ui          # Vue 前端工程
+├── app.ps1           # Windows 一键启停服务脚本
+├── pom.xml           # 项目依赖管理
 ```
 
 ## 公网演示（内网穿透）
@@ -274,7 +166,7 @@ MIT License
 ## 仓库地址
 
 - GitHub：https://github.com/alfred224-82/ruoyi-flowable-budget-demo
-
+- GitEE：https://gitee.com/alfred_224/ruoyi-flowable-budget-demo/tree/master
 ---
 
 > 如果你觉得项目有用，欢迎 Star ⭐ 支持！有 Bug、功能需求可提交 Issues，我会持续迭代维护。
