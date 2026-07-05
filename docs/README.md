@@ -166,7 +166,7 @@ MIT License
 ## 仓库地址
 
 - GitHub：https://github.com/alfred224-82/ruoyi-flowable-budget-demo
-
+- GitEE：https://gitee.com/alfred_224/ruoyi-flowable-budget-demo/tree/master
 ---
 
 > 如果你觉得项目有用，欢迎 Star ⭐ 支持！有 Bug、功能需求可提交 Issues，我会持续迭代维护。
