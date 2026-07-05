@@ -138,7 +138,7 @@
             v-hasPermi="['system:preparation:remove']"
           >删除</el-button>
           <el-button
-            v-if="isPendingReview(scope.row.status)"
+            v-if="isPendingReview(scope.row.status) || scope.row.status === 'Approved'"
             size="mini"
             type="text"
             icon="el-icon-view"
