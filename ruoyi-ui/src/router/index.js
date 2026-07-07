@@ -248,6 +248,20 @@ export const dynamicRoutes = [
       }
     ]
   },
+  {
+    path: '/system/ai-report',
+    component: Layout,
+    hidden: true,
+    permissions: ['system:preparation:query'],
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/system/ai/report'),
+        name: 'AiReport',
+        meta: { title: 'AI智能报表', activeMenu: '/system/ai-report' }
+      }
+    ]
+  },
 ]
 
 // 防止连续点击多次路由报错

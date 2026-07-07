@@ -296,7 +296,7 @@ ai:
   # 是否启用AI功能
   enabled: true
   # AI API Key（支持OpenAI及兼容接口）
-  api-key: 你的key
+  api-key: sk-fbc19e96d861431992c4fc2a23ca6b07
   # API Base URL（兼容第三方API，如通义千问、智谱等）
   base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
   # 模型名称（qwen3.7-max使用DashScope Responses API）
