@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.report.mapper.ReportRecordMapper">
+    <resultMap id="ReportRecordResult" type="com.ruoyi.report.domain.ReportRecord">
+        <id property="id" column="id"/>
+        <result property="reportType" column="report_type"/>
+        <result property="reportName" column="report_name"/>
+        <result property="sheetIds" column="sheet_ids"/>
+        <result property="reportContent" column="report_content"/>
+        <result property="exportFormat" column="export_format"/>
+        <result property="filePath" column="file_path"/>
+        <result property="status" column="status"/>
+        <result property="errorMessage" column="error_message"/>
+        <result property="costTimeMs" column="cost_time_ms"/>
+        <result property="generateTime" column="generate_time"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+</mapper>
