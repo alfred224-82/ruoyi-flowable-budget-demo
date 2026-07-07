@@ -361,6 +361,13 @@
                 <version>${ruoyi-flowable-plus.version}</version>
             </dependency>
 
+            <!-- AI报表模块 -->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-report</artifactId>
+                <version>${ruoyi-flowable-plus.version}</version>
+            </dependency>
+
             <!-- LangChain4j 核心 -->
             <dependency>
                 <groupId>dev.langchain4j</groupId>
@@ -390,6 +397,7 @@
         <module>ruoyi-sms</module>
         <module>ruoyi-system</module>
         <module>ruoyi-ai</module>
+        <module>ruoyi-report</module>
     </modules>
     <packaging>pom</packaging>
 

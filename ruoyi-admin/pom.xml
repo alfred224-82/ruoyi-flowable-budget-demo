@@ -90,6 +90,12 @@
             <artifactId>ruoyi-ai</artifactId>
         </dependency>
 
+        <!-- AI报表生成模块 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-report</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
