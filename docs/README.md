@@ -6,7 +6,7 @@
 
 ## 在线演示
 
-> 演示地址：https://450f50d6.r7.cpolar.top/login?redirect=%2Findex
+> 演示地址：http://118.89.133.114/
 
 ![系统登录页面](https://raw.githubusercontent.com/alfred224-82/ruoyi-flowable-budget-demo/master/imgs/login.png)
 

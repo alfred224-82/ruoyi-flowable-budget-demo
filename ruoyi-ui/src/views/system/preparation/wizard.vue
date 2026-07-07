@@ -50,7 +50,7 @@
             </el-col>
             <el-col :span="12">
               <el-form-item label="预算月份" prop="budgetMonth">
-                <el-select v-model="basicForm.budgetMonth" placeholder="请选择月份" style="width: 100%">
+                <el-select v-model="basicForm.budgetMonth" placeholder="请选择月份" style="width: 100%" @change="handleMonthChange">
                   <el-option label="1月" :value="1" />
                   <el-option label="2月" :value="2" />
                   <el-option label="3月" :value="3" />
@@ -98,7 +98,7 @@
 
       <!-- 第二步：科目预算编制（树形表格） -->
       <div v-show="currentStep === 1" class="step-content">
-        <el-tabs v-model="activeTab" type="border-card" @tab-click="handleTabClick">
+        <el-tabs :key="step2Key" v-model="activeTab" type="border-card" @tab-click="handleTabClick">
           <el-tab-pane
             v-for="type in budgetTypes"
             :key="type.value"
@@ -322,6 +322,7 @@ export default {
       allDetailData: [],
       preparationData: {},
       totalBudget: 0,
+      step2Key: 0,
       // 规则校验相关
       validationResults: [],
       validationLoading: false,
@@ -393,6 +394,9 @@ export default {
         await this.loadSubjectsByType();
         await this.loadDetailData(id);
 
+        // 强制重建 el-tabs 组件树，确保 el-input-number 读取到已加载的明细数据
+        this.step2Key++;
+
         // 修改模式：直接进入第2步，不可返回第1步
         if (this.viewOnly) {
           // 查看模式：直接进入第3步，需要先填充汇总数据
@@ -446,16 +450,40 @@ export default {
     /** 加载上月已审批通过的预算数据，初始化本月金额 */
     async loadPreviousMonthData() {
       if (!this.basicForm.orgId || !this.basicForm.budgetYear || !this.basicForm.budgetMonth) {
+        console.warn('[上月数据] 缺少必要参数，跳过加载:', {
+          orgId: this.basicForm.orgId,
+          budgetYear: this.basicForm.budgetYear,
+          budgetMonth: this.basicForm.budgetMonth
+        });
         return;
       }
+      
+      // 计算上月的年度和月份
+      let prevYear = parseInt(this.basicForm.budgetYear);
+      let prevMonth = this.basicForm.budgetMonth - 1;
+      if (prevMonth <= 0) {
+        prevMonth = 12;
+        prevYear = prevYear - 1;
+      }
+      console.log('[上月数据] 查询参数:', {
+        orgId: this.basicForm.orgId,
+        prevYear: prevYear,
+        prevMonth: prevMonth,
+        currentBudgetYear: this.basicForm.budgetYear,
+        currentBudgetMonth: this.basicForm.budgetMonth
+      });
+      
       try {
         const response = await getPreviousMonthDetails(
           this.basicForm.orgId,
-          parseInt(this.basicForm.budgetYear),
-          this.basicForm.budgetMonth
+          prevYear,
+          prevMonth
         );
         const prevDetails = response.data || [];
+        console.log('[上月数据] API返回:', prevDetails.length, '条记录', prevDetails);
+
         if (prevDetails.length === 0) {
+          console.log('[上月数据] 上月无已审批通过的预算数据');
           return;
         }
 
@@ -466,21 +494,37 @@ export default {
             leafMap[leaf.subjectCode] = leaf;
           });
         });
+        console.log('[上月数据] 当前科目叶子节点数:', Object.keys(leafMap).length);
 
         // 将上月数据填充到当前表单
+        let matchCount = 0;
         prevDetails.forEach(detail => {
           const leaf = leafMap[detail.subjectCode];
           if (leaf) {
-            leaf.budgetAmount = Number(detail.budgetAmount) || 0;
-            leaf.remark = detail.remark || '';
+            this.$set(leaf, 'budgetAmount', Number(detail.budgetAmount) || 0);
+            this.$set(leaf, 'remark', detail.remark || '');
+            matchCount++;
+          } else {
+            console.warn('[上月数据] 科目编码未匹配到叶子节点:', detail.subjectCode, detail.subjectName);
           }
         });
+        console.log('[上月数据] 成功匹配:', matchCount, '/', prevDetails.length);
 
         // 重新计算总额
         this.calculateTotalBudget();
-        this.$modal.msgSuccess(`已加载上月预算数据（${prevDetails.length}个科目），请根据实际情况调整`);
+
+        // 强制重建 el-tabs 组件树，使 el-input-number 重新挂载并读取更新后的 budgetAmount
+        // （因为 el-input-number 在 v-show 隐藏时已挂载，内部 currentValue 不会跟随外部数据变更）
+        this.step2Key++;
+
+        if (matchCount > 0) {
+          this.$modal.msgSuccess(`已加载上月预算数据（${matchCount}个科目），请根据实际情况调整`);
+        } else {
+          this.$modal.msgWarning('上月有已审批的预算数据，但科目编码无法匹配，请检查科目配置是否变更');
+        }
       } catch (error) {
-        console.log('加载上月数据失败或上月无已审批数据', error);
+        console.error('[上月数据] 加载失败:', error);
+        this.$modal.msgWarning('加载上月预算数据失败：' + (error.message || '未知错误') + '，请手动填写');
       }
     },
 
@@ -532,8 +576,8 @@ export default {
         details.forEach(detail => {
           const leaf = leafMap[detail.subjectCode];
           if (leaf) {
-            leaf.budgetAmount = Number(detail.budgetAmount) || 0;
-            leaf.remark = detail.remark || '';
+            this.$set(leaf, 'budgetAmount', Number(detail.budgetAmount) || 0);
+            this.$set(leaf, 'remark', detail.remark || '');
           }
         });
 
@@ -545,6 +589,23 @@ export default {
 
     handleTabClick(tab) {
       console.log('切换到Tab:', tab.name);
+    },
+
+    /** 月份改变时，重新加载上月数据 */
+    async handleMonthChange() {
+      // 只有在第一步且是新建模式时才重新加载上月数据
+      if (this.currentStep === 0 && !this.preparationData.id) {
+        console.log('[月份变更] 检测到月份变化，重新加载上月数据');
+        // 先清空当前所有科目金额
+        this.budgetTypes.forEach(t => {
+          this.collectLeaves(this.subjectsByType[t.value] || []).forEach(leaf => {
+            this.$set(leaf, 'budgetAmount', 0);
+            this.$set(leaf, 'remark', '');
+          });
+        });
+        // 重新加载上月数据
+        await this.loadPreviousMonthData();
+      }
     },
 
     handleAmountChange(row) {
@@ -575,10 +636,10 @@ export default {
         if (this.preparationData.id && this.currentStep === 1) {
           return;
         }
-        // 从第三步返回第二步时，从数据库加载明细数据回填表单
-        if (this.currentStep === 2 && this.preparationData.id) {
-          await this.reloadDetailDataFromDb();
-        }
+        // 从第三步返回第二步时，强制重建 el-tabs 组件树
+        // 通过递增 key 使 Vue 销毁旧的 el-table / el-input-number 并重新创建
+        // 新组件首次挂载时直接从数据模型读取正确的 budgetAmount
+        this.step2Key++;
         this.currentStep--;
       }
     },
@@ -595,6 +656,7 @@ export default {
             }
             
             await this.saveBasicInfo();
+            this.step2Key++;
             this.currentStep++;
           }
         });
@@ -658,23 +720,6 @@ export default {
         console.error('保存明细数据失败', error);
         this.$modal.msgError("保存明细数据失败：" + (error.message || '未知错误'));
         throw error;
-      }
-    },
-
-    /** 从数据库加载明细数据回填到第二步表单 */
-    async reloadDetailDataFromDb() {
-      try {
-        // 先清空当前表单中所有叶子节点的金额
-        this.budgetTypes.forEach(t => {
-          this.collectLeaves(this.subjectsByType[t.value] || []).forEach(leaf => {
-            leaf.budgetAmount = 0;
-            leaf.remark = '';
-          });
-        });
-        // 从数据库重新加载明细数据
-        await this.loadDetailData(this.preparationData.id);
-      } catch (error) {
-        console.error('重新加载明细数据失败', error);
       }
     },
 
