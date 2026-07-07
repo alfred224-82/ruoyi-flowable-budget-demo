@@ -935,13 +935,13 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
      */
     @Override
     public List<BudgetPreparationDetailVo> getPreviousMonthApprovedDetails(Long orgId, Integer budgetYear, Integer budgetMonth) {
-        // 计算上月的年度和月份
+        log.info("[上月数据] 查询参数: orgId={}, budgetYear={}, budgetMonth={}", orgId, budgetYear, budgetMonth);
+        
+        // 前端已经计算好上月年月并传入，直接使用，不需要再次计算
+        // 例如：当前是3月，前端传入 budgetYear=2026, budgetMonth=2（上月）
         Integer prevYear = budgetYear;
-        Integer prevMonth = budgetMonth - 1;
-        if (prevMonth <= 0) {
-            prevMonth = 12;
-            prevYear = budgetYear - 1;
-        }
+        Integer prevMonth = budgetMonth;
+        log.info("[上月数据] 使用的前端传入的上月: prevYear={}, prevMonth={}", prevYear, prevMonth);
 
         // 查询上月本部门已审批通过的编制记录（状态为 Approved）
         LambdaQueryWrapper<BudgetPreparation> lqw = Wrappers.lambdaQuery();
@@ -953,15 +953,18 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
         lqw.last("LIMIT 1");
 
         BudgetPreparation prevPreparation = baseMapper.selectOne(lqw);
+        log.info("[上月数据] 查询结果: prevPreparation={}", prevPreparation != null ? "找到" : "未找到");
         if (prevPreparation == null) {
             return Collections.emptyList();
         }
+        log.info("[上月数据] 找到的上月预算单ID: {}, 状态: {}", prevPreparation.getId(), prevPreparation.getStatus());
 
         // 查询该编制记录的明细数据
         List<BudgetPreparationDetail> prevDetails = detailMapper.selectList(
             Wrappers.<BudgetPreparationDetail>lambdaQuery()
                 .eq(BudgetPreparationDetail::getSheetId, prevPreparation.getId())
         );
+        log.info("[上月数据] 明细数量: {}", prevDetails.size());
 
         // 转换为 VO 列表
         List<BudgetPreparationDetailVo> result = new ArrayList<>();

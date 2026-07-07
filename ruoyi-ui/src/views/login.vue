@@ -88,8 +88,8 @@ export default {
         code: [{ required: true, trigger: "change", message: "请输入验证码" }]
       },
       loading: false,
-      // 验证码开关
-      captchaEnabled: true,
+      // 验证码开关（默认关闭，由后端配置控制）
+      captchaEnabled: false,
       // 注册开关
       register: false,
       redirect: undefined
