@@ -9,6 +9,14 @@ export function listSubject(query) {
   })
 }
 
+// 查询所有启用的预算科目
+export function allSubjects() {
+  return request({
+    url: '/system/subject/all',
+    method: 'get'
+  })
+}
+
 // 查询预算科目详细
 export function getSubject(id) {
   return request({

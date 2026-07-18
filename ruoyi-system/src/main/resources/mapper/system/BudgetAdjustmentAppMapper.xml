@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.BudgetAdjustmentAppMapper">
+    <resultMap id="BudgetAdjustmentAppResult" type="com.ruoyi.system.domain.BudgetAdjustmentApp">
+        <id property="id" column="id"/>
+        <result property="appNo" column="app_no"/>
+        <result property="billId" column="bill_id"/>
+        <result property="billNo" column="bill_no"/>
+        <result property="applicantId" column="applicant_id"/>
+        <result property="applicantName" column="applicant_name"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="targetSubject" column="target_subject"/>
+        <result property="targetSubjectName" column="target_subject_name"/>
+        <result property="costCenterCode" column="cost_center_code"/>
+        <result property="currentBalance" column="current_balance"/>
+        <result property="requestAmount" column="request_amount"/>
+        <result property="budgetAmount" column="budget_amount"/>
+        <result property="reason" column="reason"/>
+        <result property="currentLevel" column="current_level"/>
+        <result property="deptReservedId" column="dept_reserved_id"/>
+        <result property="branchReservedId" column="branch_reserved_id"/>
+        <result property="hqReservedId" column="hq_reserved_id"/>
+        <result property="allocateAmount" column="allocate_amount"/>
+        <result property="allocateFromReservedId" column="allocate_from_reserved_id"/>
+        <result property="rejectReason" column="reject_reason"/>
+        <result property="status" column="status"/>
+        <result property="createTime" column="create_time"/>
+        <result property="completeTime" column="complete_time"/>
+        <result property="createBy" column="create_by"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+</mapper>

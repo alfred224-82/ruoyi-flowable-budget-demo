@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.FeeOperationLogMapper">
+    <resultMap id="FeeOperationLogResult" type="com.ruoyi.system.domain.FeeOperationLog">
+        <id property="logId" column="log_id"/>
+        <result property="module" column="module"/>
+        <result property="operationType" column="operation_type"/>
+        <result property="billId" column="bill_id"/>
+        <result property="billNo" column="bill_no"/>
+        <result property="relatedAppId" column="related_app_id"/>
+        <result property="operatorId" column="operator_id"/>
+        <result property="operatorName" column="operator_name"/>
+        <result property="operatorRole" column="operator_role"/>
+        <result property="beforeStatus" column="before_status"/>
+        <result property="afterStatus" column="after_status"/>
+        <result property="operationDetail" column="operation_detail"/>
+        <result property="ipAddress" column="ip_address"/>
+        <result property="operationTime" column="operation_time"/>
+    </resultMap>
+</mapper>
