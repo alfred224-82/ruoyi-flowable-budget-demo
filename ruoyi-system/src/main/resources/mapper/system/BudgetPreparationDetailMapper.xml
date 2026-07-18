@@ -21,4 +21,87 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateTime" column="update_time"/>
     </resultMap>
 
+    <!-- 按科目和期间汇总预算金额 -->
+    <select id="sumBudgetBySubjectAndPeriod" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(budget_amount), 0)
+        FROM budget_preparation_detail bd
+        INNER JOIN budget_preparation bp ON bd.sheet_id = bp.id
+        WHERE bd.subject_code = #{subjectCode}
+          AND bp.org_id = #{deptId}
+          AND bp.budget_year = #{budgetYear}
+          AND bp.budget_month = #{budgetMonth}
+          AND bp.status = 'Approved'
+    </select>
+
+    <!-- 追加预算额度（按部门+期间隔离，只更新指定年月的记录） -->
+    <update id="addBudgetBySubject">
+        UPDATE budget_preparation_detail bd
+        INNER JOIN budget_preparation bp ON bd.sheet_id = bp.id
+        SET bd.budget_amount = bd.budget_amount + #{amount},
+            bd.update_time = NOW()
+        WHERE bd.subject_code = #{subjectCode}
+          AND bp.org_id = #{deptId}
+          AND bp.budget_year = #{budgetYear}
+          AND bp.budget_month = #{budgetMonth}
+          AND bp.status = 'Approved'
+    </update>
+
+    <!-- 调剂预算（从调出科目转到调入科目） -->
+    <update id="transferBudget">
+        UPDATE budget_preparation_detail bd
+        INNER JOIN budget_preparation bp ON bd.sheet_id = bp.id
+        SET bd.budget_amount = CASE
+                WHEN bd.subject_code = #{fromSubject} THEN bd.budget_amount - #{amount}
+                WHEN bd.subject_code = #{toSubject} THEN bd.budget_amount + #{amount}
+            END,
+            bd.update_time = NOW()
+        WHERE bd.subject_code IN (#{fromSubject}, #{toSubject})
+          AND bp.status = 'Approved'
+    </update>
+
+    <!-- 获取科目剩余预算（按部门+期间隔离）= 预算编制金额 - 经理审批通过的报销金额 -->
+    <select id="getRemainingBudgetByPeriod" resultType="java.math.BigDecimal">
+        SELECT COALESCE((
+            SELECT SUM(bd.budget_amount)
+            FROM budget_preparation_detail bd
+            INNER JOIN budget_preparation bp ON bd.sheet_id = bp.id
+            WHERE bd.subject_code = #{subjectCode}
+              AND bp.org_id = #{deptId}
+              AND bp.budget_year = #{budgetYear}
+              AND bp.budget_month = #{budgetMonth}
+              AND bp.status = 'Approved'
+        ), 0)
+        -
+        COALESCE((
+            SELECT SUM(e.amount)
+            FROM fee_expense_bill e
+            WHERE e.calc_budget_subject = #{subjectCode}
+              AND e.dept_id = #{deptId}
+              AND e.status = 'APPROVED'
+        ), 0)
+    </select>
+
+    <!-- 直接设置科目预算编制金额为目标值（调整审批通过时调用） -->
+    <update id="setBudgetAmount">
+        UPDATE budget_preparation_detail bd
+        INNER JOIN budget_preparation bp ON bd.sheet_id = bp.id
+        SET bd.budget_amount = #{amount},
+            bd.update_time = NOW()
+        WHERE bd.subject_code = #{subjectCode}
+          AND bp.org_id = #{deptId}
+          AND bp.budget_year = #{budgetYear}
+          AND bp.budget_month = #{budgetMonth}
+          AND bp.status = 'Approved'
+    </update>
+
+    <!-- 获取科目总预算（按部门隔离） -->
+    <select id="getTotalBudget" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(budget_amount), 0)
+        FROM budget_preparation_detail bd
+        INNER JOIN budget_preparation bp ON bd.sheet_id = bp.id
+        WHERE bd.subject_code = #{subjectCode}
+          AND bp.org_id = #{deptId}
+          AND bp.status = 'Approved'
+    </select>
+
 </mapper>

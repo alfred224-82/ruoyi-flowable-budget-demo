@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.ExpenseBillMapper">
+
+    <!-- 查询经理审批通过的报销金额合计 -->
+    <select id="sumApprovedAmountByDeptAndSubject" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(amount), 0)
+        FROM fee_expense_bill
+        WHERE dept_id = #{deptId}
+          AND calc_budget_subject = #{budgetSubjectCode}
+          AND status = 'APPROVED'
+    </select>
+
+    <!-- 更新报销单状态 -->
+    <update id="updateStatusById">
+        UPDATE fee_expense_bill
+        SET status = #{status}, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 盈利分析明细视图 -->
+    <select id="selectProfitAnalysisDetail" resultType="com.ruoyi.system.domain.vo.ProfitAnalysisVo">
+        SELECT
+            e.cost_center_code AS costCenterCode,
+            cc.center_name AS costCenterName,
+            e.calc_budget_subject AS budgetSubjectCode,
+            bs.subject_name AS budgetSubjectName,
+            e.calc_accounting_class AS accountingClass,
+            SUM(e.amount) AS actualAmount,
+            COALESCE(bd.budget_amount, 0) AS budgetAmount,
+            COALESCE(bd.budget_amount, 0) - SUM(e.amount) AS varianceAmount
+        FROM fee_expense_bill e
+        LEFT JOIN fee_cost_center cc ON e.cost_center_code = cc.center_code
+        LEFT JOIN budget_subject bs ON e.calc_budget_subject = bs.subject_code
+        LEFT JOIN budget_preparation_detail bd ON bd.subject_code = e.calc_budget_subject
+            AND bd.dept_id = e.dept_id
+            <if test="year != null">AND YEAR(bd.create_time) = #{year}</if>
+            <if test="month != null">AND MONTH(bd.create_time) = #{month}</if>
+        WHERE e.status = 'APPROVED'
+        <if test="year != null">
+            AND YEAR(e.expense_date) = #{year}
+        </if>
+        <if test="month != null">
+            AND MONTH(e.expense_date) = #{month}
+        </if>
+        <if test="orgId != null">
+            AND e.dept_id = #{orgId}
+        </if>
+        GROUP BY e.cost_center_code, e.calc_budget_subject, e.calc_accounting_class
+        ORDER BY e.cost_center_code, e.calc_accounting_class, e.calc_budget_subject
+    </select>
+
+    <!-- 盈利分析汇总视图（按会计6大科目聚合） -->
+    <select id="selectProfitAnalysisSummary" resultType="com.ruoyi.system.domain.vo.ProfitAnalysisSummaryVo">
+        SELECT
+            e.calc_accounting_class AS accountingClass,
+            SUM(e.amount) AS actualAmount,
+            COALESCE(SUM(bd.budget_amount), 0) AS budgetAmount,
+            COALESCE(SUM(bd.budget_amount), 0) - SUM(e.amount) AS varianceAmount
+        FROM fee_expense_bill e
+        LEFT JOIN budget_preparation_detail bd ON bd.subject_code = e.calc_budget_subject
+            AND bd.dept_id = e.dept_id
+            <if test="year != null">AND YEAR(bd.create_time) = #{year}</if>
+            <if test="month != null">AND MONTH(bd.create_time) = #{month}</if>
+        WHERE e.status = 'APPROVED'
+        <if test="year != null">AND YEAR(e.expense_date) = #{year}</if>
+        <if test="month != null">AND MONTH(e.expense_date) = #{month}</if>
+        GROUP BY e.calc_accounting_class
+        ORDER BY FIELD(e.calc_accounting_class, 'ASSET','LIABILITY','EQUITY','INCOME','COST','EXPENSE')
+    </select>
+
+    <!-- 报销单分页列表（含用途标签名称、预算科目名称） -->
+    <select id="selectExpenseBillPage" resultType="com.ruoyi.system.domain.vo.ExpenseBillVo">
+        SELECT
+            e.id, e.bill_no AS billNo, e.dept_id AS deptId,
+            sd.dept_name AS deptName,
+            e.applicant_id AS applicantId, e.applicant_name AS applicantName,
+            e.cost_center_code AS costCenterCode,
+            e.item_category AS itemCategory,
+            e.purpose_tag AS purposeTag,
+            pt.tag_name AS purposeTagName,
+            e.project_code AS projectCode,
+            e.calc_budget_subject AS calcBudgetSubject,
+            bs.subject_name AS calcBudgetSubjectName,
+            e.calc_accounting_class AS calcAccountingClass,
+            e.amount, e.expense_date AS expenseDate,
+            e.is_fixed_asset AS isFixedAsset,
+            e.expenditure_type AS expenditureType,
+            e.is_over_budget AS isOverBudget,
+            e.over_budget_approval_id AS overBudgetApprovalId,
+            e.status, e.allocation_status AS allocationStatus,
+            e.remark, e.create_by AS createBy, e.create_time AS createTime,
+            e.update_by AS updateBy, e.update_time AS updateTime
+        FROM fee_expense_bill e
+        LEFT JOIN sys_dept sd ON e.dept_id = sd.dept_id
+        LEFT JOIN fee_purpose_tag pt ON e.purpose_tag = pt.tag_code
+        LEFT JOIN budget_subject bs ON e.calc_budget_subject = bs.subject_code
+        ${ew.customSqlSegment}
+        ORDER BY e.create_time DESC
+    </select>
+
+    <!-- 异常监控表 -->
+    <select id="selectAnomalyMonitor" resultType="com.ruoyi.system.domain.vo.AnomalyMonitorVo">
+        SELECT e.id, e.bill_no AS billNo, e.dept_id AS deptId,
+               e.cost_center_code AS costCenterCode,
+               cc.center_name AS costCenterName,
+               e.item_category AS itemCategory,
+               e.purpose_tag AS purposeTag,
+               e.amount, e.expense_date AS expenseDate,
+               e.allocation_status AS allocationStatus,
+               e.status
+        FROM fee_expense_bill e
+        LEFT JOIN fee_cost_center cc ON e.cost_center_code = cc.center_code
+        WHERE e.cost_center_code = 'PENDING'
+           OR e.allocation_status = 'PENDING'
+        ORDER BY e.expense_date DESC
+    </select>
+
+</mapper>

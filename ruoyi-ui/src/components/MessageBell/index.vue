@@ -1,6 +1,6 @@
 <template>
-  <div class="message-bell right-menu-item hover-effect" @click="handleClick">
-    <el-badge :value="unreadCount" :hidden="unreadCount === 0" :max="99" class="badge">
+  <div class="message-bell right-menu-item hover-effect" ref="messageBellRef">
+    <el-badge :value="unreadCount" :hidden="unreadCount === 0" :max="99" class="badge" @click.native="handleClick">
       <i class="el-icon-bell" style="font-size: 20px;" />
     </el-badge>
     <!-- 消息下拉面板 -->
@@ -51,10 +51,21 @@ export default {
     this.pollTimer = setInterval(() => {
       this.fetchUnreadCount()
     }, 30000)
+    // 监听全局点击，点击面板外部时关闭
+    this._handleOutsideClick = (e) => {
+      const el = this.$refs.messageBellRef
+      if (this.visible && el && !el.contains(e.target)) {
+        this.visible = false
+      }
+    }
+    document.addEventListener('click', this._handleOutsideClick)
   },
   beforeDestroy() {
     if (this.pollTimer) {
       clearInterval(this.pollTimer)
+    }
+    if (this._handleOutsideClick) {
+      document.removeEventListener('click', this._handleOutsideClick)
     }
   },
   methods: {

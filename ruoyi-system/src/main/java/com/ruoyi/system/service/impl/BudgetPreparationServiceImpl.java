@@ -516,10 +516,10 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
         String stage = preparation.getApprovalStage();
         if ("Dept".equals(stage)) {
             preparation.setApprovalStage("Branch");
-            preparation.setCurrentHandler("branch_leader");
+            preparation.setCurrentHandler("branch");
         } else if ("Branch".equals(stage)) {
             preparation.setApprovalStage("HQ");
-            preparation.setCurrentHandler("hq_leader");
+            preparation.setCurrentHandler("headquarters");
         } else if ("HQ".equals(stage)) {
             preparation.setStatus("Approved");
             preparation.setApprovalStage("None");
