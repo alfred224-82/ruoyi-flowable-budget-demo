@@ -183,11 +183,10 @@ public class OverBudgetApprovalServiceImpl implements IOverBudgetApprovalService
 
         // 执行调剂
         budgetDetailMapper.transferBudget(adjustFromSubject,
-            approval.getBudgetSubject(), approval.getCostCenterGroup(), adjustAmount);
+            approval.getBudgetSubject(), adjustAmount);
 
         // 记录调剂流水
         BudgetAdjustmentLog adjLog = new BudgetAdjustmentLog();
-        adjLog.setCostCenterCode(approval.getCostCenterGroup());
         adjLog.setFromSubject(adjustFromSubject);
         adjLog.setToSubject(approval.getBudgetSubject());
         adjLog.setAdjustAmount(adjustAmount);

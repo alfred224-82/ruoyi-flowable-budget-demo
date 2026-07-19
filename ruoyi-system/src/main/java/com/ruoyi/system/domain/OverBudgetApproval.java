@@ -39,11 +39,6 @@ public class OverBudgetApproval extends BaseEntity {
     private String billNo;
 
     /**
-     * 预算责任中心编码
-     */
-    private String costCenterGroup;
-
-    /**
      * 超预算的预算科目编码
      */
     private String budgetSubject;

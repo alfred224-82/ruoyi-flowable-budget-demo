@@ -45,7 +45,6 @@ public class BudgetAdjustmentAppServiceImpl implements IBudgetAdjustmentAppServi
     private final IFeeOperationLogService feeOperationLogService;
     private final ISysMessageService sysMessageService;
     private final IReservedBudgetService reservedBudgetService;
-    private final ICostCenterService costCenterService;
     private final ISysDeptService sysDeptService;
     private final SysDeptMapper sysDeptMapper;
     private final IMappingRuleService mappingRuleService;
@@ -99,9 +98,8 @@ public class BudgetAdjustmentAppServiceImpl implements IBudgetAdjustmentAppServi
         String appNo = "BA-" + new SimpleDateFormat("yyyyMMdd").format(new Date())
             + "-" + String.format("%03d", (int) (Math.random() * 900) + 100);
 
-        // 2. 自动从登录人部门获取责任中心编码
+        // 2. 自动从登录人部门获取部门ID
         Long deptId = LoginHelper.getDeptId();
-        String costCenterCode = costCenterService.getCenterCodeByDeptId(deptId);
 
         // 3. 通过映射规则定位目标预算科目（物资小类 + 用途标签 → 预算科目）
         com.ruoyi.system.domain.vo.MappingRuleVo rule = mappingRuleService.matchRule(
@@ -129,7 +127,6 @@ public class BudgetAdjustmentAppServiceImpl implements IBudgetAdjustmentAppServi
         if (dept != null) {
             app.setDeptName(dept.getDeptName());
         }
-        app.setCostCenterCode(costCenterCode);
         // 填入映射规则解析出的目标科目
         app.setTargetSubject(targetSubject);
         app.setTargetSubjectName(targetSubjectName);
@@ -839,6 +836,25 @@ public class BudgetAdjustmentAppServiceImpl implements IBudgetAdjustmentAppServi
             }
         }
         return result;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean deleteByIds(Collection<Long> ids) {
+        // 仅未审批通过的申请单可删除（APPROVED状态不可删）
+        for (Long id : ids) {
+            BudgetAdjustmentApp app = appMapper.selectById(id);
+            if (app != null && "APPROVED".equals(app.getStatus())) {
+                throw new ServiceException("已审批通过的预算调整申请不可删除");
+            }
+            // 写操作日志
+            if (app != null) {
+                feeOperationLogService.log("BUDGET_ADJUST", "BA_DELETE", app.getBillId(), app.getBillNo(),
+                    app.getId(), app.getStatus(), "DELETED",
+                    cn.hutool.json.JSONUtil.toJsonStr(Collections.singletonMap("reason", "申请人删除")));
+            }
+        }
+        return appMapper.deleteBatchIds(ids) > 0;
     }
 
     private Wrapper<BudgetAdjustmentApp> buildQueryWrapper(BudgetAdjustmentAppBo bo) {

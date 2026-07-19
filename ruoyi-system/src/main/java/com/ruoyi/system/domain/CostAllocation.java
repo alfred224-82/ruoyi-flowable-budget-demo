@@ -38,19 +38,9 @@ public class CostAllocation extends BaseEntity {
     private String allocationBatch;
 
     /**
-     * 源责任中心编码
-     */
-    private String sourceCostCenter;
-
-    /**
      * 目标部门ID
      */
     private Long targetDeptId;
-
-    /**
-     * 目标责任中心编码
-     */
-    private String targetCostCenter;
 
     /**
      * 分摊金额

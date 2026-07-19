@@ -173,9 +173,6 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="责任中心组" prop="costCenterGroup">
-          <el-input v-model="form.costCenterGroup" placeholder="请输入责任中心组（*表示全部）" maxlength="50" />
-        </el-form-item>
         <el-form-item label="目标预算科目" prop="targetBudgetSubject">
           <el-input v-model="form.targetBudgetSubject" placeholder="请输入目标预算科目编码" maxlength="50" />
         </el-form-item>
@@ -324,7 +321,6 @@ export default {
         ruleCode: undefined,
         itemCategory: undefined,
         purposeTag: undefined,
-        costCenterGroup: '*',
         targetBudgetSubject: undefined,
         accountingClass: 'EXPENSE',
         isFixedAsset: 0,

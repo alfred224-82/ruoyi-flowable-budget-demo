@@ -39,7 +39,6 @@
           </template>
         </el-table-column>
         <el-table-column label="费用日期" align="center" prop="expenseDate" width="120" />
-        <el-table-column label="责任中心" align="center" prop="costCenterName" />
         <el-table-column label="分摊状态" align="center" prop="allocationStatus" width="120">
           <template slot-scope="scope">
             <el-tag v-if="scope.row.allocationStatus === 'PENDING'" type="warning">待分摊</el-tag>
@@ -49,10 +48,7 @@
         </el-table-column>
         <el-table-column label="异常原因" align="center" width="200">
           <template slot-scope="scope">
-            <span v-if="scope.row.costCenterCode === 'PENDING'" style="color: #e6a23c;">
-              待分摊责任中心
-            </span>
-            <span v-else-if="scope.row.allocationStatus === 'PENDING'" style="color: #f56c6c;">
+            <span v-if="scope.row.allocationStatus === 'PENDING'" style="color: #f56c6c;">
               未执行分摊
             </span>
             <span v-else>-</span>
@@ -88,17 +84,6 @@
             {{ bill.billNo }}
           </el-tag>
         </el-form-item>
-        <el-form-item label="目标责任中心" prop="targetCostCenter">
-          <el-select v-model="adjustForm.targetCostCenter" placeholder="请选择目标责任中心" style="width: 100%" filterable>
-            <el-option
-              v-for="center in costCenters"
-              :key="center.centerCode"
-              :label="center.centerName + ' (' + center.centerCode + ')'"
-              :value="center.centerCode"
-              :disabled="center.isPending === 1"
-            />
-          </el-select>
-        </el-form-item>
         <el-form-item label="目标预算科目" prop="targetBudgetSubject">
           <el-input v-model="adjustForm.targetBudgetSubject" placeholder="请输入目标预算科目编码" />
         </el-form-item>
@@ -116,7 +101,6 @@
 
 <script>
 import { anomalyMonitorList } from "@/api/system/fee/report";
-import { listCostCenter } from "@/api/system/fee/costCenter";
 
 export default {
   name: "AnomalyMonitor",
@@ -131,7 +115,6 @@ export default {
       multiple: true,
       adjustOpen: false,
       adjustLoading: false,
-      costCenters: [],
       // 物资小类字典选项
       itemCategoryOptions: [],
       queryParams: {
@@ -139,14 +122,10 @@ export default {
         pageSize: 10
       },
       adjustForm: {
-        targetCostCenter: '',
         targetBudgetSubject: '',
         remark: ''
       },
       adjustRules: {
-        targetCostCenter: [
-          { required: true, message: "请选择目标责任中心", trigger: "change" }
-        ],
         targetBudgetSubject: [
           { required: true, message: "请输入目标预算科目", trigger: "blur" }
         ]
@@ -155,7 +134,6 @@ export default {
   },
   created() {
     this.getList();
-    this.loadCostCenters();
     // 加载字典数据
     this.itemCategoryOptions = this.dict.type.fee_item_category || [];
   },
@@ -172,11 +150,6 @@ export default {
         this.anomalyList = response.rows;
         this.total = response.total;
         this.loading = false;
-      });
-    },
-    loadCostCenters() {
-      listCostCenter({ status: 'ENABLED', pageNum: 1, pageSize: 100 }).then(response => {
-        this.costCenters = response.rows || [];
       });
     },
     handleSelectionChange(selection) {
@@ -196,7 +169,6 @@ export default {
     },
     openAdjustDialog() {
       this.adjustForm = {
-        targetCostCenter: '',
         targetBudgetSubject: '',
         remark: ''
       };

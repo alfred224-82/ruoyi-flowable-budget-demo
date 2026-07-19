@@ -59,6 +59,17 @@ public class ExpenseBillBo extends BaseEntity {
     private Date expenseDate;
 
     /**
+     * 报销年月（格式：YYYY-MM，对应预算编制期间）
+     */
+    @NotBlank(message = "报销年月不能为空", groups = {AddGroup.class})
+    private String expensePeriod;
+
+    /**
+     * 使用年限(年)，仅固定资产时填写
+     */
+    private Integer usefulLife;
+
+    /**
      * 状态(DRAFT/SUBMITTED/APPROVED/REJECTED/OVER_BUDGET_PENDING)
      */
     private String status;

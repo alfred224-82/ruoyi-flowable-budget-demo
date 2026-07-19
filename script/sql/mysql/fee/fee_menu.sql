@@ -15,7 +15,6 @@ VALUES (3000, '费用管控', 0, 10, 'fee', NULL, '', 1, 0, 'M', '0', '0', '', '
 -- 二级菜单 (menu_id: 3001-3008)
 -- ----------------------------
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark) VALUES
-(3001, '责任中心管理', 3000, 1, 'costCenter', 'system/fee/costCenter/index', '', 1, 0, 'C', '0', '0', 'fee:costCenter:list', 'tree', 'admin', sysdate(), '', NULL, '责任中心管理菜单'),
 (3002, '用途标签管理', 3000, 2, 'purposeTag', 'system/fee/purposeTag/index', '', 1, 0, 'C', '0', '0', 'fee:purposeTag:list', 'tag', 'admin', sysdate(), '', NULL, '用途标签管理菜单'),
 (3003, '映射规则管理', 3000, 3, 'mappingRule', 'system/fee/mappingRule/index', '', 1, 0, 'C', '0', '0', 'fee:mappingRule:list', 'edit', 'admin', sysdate(), '', NULL, '映射规则管理菜单'),
 (3004, '报销单管理', 3000, 4, 'expense', 'system/fee/expense/index', '', 1, 0, 'C', '0', '0', 'fee:expense:list', 'form', 'admin', sysdate(), '', NULL, '报销单管理菜单'),
@@ -23,15 +22,6 @@ INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component,
 (3006, '盈利分析表', 3000, 6, 'report/profitAnalysis', 'system/fee/report/profitAnalysis', '', 1, 0, 'C', '0', '0', 'fee:report:query', 'chart', 'admin', sysdate(), '', NULL, '盈利分析表菜单'),
 (3007, '异常监控表', 3000, 7, 'report/anomalyMonitor', 'system/fee/report/anomalyMonitor', '', 1, 0, 'C', '0', '0', 'fee:report:query', 'monitor', 'admin', sysdate(), '', NULL, '异常监控表菜单'),
 (3008, '费用分摊管理', 3000, 8, 'allocation', 'system/fee/allocation/index', '', 1, 0, 'C', '0', '0', 'fee:allocation:list', 'swap', 'admin', sysdate(), '', NULL, '费用分摊管理菜单');
-
--- ----------------------------
--- 按钮权限 - 责任中心管理 (menu_id: 3011-3014)
--- ----------------------------
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark) VALUES
-(3011, '责任中心查询', 3001, 1, '#', '', '', 1, 0, 'F', '0', '0', 'fee:costCenter:query', '#', 'admin', sysdate(), '', NULL, ''),
-(3012, '责任中心新增', 3001, 2, '#', '', '', 1, 0, 'F', '0', '0', 'fee:costCenter:add', '#', 'admin', sysdate(), '', NULL, ''),
-(3013, '责任中心修改', 3001, 3, '#', '', '', 1, 0, 'F', '0', '0', 'fee:costCenter:edit', '#', 'admin', sysdate(), '', NULL, ''),
-(3014, '责任中心删除', 3001, 4, '#', '', '', 1, 0, 'F', '0', '0', 'fee:costCenter:remove', '#', 'admin', sysdate(), '', NULL, '');
 
 -- ----------------------------
 -- 按钮权限 - 用途标签管理 (menu_id: 3021-3024)

@@ -22,11 +22,6 @@ public class BudgetPreviewVo implements Serializable {
     private Boolean passed;
 
     /**
-     * 责任中心编码
-     */
-    private String costCenterCode;
-
-    /**
      * 预算科目编码
      */
     private String budgetSubject;
@@ -45,6 +40,11 @@ public class BudgetPreviewVo implements Serializable {
      * 可用余额
      */
     private BigDecimal remainingBudget;
+
+    /**
+     * 是否固定资产(0否 1是)
+     */
+    private Integer isFixedAsset;
 
     /**
      * 失败消息

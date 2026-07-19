@@ -76,4 +76,15 @@ public interface IMappingRuleService {
      * @return 预算归属预览结果
      */
     BudgetPreviewVo previewBudgetSubject(String itemCategory, String purposeTag, Long deptId);
+
+    /**
+     * 预览预算归属（支持指定预算期间）
+     *
+     * @param itemCategory 物资小类编码
+     * @param purposeTag   用途标签编码
+     * @param deptId       部门ID
+     * @param budgetPeriod 预算期间（格式：YYYY-MM），为null时使用当前期间
+     * @return 预算归属预览结果
+     */
+    BudgetPreviewVo previewBudgetSubject(String itemCategory, String purposeTag, Long deptId, String budgetPeriod);
 }

@@ -60,7 +60,6 @@
         show-summary
         :summary-method="getDetailSummary"
       >
-        <el-table-column label="责任中心" align="center" prop="costCenterName" width="150" />
         <el-table-column label="预算科目" align="center" prop="budgetSubjectName" />
         <el-table-column label="会计大类" align="center" prop="accountingClass" width="120">
           <template slot-scope="scope">

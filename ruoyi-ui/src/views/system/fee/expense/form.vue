@@ -29,6 +29,22 @@
           </el-select>
         </el-form-item>
 
+        <el-form-item label="报销年月" prop="expensePeriod">
+          <el-date-picker
+            v-model="form.expensePeriod"
+            type="month"
+            placeholder="请选择报销年月"
+            format="yyyy-MM"
+            value-format="yyyy-MM"
+            :disabled="isViewMode"
+            style="width: 100%"
+            @change="refreshBudgetPreview"
+          />
+          <div style="color: #909399; font-size: 12px; margin-top: 4px;">
+            报销年月对应预算编制期间，系统将查询该月的预算可用余额
+          </div>
+        </el-form-item>
+
         <el-form-item label="金额" prop="amount">
           <el-input-number
             v-model="form.amount"
@@ -43,6 +59,20 @@
           </div>
         </el-form-item>
 
+        <!-- 固定资产使用年限：当预算归属预览返回isFixedAsset=1时显示 -->
+        <el-form-item v-if="budgetPreview && budgetPreview.isFixedAsset === 1" label="使用年限(年)" prop="usefulLife">
+          <el-input-number
+            v-model="form.usefulLife"
+            :min="1"
+            :max="100"
+            placeholder="请输入使用年限"
+            :disabled="isViewMode"
+            style="width: 100%"
+          />
+          <div style="color: #E6A23C; font-size: 12px; margin-top: 4px;">
+            <i class="el-icon-warning"></i> 该物资属于固定资产，需填写使用年限用于折旧计算
+          </div>
+        </el-form-item>
 
         <el-form-item label="备注" prop="remark">
           <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" :disabled="isViewMode" />
@@ -57,7 +87,9 @@
             show-icon
           >
             <template v-if="budgetPreview.passed">
-              <p>预算科目：{{ budgetPreview.budgetSubjectName || budgetPreview.budgetSubject }}</p>
+              <p>预算科目：{{ budgetPreview.budgetSubjectName || budgetPreview.budgetSubject }}
+                <el-tag v-if="budgetPreview.isFixedAsset === 1" type="warning" size="mini" style="margin-left: 8px;">固定资产</el-tag>
+              </p>
               <p v-if="budgetPreview.remainingBudget !== null && budgetPreview.remainingBudget !== undefined">
                 可用余额：¥{{ Number(budgetPreview.remainingBudget).toFixed(2) }}
               </p>
@@ -78,7 +110,7 @@
 </template>
 
 <script>
-import { addExpenseBill, submitExpense, getExpenseBill } from "@/api/system/fee/expense";
+import { addExpenseBill, getExpenseBill } from "@/api/system/fee/expense";
 import { allEnabledPurposeTag } from "@/api/system/fee/purposeTag";
 import { previewMapping } from "@/api/system/fee/mappingRule";
 import { getUserProfile } from "@/api/system/user";
@@ -98,7 +130,9 @@ export default {
         itemCategory: '',
         purposeTag: '',
         amount: undefined,
+        usefulLife: undefined,
         expenseDate: new Date().toISOString().slice(0, 10),
+        expensePeriod: new Date().toISOString().slice(0, 7),
         remark: ''
       },
       rules: {
@@ -114,6 +148,13 @@ export default {
         ],
         expenseDate: [
           { required: true, message: "请选择费用日期", trigger: "change" }
+        ],
+        expensePeriod: [
+          { required: true, message: "请选择报销年月", trigger: "change" }
+        ],
+        usefulLife: [
+          { required: true, message: "固定资产必须填写使用年限", trigger: "blur" },
+          { type: 'number', min: 1, message: "使用年限必须大于0", trigger: "blur" }
         ]
       }
     };
@@ -142,7 +183,9 @@ export default {
           itemCategory: bill.itemCategory || '',
           purposeTag: bill.purposeTag || '',
           amount: bill.amount,
+          usefulLife: bill.usefulLife,
           expenseDate: bill.expenseDate,
+          expensePeriod: bill.expensePeriod || new Date().toISOString().slice(0, 7),
           remark: bill.remark || ''
         };
         // 查看模式下自动刷新预算归属预览
@@ -175,9 +218,14 @@ export default {
         const res = await previewMapping({
           itemCategory: this.form.itemCategory,
           purposeTag: this.form.purposeTag,
-          deptId: this.currentUser.deptId
+          deptId: this.currentUser.deptId,
+          budgetPeriod: this.form.expensePeriod
         });
         this.budgetPreview = res.data;
+        // 如果不再是固定资产，清空使用年限
+        if (!this.budgetPreview || this.budgetPreview.isFixedAsset !== 1) {
+          this.$set(this.form, 'usefulLife', undefined);
+        }
       } catch (error) {
         console.error('预算归属预览失败:', error);
         this.budgetPreview = null;
@@ -192,13 +240,18 @@ export default {
             return;
           }
 
+          // 固定资产校验：使用年限必填
+          if (this.budgetPreview && this.budgetPreview.isFixedAsset === 1) {
+            if (!this.form.usefulLife || this.form.usefulLife <= 0) {
+              this.$message.error('该报销单属于固定资产，必须填写使用年限（年）');
+              return;
+            }
+          }
+
           this.submitLoading = true;
           try {
-            // 第一步：创建报销单（草稿）
-            const addRes = await addExpenseBill(this.form);
-            const billId = addRes.data.id;
-            // 第二步：提交报销单
-            await submitExpense(billId);
+            // 一步提交：创建即提交（后端自动完成映射规则匹配+预算校验+状态流转）
+            await addExpenseBill(this.form);
             this.$message.success('提交成功');
             this.$router.push('/fee/expense');
           } catch (error) {

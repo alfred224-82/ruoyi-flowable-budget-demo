@@ -56,18 +56,6 @@ public class ExpenseBillVo implements Serializable {
     private String applicantName;
 
     /**
-     * 责任中心编码
-     */
-    @ExcelProperty(value = "责任中心编码")
-    private String costCenterCode;
-
-    /**
-     * 责任中心名称
-     */
-    @ExcelProperty(value = "责任中心名称")
-    private String costCenterName;
-
-    /**
      * 物资小类编码
      */
     @ExcelProperty(value = "物资小类编码")
@@ -122,10 +110,22 @@ public class ExpenseBillVo implements Serializable {
     private Date expenseDate;
 
     /**
+     * 报销年月（格式：YYYY-MM，对应预算编制期间）
+     */
+    @ExcelProperty(value = "报销年月")
+    private String expensePeriod;
+
+    /**
      * 是否固定资产(0否 1是)
      */
     @ExcelProperty(value = "是否固定资产")
     private Integer isFixedAsset;
+
+    /**
+     * 使用年限(年)，仅固定资产时填写
+     */
+    @ExcelProperty(value = "使用年限(年)")
+    private Integer usefulLife;
 
     /**
      * 支出类型(CAPITAL/OPERATING)

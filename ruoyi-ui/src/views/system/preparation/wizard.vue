@@ -374,7 +374,7 @@ export default {
         await this.loadExistingData(id);
       } else {
         await this.loadSubjectsByType();
-        // 新建模式：尝试加载上月已审批数据初始化金额
+        // 新建模式：尝试加载上月已审批通过的报销实际数据初始化金额
         await this.loadPreviousMonthData();
       }
     },
@@ -447,7 +447,7 @@ export default {
       }
     },
 
-    /** 加载上月已审批通过的预算数据，初始化本月金额 */
+    /** 加载上月已审批通过的报销实际数据，初始化本月金额 */
     async loadPreviousMonthData() {
       if (!this.basicForm.orgId || !this.basicForm.budgetYear || !this.basicForm.budgetMonth) {
         console.warn('[上月数据] 缺少必要参数，跳过加载:', {
@@ -479,11 +479,13 @@ export default {
           prevYear,
           prevMonth
         );
-        const prevDetails = response.data || [];
-        console.log('[上月数据] API返回:', prevDetails.length, '条记录', prevDetails);
+        const resultData = response.data || {};
+        const dataSource = resultData.dataSource || 'NONE';
+        const prevDetails = resultData.details || [];
+        console.log('[上月数据] 数据源:', dataSource, ', 记录数:', prevDetails.length, prevDetails);
 
         if (prevDetails.length === 0) {
-          console.log('[上月数据] 上月无已审批通过的预算数据');
+          console.log('[上月数据] 上月无报销实际数据也无预算编制数据');
           return;
         }
 
@@ -518,13 +520,21 @@ export default {
         this.step2Key++;
 
         if (matchCount > 0) {
-          this.$modal.msgSuccess(`已加载上月预算数据（${matchCount}个科目），请根据实际情况调整`);
+          let sourceLabel;
+          if (dataSource === 'MIXED') {
+            sourceLabel = '报销实际数据+上月预算数据';
+          } else if (dataSource === 'EXPENSE') {
+            sourceLabel = '报销实际数据';
+          } else {
+            sourceLabel = '上月预算科目数据';
+          }
+          this.$modal.msgSuccess(`已加载上月${sourceLabel}（${matchCount}个科目），请根据本月计划调整`);
         } else {
-          this.$modal.msgWarning('上月有已审批的预算数据，但科目编码无法匹配，请检查科目配置是否变更');
+          this.$modal.msgWarning('上月有数据，但科目编码无法匹配，请检查科目配置是否变更');
         }
       } catch (error) {
         console.error('[上月数据] 加载失败:', error);
-        this.$modal.msgWarning('加载上月预算数据失败：' + (error.message || '未知错误') + '，请手动填写');
+        this.$modal.msgWarning('加载上月报销实际数据失败：' + (error.message || '未知错误') + '，请手动填写');
       }
     },
 
@@ -591,7 +601,7 @@ export default {
       console.log('切换到Tab:', tab.name);
     },
 
-    /** 月份改变时，重新加载上月数据 */
+    /** 月份改变时，重新加载上月报销实际数据 */
     async handleMonthChange() {
       // 只有在第一步且是新建模式时才重新加载上月数据
       if (this.currentStep === 0 && !this.preparationData.id) {

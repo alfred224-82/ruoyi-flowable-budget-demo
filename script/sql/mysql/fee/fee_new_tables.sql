@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS `fee_over_budget_approval` (
   `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `bill_id` BIGINT(20) NOT NULL COMMENT '关联报销单ID',
   `bill_no` VARCHAR(50) DEFAULT NULL COMMENT '关联报销单号',
-  `cost_center_code` VARCHAR(50) DEFAULT NULL COMMENT '预算责任中心编码',
   `budget_subject` VARCHAR(50) NOT NULL COMMENT '超预算的预算科目编码',
   `budget_subject_name` VARCHAR(100) DEFAULT NULL COMMENT '预算科目名称',
   `original_budget` DECIMAL(15,2) NOT NULL COMMENT '该科目原预算金额',
@@ -36,7 +35,6 @@ CREATE TABLE IF NOT EXISTS `fee_over_budget_approval` (
 -- 2. 预算调剂流水表
 CREATE TABLE IF NOT EXISTS `fee_budget_adjustment_log` (
   `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `cost_center_code` VARCHAR(50) NOT NULL COMMENT '预算责任中心编码',
   `from_subject` VARCHAR(50) NOT NULL COMMENT '调出科目编码',
   `from_subject_name` VARCHAR(100) DEFAULT NULL COMMENT '调出科目名称',
   `to_subject` VARCHAR(50) NOT NULL COMMENT '调入科目编码',
@@ -113,7 +111,6 @@ CREATE TABLE IF NOT EXISTS `fee_budget_adjustment_app` (
   `purpose_tag` VARCHAR(50) DEFAULT NULL COMMENT '用途标签编码',
   `target_subject` VARCHAR(50) NOT NULL COMMENT '目标预算科目编码',
   `target_subject_name` VARCHAR(100) DEFAULT NULL COMMENT '目标预算科目名称',
-  `cost_center_code` VARCHAR(50) DEFAULT NULL COMMENT '责任中心编码',
   `current_balance` DECIMAL(15,2) NOT NULL COMMENT '申请时科目可用余额',
   `request_amount` DECIMAL(15,2) NOT NULL COMMENT '申请调整金额',
   `budget_amount` DECIMAL(15,2) DEFAULT NULL COMMENT '预算金额',

@@ -76,7 +76,7 @@
           {{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}') }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="80" fixed="right" align="center">
+      <el-table-column label="操作" width="130" fixed="right" align="center">
         <template slot-scope="scope">
           <el-button
             size="mini"
@@ -84,6 +84,14 @@
             icon="el-icon-view"
             @click="handleView(scope.row)"
           >查看</el-button>
+          <el-button
+            v-if="scope.row.status !== 'APPROVED'"
+            size="mini"
+            type="text"
+            icon="el-icon-delete"
+            style="color: #F56C6C"
+            @click="handleDelete(scope.row)"
+          >删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -167,7 +175,7 @@
 </template>
 
 <script>
-import { listBudgetAdjustment, applyBudgetAdjustment, getBudgetAdjustment } from "@/api/system/fee/budgetAdjustment";
+import { listBudgetAdjustment, applyBudgetAdjustment, getBudgetAdjustment, delBudgetAdjustment } from "@/api/system/fee/budgetAdjustment";
 import { allEnabledPurposeTag } from "@/api/system/fee/purposeTag";
 import { previewMapping } from "@/api/system/fee/mappingRule";
 import { getUserProfile } from "@/api/system/user";
@@ -337,6 +345,16 @@ export default {
         'APPROVED': '已通过', 'REJECTED': '已驳回', 'ESCALATED': '已转审', 'CANCELLED': '已撤回'
       };
       return map[status] || status;
+    },
+    handleDelete(row) {
+      this.$confirm('确认删除该预算调整申请？删除后不可恢复。', '提示', {
+        type: 'warning'
+      }).then(() => {
+        delBudgetAdjustment(row.id).then(() => {
+          this.$message.success('删除成功');
+          this.getList();
+        });
+      }).catch(() => {});
     }
   }
 }

@@ -42,7 +42,7 @@ public class AllocationServiceImpl implements IAllocationService {
         // 1. 查询待分摊单据
         List<ExpenseBill> pendingBills = expenseBillMapper.selectList(
             Wrappers.<ExpenseBill>lambdaQuery()
-                .eq(ExpenseBill::getCostCenterCode, "PENDING")
+                .eq(ExpenseBill::getAllocationStatus, "PENDING")
                 .eq(ExpenseBill::getStatus, "APPROVED")
                 .apply("DATE_FORMAT(expense_date, '%Y-%m') = {0}", batch));
 
@@ -82,9 +82,7 @@ public class AllocationServiceImpl implements IAllocationService {
                 CostAllocation allocation = new CostAllocation();
                 allocation.setBillId(bill.getId());
                 allocation.setAllocationBatch(batch);
-                allocation.setSourceCostCenter("PENDING");
                 allocation.setTargetDeptId(rule.getTargetDeptId());
-                allocation.setTargetCostCenter(rule.getTargetCostCenter());
                 allocation.setAllocAmount(allocAmount);
                 allocation.setAllocRatio(ratio);
                 allocation.setAllocRuleId(rule.getId());

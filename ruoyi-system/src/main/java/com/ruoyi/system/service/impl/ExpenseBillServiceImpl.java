@@ -14,21 +14,19 @@ import com.ruoyi.system.domain.bo.ExpenseBillBo;
 import com.ruoyi.system.domain.vo.BudgetCheckResultVo;
 import com.ruoyi.system.domain.vo.ExpenseBillVo;
 import com.ruoyi.system.domain.vo.MappingRuleVo;
-import com.ruoyi.system.domain.vo.PurposeTagVo;
 import com.ruoyi.system.mapper.ExpenseBillMapper;
 import com.ruoyi.system.mapper.OverBudgetApprovalMapper;
 import com.ruoyi.system.service.IBudgetCheckService;
 import com.ruoyi.system.service.IExpenseBillService;
 import com.ruoyi.system.service.IFeeOperationLogService;
 import com.ruoyi.system.service.IMappingRuleService;
-import com.ruoyi.system.service.IPurposeTagService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.UUID;
 
 /**
@@ -45,7 +43,6 @@ public class ExpenseBillServiceImpl implements IExpenseBillService {
     private final ExpenseBillMapper expenseBillMapper;
     private final IMappingRuleService mappingRuleService;
     private final IBudgetCheckService budgetCheckService;
-    private final IPurposeTagService purposeTagService;
     private final OverBudgetApprovalMapper overBudgetApprovalMapper;
     private final IFeeOperationLogService feeOperationLogService;
 
@@ -60,6 +57,10 @@ public class ExpenseBillServiceImpl implements IExpenseBillService {
         return expenseBillMapper.selectExpenseBillPage(pageQuery.build(), wrapper);
     }
 
+    /**
+     * 新增报销单（创建即提交，无草稿状态）
+     * 一步完成：创建 → 映射规则匹配 → 预算校验 → 提交/超预算分流
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ExpenseBill insertByBo(ExpenseBillBo bo) {
@@ -70,57 +71,58 @@ public class ExpenseBillServiceImpl implements IExpenseBillService {
         bill.setDeptId(LoginHelper.getDeptId());
         bill.setApplicantId(LoginHelper.getUserId());
         bill.setApplicantName(LoginHelper.getNickName());
-        // 初始状态为草稿
-        bill.setStatus("DRAFT");
         bill.setAllocationStatus("NONE");
         bill.setIsOverBudget(0);
-        bill.setIsFixedAsset(0);
-        bill.setExpenditureType("OPERATING");
 
-        expenseBillMapper.insert(bill);
-        return bill;
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public ExpenseBill submitBill(Long id) {
-        ExpenseBill bill = expenseBillMapper.selectById(id);
-        if (bill == null) {
-            throw new ServiceException("报销单不存在");
-        }
-        if (!"DRAFT".equals(bill.getStatus())) {
-            throw new ServiceException("只有草稿状态可以提交");
+        // 兜底：如果前端未传报销年月，从费用日期自动推导（格式 YYYY-MM）
+        if (StrUtil.isBlank(bill.getExpensePeriod()) && bill.getExpenseDate() != null) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM");
+            bill.setExpensePeriod(sdf.format(bill.getExpenseDate()));
         }
 
-        // 1. 用途标签校验：项目交付 → 项目编号必填
-        PurposeTagVo tag = purposeTagService.queryByCode(bill.getPurposeTag());
-        if (tag != null && tag.getRequireProject() == 1
-            && StrUtil.isBlank(bill.getProjectCode())) {
-            throw new ServiceException("用途标签为「项目交付」时，项目编号必填");
-        }
-
-        // 2. 映射规则匹配
+        // 1. 映射规则匹配
         MappingRuleVo rule = mappingRuleService.matchRule(
             bill.getItemCategory(), bill.getPurposeTag(), bill.getDeptId());
 
-        // 3. 填充系统计算字段
-        bill.setCostCenterCode(rule.getCostCenterGroup());
+        // 2. 填充系统计算字段
         bill.setCalcBudgetSubject(rule.getBudgetSubject());
         bill.setCalcAccountingClass(rule.getAccountingClass());
         bill.setIsFixedAsset(rule.getIsFixedAsset());
-        bill.setExpenditureType(rule.getIsFixedAsset() == 1 ? "CAPITAL" : "OPERATING");
+        bill.setExpenditureType(rule.getIsFixedAsset() != null && rule.getIsFixedAsset() == 1
+            ? "CAPITAL" : "OPERATING");
 
-        // 4. 预算校验（含超预算分流）
+        // 2.1 固定资产校验：使用年限必填
+        if (bill.getIsFixedAsset() != null && bill.getIsFixedAsset() == 1) {
+            if (bill.getUsefulLife() == null || bill.getUsefulLife() <= 0) {
+                throw new ServiceException("该报销单属于固定资产，必须填写使用年限（年）");
+            }
+        }
+
+        // 3. 预算校验（含超预算分流）——使用报销年月而非当前日期
+        int budgetYear;
+        int budgetMonth;
+        if (StrUtil.isNotBlank(bill.getExpensePeriod()) && bill.getExpensePeriod().length() >= 7) {
+            String[] parts = bill.getExpensePeriod().split("-");
+            budgetYear = Integer.parseInt(parts[0]);
+            budgetMonth = Integer.parseInt(parts[1]);
+        } else {
+            LocalDate now = LocalDate.now();
+            budgetYear = now.getYear();
+            budgetMonth = now.getMonthValue();
+        }
         BudgetCheckResultVo checkResult = budgetCheckService.checkBudget(
             bill.getDeptId(), bill.getCalcBudgetSubject(), bill.getAmount(),
-            LocalDate.now().getYear(), LocalDate.now().getMonthValue());
+            budgetYear, budgetMonth);
 
         if (!checkResult.getPassed()) {
             if (checkResult.getOverBudget() != null && checkResult.getOverBudget()) {
                 // 超预算：创建超预算审批单，单据状态变为 OVER_BUDGET_PENDING
+                bill.setStatus("OVER_BUDGET_PENDING");
+                expenseBillMapper.insert(bill);
+
                 OverBudgetApproval approval = new OverBudgetApproval();
                 approval.setBillId(bill.getId());
-                approval.setCostCenterGroup(bill.getCostCenterCode());
+                approval.setBillNo(bill.getBillNo());
                 approval.setBudgetSubject(bill.getCalcBudgetSubject());
                 approval.setOriginalBudget(checkResult.getTotalBudget());
                 approval.setUsedAmount(checkResult.getUsedAmount());
@@ -131,8 +133,10 @@ public class ExpenseBillServiceImpl implements IExpenseBillService {
 
                 bill.setIsOverBudget(1);
                 bill.setOverBudgetApprovalId(approval.getId());
-                bill.setStatus("OVER_BUDGET_PENDING");
                 expenseBillMapper.updateById(bill);
+
+                feeOperationLogService.log("EXPENSE", "SUBMIT", bill.getId(), bill.getBillNo(),
+                    null, "NEW", "OVER_BUDGET_PENDING", null);
                 return bill;
             } else {
                 // 无预算或其他原因 → 阻断
@@ -140,33 +144,15 @@ public class ExpenseBillServiceImpl implements IExpenseBillService {
             }
         }
 
-        // 5. 更新状态
+        // 4. 正常提交
         bill.setStatus("SUBMITTED");
-        expenseBillMapper.updateById(bill);
+        expenseBillMapper.insert(bill);
 
         // 写操作日志
         feeOperationLogService.log("EXPENSE", "SUBMIT", bill.getId(), bill.getBillNo(),
-            null, "DRAFT", "SUBMITTED", null);
+            null, "NEW", "SUBMITTED", null);
 
         return bill;
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Boolean deleteWithValidByIds(Collection<Long> ids) {
-        // 只能删除草稿状态的单据
-        for (Long id : ids) {
-            ExpenseBill bill = expenseBillMapper.selectById(id);
-            if (bill != null && !"DRAFT".equals(bill.getStatus())) {
-                throw new ServiceException("只能删除草稿状态的报销单");
-            }
-            // 写操作日志
-            if (bill != null) {
-                feeOperationLogService.log("EXPENSE", "DELETE", bill.getId(), bill.getBillNo(),
-                    null, "DRAFT", "DELETED", null);
-            }
-        }
-        return expenseBillMapper.deleteBatchIds(ids) > 0;
     }
 
     /**

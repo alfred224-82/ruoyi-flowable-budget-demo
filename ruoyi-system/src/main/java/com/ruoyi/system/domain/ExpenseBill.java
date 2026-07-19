@@ -39,11 +39,6 @@ public class ExpenseBill extends BaseEntity {
     private Long deptId;
 
     /**
-     * 责任中心编码
-     */
-    private String costCenterCode;
-
-    /**
      * 物资小类编码
      */
     private String itemCategory;
@@ -79,9 +74,19 @@ public class ExpenseBill extends BaseEntity {
     private Date expenseDate;
 
     /**
+     * 报销年月（格式：YYYY-MM，对应预算编制期间）
+     */
+    private String expensePeriod;
+
+    /**
      * 是否固定资产(0否 1是)
      */
     private Integer isFixedAsset;
+
+    /**
+     * 使用年限(年)，仅固定资产时填写
+     */
+    private Integer usefulLife;
 
     /**
      * 支出类型(CAPITAL/OPERATING)

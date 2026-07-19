@@ -23,11 +23,6 @@ public class BudgetAdjustmentLogVo implements Serializable {
     private Long id;
 
     /**
-     * 责任中心编码
-     */
-    private String costCenterGroup;
-
-    /**
      * 调出科目编码
      */
     private String fromSubject;

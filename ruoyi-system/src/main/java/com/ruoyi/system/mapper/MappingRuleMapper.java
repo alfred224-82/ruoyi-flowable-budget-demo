@@ -15,30 +15,15 @@ import org.apache.ibatis.annotations.Select;
 public interface MappingRuleMapper extends BaseMapperPlus<MappingRuleMapper, MappingRule, MappingRuleVo> {
 
     /**
-     * 精确匹配映射规则
+     * 精确匹配映射规则（物资小类 + 用途标签）
      *
      * @param itemCategory 物资小类编码
      * @param purposeTag   用途标签编码
-     * @param centerCode   责任中心编码
      * @return 匹配的规则
      */
     @Select("SELECT * FROM fee_mapping_rule WHERE item_category = #{itemCategory} " +
-            "AND purpose_tag = #{purposeTag} AND cost_center_group = #{centerCode} " +
+            "AND purpose_tag = #{purposeTag} " +
             "AND status = 'ENABLED' ORDER BY priority DESC LIMIT 1")
     MappingRule matchExact(@Param("itemCategory") String itemCategory,
-                           @Param("purposeTag") String purposeTag,
-                           @Param("centerCode") String centerCode);
-
-    /**
-     * 降级匹配（不限责任中心）
-     *
-     * @param itemCategory 物资小类编码
-     * @param purposeTag   用途标签编码
-     * @return 匹配的规则
-     */
-    @Select("SELECT * FROM fee_mapping_rule WHERE item_category = #{itemCategory} " +
-            "AND purpose_tag = #{purposeTag} AND cost_center_group = '*' " +
-            "AND status = 'ENABLED' ORDER BY priority DESC LIMIT 1")
-    MappingRule matchFallback(@Param("itemCategory") String itemCategory,
-                              @Param("purposeTag") String purposeTag);
+                           @Param("purposeTag") String purposeTag);
 }

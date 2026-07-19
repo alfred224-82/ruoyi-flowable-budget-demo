@@ -52,8 +52,6 @@ public class BudgetAdjustmentAppVo implements Serializable {
     @ExcelProperty("目标科目名称")
     private String targetSubjectName;
 
-    private String costCenterCode;
-
     private BigDecimal currentBalance;
 
     @ExcelProperty("申请调整金额")

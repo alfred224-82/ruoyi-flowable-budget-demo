@@ -44,11 +44,6 @@ public class MappingRuleBo extends BaseEntity {
     private String purposeTag;
 
     /**
-     * 适用责任中心编码(*=全部)
-     */
-    private String costCenterGroup;
-
-    /**
      * 目标预算科目编码
      */
     @NotBlank(message = "目标预算科目编码不能为空", groups = {AddGroup.class, EditGroup.class})

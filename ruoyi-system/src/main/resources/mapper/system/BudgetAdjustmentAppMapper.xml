@@ -12,7 +12,6 @@
         <result property="deptName" column="dept_name"/>
         <result property="targetSubject" column="target_subject"/>
         <result property="targetSubjectName" column="target_subject_name"/>
-        <result property="costCenterCode" column="cost_center_code"/>
         <result property="currentBalance" column="current_balance"/>
         <result property="requestAmount" column="request_amount"/>
         <result property="budgetAmount" column="budget_amount"/>

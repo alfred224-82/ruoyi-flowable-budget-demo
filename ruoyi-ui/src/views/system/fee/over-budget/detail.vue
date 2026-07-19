@@ -4,7 +4,6 @@
       <div slot="header"><span>超预算审批详情</span></div>
       <el-descriptions :column="2" border>
         <el-descriptions-item label="报销单号">{{ detail.billNo }}</el-descriptions-item>
-        <el-descriptions-item label="责任中心">{{ detail.costCenterGroup }}</el-descriptions-item>
         <el-descriptions-item label="预算科目">{{ detail.budgetSubject }}</el-descriptions-item>
         <el-descriptions-item label="原预算">¥{{ detail.originalBudget }}</el-descriptions-item>
         <el-descriptions-item label="已使用">¥{{ detail.usedAmount }}</el-descriptions-item>

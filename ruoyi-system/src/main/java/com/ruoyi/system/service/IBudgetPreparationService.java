@@ -11,6 +11,7 @@ import com.ruoyi.common.core.domain.PageQuery;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 预算编制主表Service接口
@@ -100,11 +101,12 @@ public interface IBudgetPreparationService {
     List<BudgetRejectHistoryVo> queryRejectHistory(Long sheetId);
 
     /**
-     * 获取上月已审批通过的预算明细（用于初始化本月预算金额）
+     * 获取上月已审批通过的报销实际数据或预算编制数据（用于初始化本月预算金额）
+     * 优先取报销单，无报销单时回退到上月预算编制科目金额
      * @param orgId 部门ID
-     * @param budgetYear 预算年度
-     * @param budgetMonth 预算月份
-     * @return 上月已审批的预算明细列表
+     * @param budgetYear 预算年度（上月）
+     * @param budgetMonth 预算月份（上月）
+     * @return Map包含 dataSource(EXPENSE/BUDGET/NONE) + details(明细列表)
      */
-    List<BudgetPreparationDetailVo> getPreviousMonthApprovedDetails(Long orgId, Integer budgetYear, Integer budgetMonth);
+    Map<String, Object> getPreviousMonthApprovedDetails(Long orgId, Integer budgetYear, Integer budgetMonth);
 }

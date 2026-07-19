@@ -26,16 +26,6 @@ public class BudgetAdjustmentLog {
     private Long id;
 
     /**
-     * 责任中心编码
-     */
-    private String costCenterGroup;
-
-    /**
-     * 责任中心编码（别名）
-     */
-    private String costCenterCode;
-
-    /**
      * 调出科目编码
      */
     private String fromSubject;

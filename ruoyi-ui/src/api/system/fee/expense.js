@@ -17,28 +17,12 @@ export function getExpenseBill(id) {
   })
 }
 
-// 新增报销单（草稿）
+// 新增报销单（创建即提交）
 export function addExpenseBill(data) {
   return request({
     url: '/fee/expense',
     method: 'post',
     data: data
-  })
-}
-
-// 提交报销单
-export function submitExpense(id) {
-  return request({
-    url: '/fee/expense/submit/' + id,
-    method: 'post'
-  })
-}
-
-// 删除报销单
-export function delExpenseBill(id) {
-  return request({
-    url: '/fee/expense/' + id,
-    method: 'delete'
   })
 }
 

@@ -82,6 +82,14 @@ export function cancelBudgetAdjustment(id) {
   })
 }
 
+// 删除申请单（未审批通过的可删除）
+export function delBudgetAdjustment(id) {
+  return request({
+    url: '/fee/budgetAdjustment/' + id,
+    method: 'delete'
+  })
+}
+
 // 获取当前用户资金池信息
 export function getMyFundPool() {
   return request({

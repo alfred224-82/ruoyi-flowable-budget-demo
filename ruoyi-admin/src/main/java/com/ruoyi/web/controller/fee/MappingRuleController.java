@@ -93,6 +93,7 @@ public class MappingRuleController extends BaseController {
         String purposeTag = (String) params.get("purposeTag");
         Object deptIdObj = params.get("deptId");
         Long deptId = deptIdObj != null ? Long.valueOf(deptIdObj.toString()) : null;
-        return R.ok(mappingRuleService.previewBudgetSubject(itemCategory, purposeTag, deptId));
+        String budgetPeriod = (String) params.get("budgetPeriod");
+        return R.ok(mappingRuleService.previewBudgetSubject(itemCategory, purposeTag, deptId, budgetPeriod));
     }
 }
