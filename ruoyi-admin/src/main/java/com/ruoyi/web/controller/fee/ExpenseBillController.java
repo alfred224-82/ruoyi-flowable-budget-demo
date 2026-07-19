@@ -19,8 +19,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
-
 /**
  * 报销单管理Controller
  *
@@ -64,21 +62,12 @@ public class ExpenseBillController extends BaseController {
     }
 
     /**
-     * 新增报销单（草稿，填写报销单用，无需权限）
+     * 新增报销单（创建即提交，无需权限）
      */
     @Log(title = "报销单", businessType = BusinessType.INSERT)
     @PostMapping
     public R<ExpenseBill> add(@Validated(AddGroup.class) @RequestBody ExpenseBillBo bo) {
         return R.ok(expenseBillService.insertByBo(bo));
-    }
-
-    /**
-     * 提交报销单（填写报销单用，无需权限）
-     */
-    @Log(title = "报销单提交", businessType = BusinessType.UPDATE)
-    @PostMapping("/submit/{id}")
-    public R<ExpenseBill> submit(@PathVariable Long id) {
-        return R.ok(expenseBillService.submitBill(id));
     }
 
     /**
@@ -100,15 +89,5 @@ public class ExpenseBillController extends BaseController {
     public R<Void> reject(@PathVariable Long id, @RequestParam String reason,
                           @RequestParam(required = false) String opinion) {
         return toAjax(expenseApprovalService.reject(id, reason, opinion));
-    }
-
-    /**
-     * 删除报销单
-     */
-    @SaCheckPermission("fee:expense:remove")
-    @Log(title = "报销单", businessType = BusinessType.DELETE)
-    @DeleteMapping("/{ids}")
-    public R<Void> remove(@PathVariable Long[] ids) {
-        return toAjax(expenseBillService.deleteWithValidByIds(Arrays.asList(ids)));
     }
 }

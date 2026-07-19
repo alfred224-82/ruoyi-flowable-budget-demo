@@ -5,44 +5,7 @@
 -- =============================================
 
 -- ----------------------------
--- 1. 责任中心表 fee_cost_center
--- ----------------------------
-DROP TABLE IF EXISTS `fee_cost_center`;
-CREATE TABLE `fee_cost_center` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `center_code` VARCHAR(50) NOT NULL COMMENT '责任中心编码',
-  `center_name` VARCHAR(200) NOT NULL COMMENT '责任中心名称',
-  `default_accounting_class` VARCHAR(50) DEFAULT 'EXPENSE' COMMENT '默认会计大类',
-  `is_pending` TINYINT DEFAULT 0 COMMENT '是否待分摊中心(0否 1是)',
-  `status` VARCHAR(20) DEFAULT 'ENABLED' COMMENT '状态(ENABLED/DISABLED)',
-  `create_by` VARCHAR(64) DEFAULT '' COMMENT '创建者',
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_by` VARCHAR(64) DEFAULT '' COMMENT '更新者',
-  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_center_code` (`center_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='责任中心表';
-
--- ----------------------------
--- 2. 责任中心-部门关联表 fee_cost_center_dept
--- ----------------------------
-DROP TABLE IF EXISTS `fee_cost_center_dept`;
-CREATE TABLE `fee_cost_center_dept` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `center_code` VARCHAR(50) NOT NULL COMMENT '责任中心编码',
-  `dept_id` BIGINT NOT NULL COMMENT '部门ID',
-  `dept_name` VARCHAR(200) DEFAULT NULL COMMENT '部门名称(冗余)',
-  `create_by` VARCHAR(64) DEFAULT '' COMMENT '创建者',
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_by` VARCHAR(64) DEFAULT '' COMMENT '更新者',
-  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_dept_id` (`dept_id`),
-  KEY `idx_center_code` (`center_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='责任中心-部门关联表';
-
--- ----------------------------
--- 3. 用途标签表 fee_purpose_tag
+-- 1. 用途标签表 fee_purpose_tag
 -- ----------------------------
 DROP TABLE IF EXISTS `fee_purpose_tag`;
 CREATE TABLE `fee_purpose_tag` (
@@ -71,7 +34,6 @@ CREATE TABLE `fee_mapping_rule` (
   `rule_code` VARCHAR(50) NOT NULL COMMENT '规则编码',
   `item_category` VARCHAR(100) NOT NULL COMMENT '物资小类编码',
   `purpose_tag` VARCHAR(50) NOT NULL COMMENT '用途标签编码',
-  `cost_center_group` VARCHAR(50) DEFAULT '*' COMMENT '适用责任中心编码(*=全部)',
   `budget_subject` VARCHAR(100) NOT NULL COMMENT '目标预算科目编码',
   `accounting_class` VARCHAR(50) NOT NULL COMMENT '归属会计大类',
   `is_fixed_asset` TINYINT DEFAULT 0 COMMENT '是否固定资产(0否 1是)',
@@ -83,8 +45,7 @@ CREATE TABLE `fee_mapping_rule` (
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_rule_code` (`rule_code`),
-  KEY `idx_item_purpose` (`item_category`, `purpose_tag`),
-  KEY `idx_cost_center` (`cost_center_group`)
+  KEY `idx_item_purpose` (`item_category`, `purpose_tag`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='映射规则表';
 
 -- ----------------------------
@@ -95,7 +56,6 @@ CREATE TABLE `fee_expense_bill` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `bill_no` VARCHAR(50) NOT NULL COMMENT '报销单号',
   `dept_id` BIGINT NOT NULL COMMENT '部门ID',
-  `cost_center_code` VARCHAR(50) DEFAULT NULL COMMENT '责任中心编码',
   `item_category` VARCHAR(100) NOT NULL COMMENT '物资小类编码',
   `purpose_tag` VARCHAR(50) NOT NULL COMMENT '用途标签编码',
   `project_code` VARCHAR(100) DEFAULT NULL COMMENT '项目编号',
@@ -104,6 +64,7 @@ CREATE TABLE `fee_expense_bill` (
   `amount` DECIMAL(18,2) NOT NULL COMMENT '报销金额',
   `expense_date` DATE NOT NULL COMMENT '费用发生日期',
   `is_fixed_asset` TINYINT DEFAULT 0 COMMENT '是否固定资产(0否 1是)',
+  `useful_life` INT DEFAULT NULL COMMENT '使用年限(年)，仅固定资产时填写',
   `expenditure_type` VARCHAR(20) DEFAULT 'OPERATING' COMMENT '支出类型(CAPITAL/OPERATING)',
   `is_over_budget` TINYINT DEFAULT 0 COMMENT '是否超预算(0否 1是)',
   `over_budget_approval_id` BIGINT DEFAULT NULL COMMENT '关联超预算审批单ID',
@@ -117,7 +78,6 @@ CREATE TABLE `fee_expense_bill` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_bill_no` (`bill_no`),
   KEY `idx_dept_id` (`dept_id`),
-  KEY `idx_cost_center` (`cost_center_code`),
   KEY `idx_status` (`status`),
   KEY `idx_expense_date` (`expense_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报销单表';
@@ -129,7 +89,6 @@ DROP TABLE IF EXISTS `fee_over_budget_approval`;
 CREATE TABLE `fee_over_budget_approval` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `bill_id` BIGINT NOT NULL COMMENT '关联报销单ID',
-  `cost_center_group` VARCHAR(50) NOT NULL COMMENT '预算责任中心编码',
   `budget_subject` VARCHAR(100) NOT NULL COMMENT '超预算的预算科目编码',
   `original_budget` DECIMAL(18,2) NOT NULL COMMENT '该科目原预算金额',
   `used_amount` DECIMAL(18,2) NOT NULL COMMENT '该科目已使用金额',
@@ -157,7 +116,6 @@ CREATE TABLE `fee_over_budget_approval` (
 DROP TABLE IF EXISTS `fee_budget_adjustment_log`;
 CREATE TABLE `fee_budget_adjustment_log` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `cost_center_group` VARCHAR(50) NOT NULL COMMENT '责任中心编码',
   `from_subject` VARCHAR(100) NOT NULL COMMENT '调出科目编码',
   `to_subject` VARCHAR(100) NOT NULL COMMENT '调入科目编码',
   `adjust_amount` DECIMAL(18,2) NOT NULL COMMENT '调剂金额',
@@ -176,9 +134,7 @@ CREATE TABLE `fee_cost_allocation` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `bill_id` BIGINT NOT NULL COMMENT '关联报销单ID',
   `allocation_batch` VARCHAR(20) NOT NULL COMMENT '分摊批次(YYYY-MM)',
-  `source_cost_center` VARCHAR(50) NOT NULL COMMENT '源责任中心编码',
   `target_dept_id` BIGINT NOT NULL COMMENT '目标部门ID',
-  `target_cost_center` VARCHAR(50) NOT NULL COMMENT '目标责任中心编码',
   `alloc_amount` DECIMAL(18,2) NOT NULL COMMENT '分摊金额',
   `alloc_ratio` DECIMAL(10,4) NOT NULL COMMENT '分摊比例',
   `alloc_rule_id` BIGINT DEFAULT NULL COMMENT '分摊规则ID',
@@ -200,7 +156,6 @@ CREATE TABLE `fee_cost_allocation_rule` (
   `rule_name` VARCHAR(200) NOT NULL COMMENT '规则名称',
   `allocation_method` VARCHAR(30) NOT NULL COMMENT '分摊方法(HEAD_COUNT/WORK_HOUR/RATIO)',
   `target_dept_id` BIGINT NOT NULL COMMENT '目标部门ID',
-  `target_cost_center` VARCHAR(50) NOT NULL COMMENT '目标责任中心编码',
   `weight` DECIMAL(10,4) NOT NULL COMMENT '权重',
   `status` VARCHAR(20) DEFAULT 'ENABLED' COMMENT '状态(ENABLED/DISABLED)',
   `create_by` VARCHAR(64) DEFAULT '' COMMENT '创建者',

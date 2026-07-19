@@ -60,6 +60,7 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
     private final SysUserRoleMapper sysUserRoleMapper;
     private final ISysMessageService sysMessageService;
     private final IBudgetNotificationService budgetNotificationService;
+    private final ExpenseBillMapper expenseBillMapper;
 
     /**
      * 查询预算编制
@@ -925,58 +926,130 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
     }
 
     /**
-     * 获取上月已审批通过的预算明细（用于初始化本月预算金额）
-     * 实现「上月实绩驱动下月预算」：取本部门上月审核通过的科目金额作为本月初始值
+     * 获取上月已审批通过的报销实际数据或预算编制数据（用于初始化本月预算金额）
+     * 优先取报销单，无报销单时回退到上月预算编制科目金额
+     * 若有报销单但只覆盖部分科目，则无报销单的科目从上期预算编制金额补充
      *
      * @param orgId 部门ID
-     * @param budgetYear 预算年度
-     * @param budgetMonth 预算月份
-     * @return 上月已审批的预算明细列表
+     * @param budgetYear 预算年度（上月，已由前端计算好）
+     * @param budgetMonth 预算月份（上月，已由前端计算好）
+     * @return Map包含 dataSource(EXPENSE/BUDGET/MIXED/NONE) + details(明细列表)
      */
     @Override
-    public List<BudgetPreparationDetailVo> getPreviousMonthApprovedDetails(Long orgId, Integer budgetYear, Integer budgetMonth) {
-        log.info("[上月数据] 查询参数: orgId={}, budgetYear={}, budgetMonth={}", orgId, budgetYear, budgetMonth);
-        
-        // 前端已经计算好上月年月并传入，直接使用，不需要再次计算
-        // 例如：当前是3月，前端传入 budgetYear=2026, budgetMonth=2（上月）
-        Integer prevYear = budgetYear;
-        Integer prevMonth = budgetMonth;
-        log.info("[上月数据] 使用的前端传入的上月: prevYear={}, prevMonth={}", prevYear, prevMonth);
+    public Map<String, Object> getPreviousMonthApprovedDetails(Long orgId, Integer budgetYear, Integer budgetMonth) {
+        log.info("[上月数据] 查询参数: orgId={}, prevYear={}, prevMonth={}", orgId, budgetYear, budgetMonth);
+        Map<String, Object> result = new HashMap<>();
 
-        // 查询上月本部门已审批通过的编制记录（状态为 Approved）
+        // === 第一步：查询上月本部门已审批通过的报销单，按预算科目汇总金额 ===
+        List<Map<String, Object>> aggregated = expenseBillMapper.sumApprovedExpenseGroupBySubject(
+            orgId, budgetYear, budgetMonth);
+        log.info("[上月报销数据] 查询结果: {} 条科目汇总记录", aggregated != null ? aggregated.size() : 0);
+
+        // === 第二步：查询上月本部门已审批通过的预算编制记录（用于补充无报销单的科目） ===
+        List<BudgetPreparationDetail> prevBudgetDetails = queryPreviousMonthBudgetDetails(orgId, budgetYear, budgetMonth);
+        log.info("[上月预算数据] 查询结果: {} 条科目记录", prevBudgetDetails != null ? prevBudgetDetails.size() : 0);
+
+        // === 第三步：按科目合并，优先报销金额，无报销则用上月预算金额 ===
+        boolean hasExpense = aggregated != null && !aggregated.isEmpty();
+        boolean hasBudget = prevBudgetDetails != null && !prevBudgetDetails.isEmpty();
+
+        if (!hasExpense && !hasBudget) {
+            log.info("[上月数据] 报销单和预算编制均无数据");
+            result.put("dataSource", "NONE");
+            result.put("details", Collections.emptyList());
+            return result;
+        }
+
+        // 用 subjectCode 作为合并 key，报销优先覆盖预算
+        Map<String, BudgetPreparationDetailVo> mergedMap = new LinkedHashMap<>();
+
+        // 先放入上月预算数据（低优先级）
+        if (hasBudget) {
+            for (BudgetPreparationDetail d : prevBudgetDetails) {
+                BudgetPreparationDetailVo vo = new BudgetPreparationDetailVo();
+                vo.setSubjectCode(d.getSubjectCode());
+                vo.setSubjectName(d.getSubjectName());
+                vo.setSubjectType(d.getSubjectType());
+                vo.setBudgetAmount(d.getBudgetAmount());
+                mergedMap.put(d.getSubjectCode(), vo);
+            }
+        }
+
+        // 再用报销数据覆盖（高优先级）
+        if (hasExpense) {
+            for (Map<String, Object> row : aggregated) {
+                String subjectCode = getStringVal(row, "subjectCode");
+                BudgetPreparationDetailVo vo = new BudgetPreparationDetailVo();
+                vo.setSubjectCode(subjectCode);
+                vo.setSubjectName(getStringVal(row, "subjectName"));
+                vo.setSubjectType(getStringVal(row, "subjectType"));
+                vo.setBudgetAmount(toBigDecimal(row.get("totalAmount")));
+                mergedMap.put(subjectCode, vo);
+            }
+        }
+
+        List<BudgetPreparationDetailVo> details = new ArrayList<>(mergedMap.values());
+
+        // 确定数据源标签
+        String dataSource;
+        if (hasExpense && hasBudget) {
+            dataSource = "MIXED";
+        } else if (hasExpense) {
+            dataSource = "EXPENSE";
+        } else {
+            dataSource = "BUDGET";
+        }
+        result.put("dataSource", dataSource);
+        result.put("details", details);
+        log.info("[上月数据] 合并返回 {} 条科目数据，数据源: {}", details.size(), dataSource);
+        return result;
+    }
+
+    /**
+     * 查询上月本部门已审批通过的预算编制明细
+     *
+     * @return 明细列表，无数据时返回 null
+     */
+    private List<BudgetPreparationDetail> queryPreviousMonthBudgetDetails(Long orgId, Integer budgetYear, Integer budgetMonth) {
         LambdaQueryWrapper<BudgetPreparation> lqw = Wrappers.lambdaQuery();
         lqw.eq(BudgetPreparation::getOrgId, orgId);
-        lqw.eq(BudgetPreparation::getBudgetYear, prevYear);
-        lqw.eq(BudgetPreparation::getBudgetMonth, prevMonth);
+        lqw.eq(BudgetPreparation::getBudgetYear, budgetYear);
+        lqw.eq(BudgetPreparation::getBudgetMonth, budgetMonth);
         lqw.eq(BudgetPreparation::getStatus, "Approved");
         lqw.orderByDesc(BudgetPreparation::getUpdateTime);
         lqw.last("LIMIT 1");
 
         BudgetPreparation prevPreparation = baseMapper.selectOne(lqw);
-        log.info("[上月数据] 查询结果: prevPreparation={}", prevPreparation != null ? "找到" : "未找到");
         if (prevPreparation == null) {
-            return Collections.emptyList();
+            log.info("[上月预算数据] 未找到上月已审批的预算编制记录");
+            return null;
         }
-        log.info("[上月数据] 找到的上月预算单ID: {}, 状态: {}", prevPreparation.getId(), prevPreparation.getStatus());
+        log.info("[上月预算数据] 找到上月预算单ID: {}", prevPreparation.getId());
 
-        // 查询该编制记录的明细数据
-        List<BudgetPreparationDetail> prevDetails = detailMapper.selectList(
+        return detailMapper.selectList(
             Wrappers.<BudgetPreparationDetail>lambdaQuery()
                 .eq(BudgetPreparationDetail::getSheetId, prevPreparation.getId())
         );
-        log.info("[上月数据] 明细数量: {}", prevDetails.size());
+    }
 
-        // 转换为 VO 列表
-        List<BudgetPreparationDetailVo> result = new ArrayList<>();
-        for (BudgetPreparationDetail detail : prevDetails) {
-            BudgetPreparationDetailVo vo = new BudgetPreparationDetailVo();
-            vo.setSubjectCode(detail.getSubjectCode());
-            vo.setSubjectName(detail.getSubjectName());
-            vo.setSubjectType(detail.getSubjectType());
-            vo.setBudgetAmount(detail.getBudgetAmount());
-            result.add(vo);
+    /**
+     * 从 Map 中安全取字符串值
+     */
+    private String getStringVal(Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        return v != null ? v.toString() : null;
+    }
+
+    /**
+     * 将对象安全转为 BigDecimal
+     */
+    private BigDecimal toBigDecimal(Object v) {
+        if (v == null) {
+            return BigDecimal.ZERO;
         }
-
-        return result;
+        if (v instanceof BigDecimal) {
+            return (BigDecimal) v;
+        }
+        return new BigDecimal(v.toString());
     }
 }

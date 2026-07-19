@@ -33,16 +33,6 @@ public class AnomalyMonitorVo implements Serializable {
     private Long deptId;
 
     /**
-     * 责任中心编码
-     */
-    private String costCenterCode;
-
-    /**
-     * 责任中心名称
-     */
-    private String costCenterName;
-
-    /**
      * 物资小类编码
      */
     private String itemCategory;

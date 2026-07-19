@@ -16,7 +16,6 @@ import com.ruoyi.system.domain.BudgetSubject;
 import com.ruoyi.system.mapper.BudgetPreparationDetailMapper;
 import com.ruoyi.system.mapper.BudgetSubjectMapper;
 import com.ruoyi.system.mapper.MappingRuleMapper;
-import com.ruoyi.system.service.ICostCenterService;
 import com.ruoyi.system.service.IMappingRuleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +36,6 @@ import java.util.Collection;
 public class MappingRuleServiceImpl implements IMappingRuleService {
 
     private final MappingRuleMapper mappingRuleMapper;
-    private final ICostCenterService costCenterService;
     private final BudgetSubjectMapper budgetSubjectMapper;
     private final BudgetPreparationDetailMapper budgetPreparationDetailMapper;
 
@@ -87,28 +85,17 @@ public class MappingRuleServiceImpl implements IMappingRuleService {
 
     @Override
     public MappingRuleVo matchRule(String itemCategory, String purposeTag, Long deptId) {
-        // 1. 部门ID → 责任中心
-        String centerCode = costCenterService.getCenterCodeByDeptId(deptId);
-        if (centerCode == null) {
-            centerCode = "PENDING"; // 未映射部门进入待分摊
-        }
-
-        // 2. 尝试缓存
-        String cacheKey = "fee:mapping_rule:" + itemCategory + ":" + purposeTag + ":" + centerCode;
+        // 1. 尝试缓存
+        String cacheKey = "fee:mapping_rule:" + itemCategory + ":" + purposeTag;
         MappingRuleVo cached = RedisUtils.getCacheObject(cacheKey);
         if (cached != null) {
             return cached;
         }
 
-        // 3. 精确匹配
-        MappingRule rule = mappingRuleMapper.matchExact(itemCategory, purposeTag, centerCode);
+        // 2. 精确匹配（物资小类 + 用途标签）
+        MappingRule rule = mappingRuleMapper.matchExact(itemCategory, purposeTag);
 
-        // 4. 降级匹配
-        if (rule == null) {
-            rule = mappingRuleMapper.matchFallback(itemCategory, purposeTag);
-        }
-
-        // 5. 未匹配
+        // 3. 未匹配
         if (rule == null) {
             throw new ServiceException("未找到匹配的预算科目规则，请联系财务管理员配置映射规则");
         }
@@ -120,13 +107,18 @@ public class MappingRuleServiceImpl implements IMappingRuleService {
 
     @Override
     public BudgetPreviewVo previewBudgetSubject(String itemCategory, String purposeTag, Long deptId) {
+        return previewBudgetSubject(itemCategory, purposeTag, deptId, null);
+    }
+
+    @Override
+    public BudgetPreviewVo previewBudgetSubject(String itemCategory, String purposeTag, Long deptId, String budgetPeriod) {
         BudgetPreviewVo preview = new BudgetPreviewVo();
         try {
             MappingRuleVo rule = matchRule(itemCategory, purposeTag, deptId);
             preview.setPassed(true);
             preview.setBudgetSubject(rule.getBudgetSubject());
             preview.setAccountingClass(rule.getAccountingClass());
-            preview.setCostCenterCode(rule.getCostCenterGroup());
+            preview.setIsFixedAsset(rule.getIsFixedAsset());
             // 查询预算科目名称
             BudgetSubject subject = budgetSubjectMapper.selectOne(
                 Wrappers.<BudgetSubject>lambdaQuery()
@@ -135,11 +127,21 @@ public class MappingRuleServiceImpl implements IMappingRuleService {
             if (subject != null) {
                 preview.setBudgetSubjectName(subject.getSubjectName());
             }
-            // 查询可用余额（当月总预算 - 已使用），按部门+期间隔离
+            // 查询可用余额（按部门+期间隔离），优先使用传入的budgetPeriod
             try {
-                java.time.LocalDate now = java.time.LocalDate.now();
+                int year;
+                int month;
+                if (budgetPeriod != null && budgetPeriod.length() >= 7) {
+                    String[] parts = budgetPeriod.split("-");
+                    year = Integer.parseInt(parts[0]);
+                    month = Integer.parseInt(parts[1]);
+                } else {
+                    java.time.LocalDate now = java.time.LocalDate.now();
+                    year = now.getYear();
+                    month = now.getMonthValue();
+                }
                 java.math.BigDecimal remaining = budgetPreparationDetailMapper.getRemainingBudgetByPeriod(
-                    rule.getBudgetSubject(), deptId, now.getYear(), now.getMonthValue());
+                    rule.getBudgetSubject(), deptId, year, month);
                 preview.setRemainingBudget(remaining != null ? remaining : java.math.BigDecimal.ZERO);
             } catch (Exception ex) {
                 log.debug("查询可用余额失败: {}", ex.getMessage());
@@ -163,7 +165,6 @@ public class MappingRuleServiceImpl implements IMappingRuleService {
             .like(StrUtil.isNotBlank(bo.getRuleCode()), MappingRule::getRuleCode, bo.getRuleCode())
             .like(StrUtil.isNotBlank(bo.getItemCategory()), MappingRule::getItemCategory, bo.getItemCategory())
             .eq(StrUtil.isNotBlank(bo.getPurposeTag()), MappingRule::getPurposeTag, bo.getPurposeTag())
-            .eq(StrUtil.isNotBlank(bo.getCostCenterGroup()), MappingRule::getCostCenterGroup, bo.getCostCenterGroup())
             .eq(StrUtil.isNotBlank(bo.getStatus()), MappingRule::getStatus, bo.getStatus())
             .orderByDesc(MappingRule::getPriority);
     }

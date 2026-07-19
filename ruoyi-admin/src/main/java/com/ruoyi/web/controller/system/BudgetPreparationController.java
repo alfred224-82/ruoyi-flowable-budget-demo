@@ -224,7 +224,7 @@ public class BudgetPreparationController extends BaseController {
      */
     @SaCheckPermission("system:preparation:query")
     @GetMapping("/previousMonthDetails")
-    public R<List<BudgetPreparationDetailVo>> getPreviousMonthDetails(
+    public R<Map<String, Object>> getPreviousMonthDetails(
             @RequestParam Long orgId,
             @RequestParam Integer budgetYear,
             @RequestParam Integer budgetMonth) {

@@ -62,11 +62,6 @@ public class BudgetAdjustmentAppBo extends BaseEntity {
     private String targetSubjectName;
 
     /**
-     * 责任中心编码
-     */
-    private String costCenterCode;
-
-    /**
      * 申请调整金额
      */
     @NotNull(message = "申请调整金额不能为空", groups = {AddGroup.class})

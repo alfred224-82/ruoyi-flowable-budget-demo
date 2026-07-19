@@ -11,6 +11,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 
 /**
@@ -80,4 +81,16 @@ public interface ExpenseBillMapper extends BaseMapperPlus<ExpenseBillMapper, Exp
      * @return 报销单VO分页数据
      */
     Page<ExpenseBillVo> selectExpenseBillPage(Page<ExpenseBillVo> page, @Param("ew") Wrapper<ExpenseBill> wrapper);
+
+    /**
+     * 按科目汇总查询指定部门、月份已审批通过的报销金额
+     *
+     * @param deptId 部门ID
+     * @param year   年份
+     * @param month  月份
+     * @return 每行包含 subjectCode / subjectName / subjectType / totalAmount
+     */
+    List<Map<String, Object>> sumApprovedExpenseGroupBySubject(@Param("deptId") Long deptId,
+                                                                @Param("year") Integer year,
+                                                                @Param("month") Integer month);
 }

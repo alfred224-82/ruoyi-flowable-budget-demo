@@ -17,16 +17,6 @@ public class ProfitAnalysisVo implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 责任中心编码
-     */
-    private String costCenterCode;
-
-    /**
-     * 责任中心名称
-     */
-    private String costCenterName;
-
-    /**
      * 预算科目编码
      */
     private String budgetSubjectCode;

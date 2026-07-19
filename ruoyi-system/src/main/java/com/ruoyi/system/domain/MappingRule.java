@@ -41,11 +41,6 @@ public class MappingRule extends BaseEntity {
     private String purposeTag;
 
     /**
-     * 适用责任中心编码(*=全部)
-     */
-    private String costCenterGroup;
-
-    /**
      * 目标预算科目编码
      */
     private String budgetSubject;

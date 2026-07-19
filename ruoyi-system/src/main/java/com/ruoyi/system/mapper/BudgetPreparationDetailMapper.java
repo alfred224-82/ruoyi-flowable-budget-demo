@@ -50,13 +50,11 @@ public interface BudgetPreparationDetailMapper extends BaseMapperPlus<BudgetPrep
      *
      * @param fromSubject   调出科目
      * @param toSubject     调入科目
-     * @param costCenterCode 责任中心编码
      * @param amount        调剂金额
      * @return 影响行数
      */
     int transferBudget(@Param("fromSubject") String fromSubject,
                        @Param("toSubject") String toSubject,
-                       @Param("costCenterCode") String costCenterCode,
                        @Param("amount") BigDecimal amount);
 
     /**

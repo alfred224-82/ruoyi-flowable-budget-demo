@@ -63,4 +63,9 @@ public interface IBudgetAdjustmentAppService {
      * 申请人撤回申请（仅审批中的可撤回）
      */
     Boolean cancel(Long id);
+
+    /**
+     * 删除申请单（仅未审批通过的申请单可删除）
+     */
+    Boolean deleteByIds(java.util.Collection<Long> ids);
 }

@@ -11,9 +11,12 @@
         <el-descriptions-item label="报销金额">¥{{ bill.amount }}</el-descriptions-item>
         <el-descriptions-item label="费用发生日期">{{ bill.expenseDate }}</el-descriptions-item>
         <el-descriptions-item label="预算科目">{{ bill.calcBudgetSubject }}</el-descriptions-item>
-        <el-descriptions-item label="责任中心">{{ bill.costCenterCode }}</el-descriptions-item>
         <el-descriptions-item label="用途标签">{{ bill.purposeTag }}</el-descriptions-item>
         <el-descriptions-item label="项目编号">{{ bill.projectCode || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="是否固定资产">
+          <el-tag :type="bill.isFixedAsset === 1 ? 'warning' : 'info'">{{ bill.isFixedAsset === 1 ? '是' : '否' }}</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="使用年限" v-if="bill.isFixedAsset === 1">{{ bill.usefulLife }} 年</el-descriptions-item>
         <el-descriptions-item label="备注" :span="2">{{ bill.remark || '-' }}</el-descriptions-item>
       </el-descriptions>
     </el-card>

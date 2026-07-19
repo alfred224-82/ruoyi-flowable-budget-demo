@@ -8,7 +8,6 @@
 
       <!-- 审批单信息 -->
       <el-descriptions title="审批单信息" :column="2" border>
-        <el-descriptions-item label="责任中心">{{ approval.costCenterName }}</el-descriptions-item>
         <el-descriptions-item label="预算科目">{{ approval.budgetSubjectName }}</el-descriptions-item>
         <el-descriptions-item label="原预算金额">
           ¥{{ Number(approval.originalBudget || 0).toFixed(2) }}
@@ -216,9 +215,9 @@ export default {
     loadAvailableSubjects() {
       // TODO: 调用后端接口获取可调出科目列表
       // 这里暂时使用模拟数据，实际应调用API
-      // const res = await getAvailableSubjects({ costCenterGroup: this.approval.costCenterGroup });
+      // const res = await getAvailableSubjects({ deptId: this.approval.deptId });
       // this.availableSubjects = res.data;
-      console.log('加载可调出科目，责任中心组:', this.approval.costCenterGroup);
+      console.log('加载可调出科目');
     },
     loadAdjustmentLogs() {
       queryAdjustmentLog(this.approvalId).then(response => {

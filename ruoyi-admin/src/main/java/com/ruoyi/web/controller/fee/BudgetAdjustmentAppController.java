@@ -154,4 +154,13 @@ public class BudgetAdjustmentAppController extends BaseController {
     public R<Void> cancel(@PathVariable Long id) {
         return toAjax(budgetAdjustmentAppService.cancel(id));
     }
+
+    /**
+     * 删除申请单（未审批通过的可删除）
+     */
+    @Log(title = "预算调整申请", businessType = BusinessType.DELETE)
+    @DeleteMapping("/{ids}")
+    public R<Void> remove(@PathVariable Long[] ids) {
+        return toAjax(budgetAdjustmentAppService.deleteByIds(java.util.Arrays.asList(ids)));
+    }
 }

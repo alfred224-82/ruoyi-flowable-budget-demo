@@ -28,16 +28,6 @@ public class OverBudgetApprovalVo implements Serializable {
     private Long billId;
 
     /**
-     * 预算责任中心编码
-     */
-    private String costCenterGroup;
-
-    /**
-     * 责任中心名称
-     */
-    private String costCenterName;
-
-    /**
      * 超预算的预算科目编码
      */
     private String budgetSubject;

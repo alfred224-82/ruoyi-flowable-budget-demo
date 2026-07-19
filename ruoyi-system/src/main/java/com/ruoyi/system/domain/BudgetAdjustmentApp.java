@@ -84,11 +84,6 @@ public class BudgetAdjustmentApp extends BaseEntity {
     private String targetSubjectName;
 
     /**
-     * 责任中心编码
-     */
-    private String costCenterCode;
-
-    /**
      * 申请时科目可用余额
      */
     private BigDecimal currentBalance;

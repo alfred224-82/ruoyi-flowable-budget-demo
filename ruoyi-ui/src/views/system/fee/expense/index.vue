@@ -11,7 +11,6 @@
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-          <el-option label="草稿" value="DRAFT" />
           <el-option label="已提交" value="SUBMITTED" />
           <el-option label="超预算待审" value="OVER_BUDGET_PENDING" />
           <el-option label="已批准" value="APPROVED" />
@@ -57,18 +56,18 @@
           {{ parseTime(scope.row.expenseDate, '{y}-{m}-{d}') }}
         </template>
       </el-table-column>
+      <el-table-column label="报销年月" align="center" prop="expensePeriod" width="100" />
       <el-table-column label="预算科目" align="center" prop="calcBudgetSubjectName" :show-overflow-tooltip="true" />
       <el-table-column label="状态" align="center" prop="status" width="120">
         <template slot-scope="scope">
-          <el-tag v-if="scope.row.status === 'DRAFT'" type="info">草稿</el-tag>
-          <el-tag v-else-if="scope.row.status === 'SUBMITTED'" type="success">已提交</el-tag>
+          <el-tag v-if="scope.row.status === 'SUBMITTED'" type="success">已提交</el-tag>
           <el-tag v-else-if="scope.row.status === 'OVER_BUDGET_PENDING'" type="warning">超预算待审</el-tag>
           <el-tag v-else-if="scope.row.status === 'APPROVED'" type="success">已批准</el-tag>
           <el-tag v-else-if="scope.row.status === 'REJECTED'" type="danger">已驳回</el-tag>
           <el-tag v-else>{{ scope.row.status }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100">
         <template slot-scope="scope">
           <el-button
             size="mini"

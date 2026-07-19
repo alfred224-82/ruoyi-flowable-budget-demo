@@ -43,11 +43,6 @@ public class CostAllocationRule extends BaseEntity {
     private Long targetDeptId;
 
     /**
-     * 目标责任中心编码
-     */
-    private String targetCostCenter;
-
-    /**
      * 权重
      */
     private BigDecimal weight;

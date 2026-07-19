@@ -23,8 +23,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 盈利分析明细视图 -->
     <select id="selectProfitAnalysisDetail" resultType="com.ruoyi.system.domain.vo.ProfitAnalysisVo">
         SELECT
-            e.cost_center_code AS costCenterCode,
-            cc.center_name AS costCenterName,
             e.calc_budget_subject AS budgetSubjectCode,
             bs.subject_name AS budgetSubjectName,
             e.calc_accounting_class AS accountingClass,
@@ -32,7 +30,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             COALESCE(bd.budget_amount, 0) AS budgetAmount,
             COALESCE(bd.budget_amount, 0) - SUM(e.amount) AS varianceAmount
         FROM fee_expense_bill e
-        LEFT JOIN fee_cost_center cc ON e.cost_center_code = cc.center_code
         LEFT JOIN budget_subject bs ON e.calc_budget_subject = bs.subject_code
         LEFT JOIN budget_preparation_detail bd ON bd.subject_code = e.calc_budget_subject
             AND bd.dept_id = e.dept_id
@@ -48,8 +45,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="orgId != null">
             AND e.dept_id = #{orgId}
         </if>
-        GROUP BY e.cost_center_code, e.calc_budget_subject, e.calc_accounting_class
-        ORDER BY e.cost_center_code, e.calc_accounting_class, e.calc_budget_subject
+        GROUP BY e.calc_budget_subject, e.calc_accounting_class
+        ORDER BY e.calc_accounting_class, e.calc_budget_subject
     </select>
 
     <!-- 盈利分析汇总视图（按会计6大科目聚合） -->
@@ -77,7 +74,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             e.id, e.bill_no AS billNo, e.dept_id AS deptId,
             sd.dept_name AS deptName,
             e.applicant_id AS applicantId, e.applicant_name AS applicantName,
-            e.cost_center_code AS costCenterCode,
             e.item_category AS itemCategory,
             e.purpose_tag AS purposeTag,
             pt.tag_name AS purposeTagName,
@@ -86,6 +82,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             bs.subject_name AS calcBudgetSubjectName,
             e.calc_accounting_class AS calcAccountingClass,
             e.amount, e.expense_date AS expenseDate,
+            e.expense_period AS expensePeriod,
             e.is_fixed_asset AS isFixedAsset,
             e.expenditure_type AS expenditureType,
             e.is_over_budget AS isOverBudget,
@@ -104,18 +101,31 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 异常监控表 -->
     <select id="selectAnomalyMonitor" resultType="com.ruoyi.system.domain.vo.AnomalyMonitorVo">
         SELECT e.id, e.bill_no AS billNo, e.dept_id AS deptId,
-               e.cost_center_code AS costCenterCode,
-               cc.center_name AS costCenterName,
                e.item_category AS itemCategory,
                e.purpose_tag AS purposeTag,
                e.amount, e.expense_date AS expenseDate,
                e.allocation_status AS allocationStatus,
                e.status
         FROM fee_expense_bill e
-        LEFT JOIN fee_cost_center cc ON e.cost_center_code = cc.center_code
-        WHERE e.cost_center_code = 'PENDING'
-           OR e.allocation_status = 'PENDING'
+        WHERE e.allocation_status = 'PENDING'
         ORDER BY e.expense_date DESC
+    </select>
+
+    <!-- 按科目汇总查询指定部门、月份已审批通过的报销金额（用于上月实绩驱动下月预算） -->
+    <select id="sumApprovedExpenseGroupBySubject" resultType="java.util.Map">
+        SELECT
+            e.calc_budget_subject AS subjectCode,
+            bs.subject_name       AS subjectName,
+            bs.subject_type       AS subjectType,
+            SUM(e.amount)         AS totalAmount
+        FROM fee_expense_bill e
+        LEFT JOIN budget_subject bs ON e.calc_budget_subject = bs.subject_code
+        WHERE e.dept_id    = #{deptId}
+          AND e.status     = 'APPROVED'
+          AND YEAR(e.expense_date)  = #{year}
+          AND MONTH(e.expense_date) = #{month}
+          AND e.calc_budget_subject IS NOT NULL
+        GROUP BY e.calc_budget_subject, bs.subject_name, bs.subject_type
     </select>
 
 </mapper>
