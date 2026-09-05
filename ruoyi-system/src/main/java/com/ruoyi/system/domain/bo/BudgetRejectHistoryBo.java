@@ -1,5 +1,6 @@
 package com.ruoyi.system.domain.bo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.core.validate.AddGroup;
 import com.ruoyi.common.core.validate.EditGroup;
 import lombok.Data;
@@ -81,16 +82,19 @@ public class BudgetRejectHistoryBo extends BaseEntity {
     /**
      * 截止时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private Date deadlineTime;
 
     /**
      * 驳回时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date rejectTime;
 
     /**
      * 处理时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date handleTime;
 
     /**

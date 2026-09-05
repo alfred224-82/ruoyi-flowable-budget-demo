@@ -2,11 +2,13 @@ package com.ruoyi.system.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.PageQuery;
+import com.ruoyi.system.domain.FeeMappingAuditLog;
 import com.ruoyi.system.domain.bo.MappingRuleBo;
 import com.ruoyi.system.domain.vo.BudgetPreviewVo;
 import com.ruoyi.system.domain.vo.MappingRuleVo;
 
 import java.util.Collection;
+import java.util.Map;
 
 /**
  * 映射规则Service接口
@@ -87,4 +89,29 @@ public interface IMappingRuleService {
      * @return 预算归属预览结果
      */
     BudgetPreviewVo previewBudgetSubject(String itemCategory, String purposeTag, Long deptId, String budgetPeriod);
+
+    // ========== T6.4 规则引擎租户级自定义（FEAT_RULE_ENGINE_CUSTOM） ==========
+
+    /**
+     * 发布规则（草稿→已发布，写审计日志）
+     *
+     * @param id 规则ID
+     */
+    Boolean publishRule(Long id);
+
+    /**
+     * 影响分析（发布前评估：历史命中单据数 + 当前生效规则对比）
+     *
+     * @param id 规则ID
+     * @return 影响分析结果（ruleInfo/matchedBillCount90d/currentEffective/message）
+     */
+    Map<String, Object> impactAnalysis(Long id);
+
+    /**
+     * 规则变更审计日志分页查询（匹配链路追溯）
+     *
+     * @param ruleId    规则ID（可空=全部）
+     * @param pageQuery 分页参数
+     */
+    Page<FeeMappingAuditLog> auditLogs(Long ruleId, PageQuery pageQuery);
 }

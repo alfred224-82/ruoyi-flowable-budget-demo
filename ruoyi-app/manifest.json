@@ -1,0 +1,23 @@
+{
+    "name" : "ruoyi-app",
+    "appid" : "",
+    "description" : "资金管控系统微信小程序（单包多角色：老板/财务/项目经理/报销人）",
+    "versionName" : "1.0.0",
+    "versionCode" : "100",
+    "transformPx" : false,
+    "mp-weixin" : {
+        "appid" : "",
+        "setting" : {
+            "urlCheck" : false,
+            "es6" : true,
+            "minified" : true
+        },
+        "usingComponents" : true,
+        "requiredPrivateInfos" : [ "getLocation" ],
+        "permission" : {
+            "scope.userLocation" : {
+                "desc" : "用于门店就近推荐与高级版报销打卡考勤校验，需要获取您的位置信息"
+            }
+        }
+    }
+}

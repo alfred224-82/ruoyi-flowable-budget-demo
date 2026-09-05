@@ -1,11 +1,13 @@
 package com.ruoyi.system.config;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.ruoyi.system.domain.FeeWorkflowConfig;
+import com.ruoyi.system.mapper.FeeWorkflowConfigMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.engine.RepositoryService;
 import org.flowable.engine.repository.Deployment;
 import org.flowable.engine.repository.ProcessDefinition;
-import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -26,6 +28,7 @@ import java.util.List;
 public class BudgetProcessDeployer implements ApplicationRunner {
 
     private final RepositoryService repositoryService;
+    private final FeeWorkflowConfigMapper workflowConfigMapper;
 
     /**
      * 预算审批流程定义Key（从配置文件读取）
@@ -45,7 +48,24 @@ public class BudgetProcessDeployer implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         try {
-            // 部署流程定义（Flowable会自动递增版本号）
+            // === 优先从配置表读取已部署的工作流 ===
+            FeeWorkflowConfig config = workflowConfigMapper.selectOne(
+                Wrappers.<FeeWorkflowConfig>lambdaQuery()
+                    .eq(FeeWorkflowConfig::getWorkflowKey, "budget_preparation")
+                    .eq(FeeWorkflowConfig::getStatus, "DEPLOYED")
+            );
+            if (config != null) {
+                ProcessDefinition existingDef = repositoryService.createProcessDefinitionQuery()
+                    .processDefinitionKey("budget_preparation")
+                    .latestVersion()
+                    .singleResult();
+                if (existingDef != null && !existingDef.isSuspended()) {
+                    log.info("预算编制工作流已从配置表部署，跳过默认部署。版本：{}", existingDef.getVersion());
+                    return;
+                }
+            }
+
+            // === 原有逻辑：部署内置默认BPMN（作为兜底） ===
             ClassPathResource resource = new ClassPathResource(BPMN_RESOURCE);
             if (!resource.exists()) {
                 log.error("预算审批流程BPMN文件不存在：{}", BPMN_RESOURCE);

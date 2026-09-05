@@ -138,6 +138,10 @@ security:
     # actuator 监控配置
     - /actuator
     - /actuator/**
+    # M13 引导态总入口白名单（双阶段租户识别：只读反查门店，绝不写 TenantContext，T13.1/T13.4）
+    - /portal/**
+    # M7 T7.8 开放平台外部调用网关（AppKey+HMAC-SHA256 签名鉴权，无登录态）
+    - /openapi/gateway/**
 
 # MyBatisPlus配置
 # https://baomidou.com/config/
@@ -285,6 +289,17 @@ flowable:
   check-process-definitions: false
   # 关闭历史任务定时任务job
   async-history-executor-activate: false
+
+--- # License授权配置
+license:
+  # 执行模式: soft=软限制(开发测试,不校验签名) / hard=加固模式(生产,强制RSA签名+指纹绑定)
+  enforce-mode: soft
+  # RSA公钥(Base64编码) - hard模式必须配置，由LicenseGenerateTool keygen生成
+  public-key:
+  # 是否校验机器指纹(soft模式可关闭, hard模式强制开启)
+  verify-fingerprint: false
+  # 是否允许API明文切换版本(仅soft模式有效, hard模式始终禁止)
+  allow-plain-switch: true
 
 --- # 预算审批流程配置
 budget:

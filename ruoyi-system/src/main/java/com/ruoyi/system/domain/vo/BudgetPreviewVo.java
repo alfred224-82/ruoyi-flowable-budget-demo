@@ -47,6 +47,11 @@ public class BudgetPreviewVo implements Serializable {
     private Integer isFixedAsset;
 
     /**
+     * 成本处理方式(DIRECT直接费用化/DEPRECIATION折旧/ACCRUAL计提摊销/FEE_RATE费率利息)
+     */
+    private String costMethod;
+
+    /**
      * 失败消息
      */
     private String message;

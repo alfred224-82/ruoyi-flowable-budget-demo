@@ -89,6 +89,13 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
                 ids.add(user.getDeptId());
                 w.in("u.dept_id", ids);
             });
+        // 租户隔离：非 admin 超管时按 tenant_id 过滤用户（T2.4）
+        if (!LoginHelper.isAdmin()) {
+            Long tenantId = LoginHelper.getTenantId();
+            if (tenantId != null) {
+                wrapper.eq("u.tenant_id", tenantId);
+            }
+        }
         return wrapper;
     }
 
@@ -270,6 +277,10 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertUser(SysUser user) {
+        // 租户隔离：新建用户时自动绑定当前租户ID（T2.4），与部门/角色保持一致
+        if (user.getTenantId() == null && !LoginHelper.isAdmin()) {
+            user.setTenantId(LoginHelper.getTenantId());
+        }
         // 新增用户信息
         int rows = baseMapper.insert(user);
         // 新增用户岗位关联

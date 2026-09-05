@@ -11,7 +11,7 @@ spring.boot.admin.client:
 --- # xxl-job 配置
 xxl.job:
   # 执行器开关
-  enabled: false
+  enabled: true
   # 调度中心地址：如调度中心集群部署存在多个地址则用逗号分隔。
   admin-addresses: http://localhost:9100/xxl-job-admin
   # 执行器通讯TOKEN：非空时启用
@@ -174,3 +174,9 @@ sms:
   signName: 测试
   # 腾讯专用
   sdkAppId:
+
+--- # 微信小程序（T13.1 code2session 一键登录；未配置 appid/secret 时一键登录不可用，仍可账号密码登录）
+wx:
+  miniapp:
+    appid:
+    secret:

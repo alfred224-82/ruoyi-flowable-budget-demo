@@ -37,6 +37,7 @@ CREATE TABLE `fee_mapping_rule` (
   `budget_subject` VARCHAR(100) NOT NULL COMMENT '目标预算科目编码',
   `accounting_class` VARCHAR(50) NOT NULL COMMENT '归属会计大类',
   `is_fixed_asset` TINYINT DEFAULT 0 COMMENT '是否固定资产(0否 1是)',
+  `cost_method` VARCHAR(20) DEFAULT 'DIRECT' COMMENT '费用确认方式(DIRECT直接费用化/DEPRECIATION折旧/ACCRUAL计提摊销/FEE_RATE费率利息)',
   `priority` INT DEFAULT 0 COMMENT '优先级(数值越大优先级越高)',
   `status` VARCHAR(20) DEFAULT 'ENABLED' COMMENT '状态(ENABLED/DISABLED)',
   `create_by` VARCHAR(64) DEFAULT '' COMMENT '创建者',

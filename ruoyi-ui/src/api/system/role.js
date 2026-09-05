@@ -117,3 +117,11 @@ export function deptTreeSelect(roleId) {
     method: 'get'
   })
 }
+
+// 查询所有角色选项（排除admin，无需权限）
+export function allRoleExcludeAdmin() {
+  return request({
+    url: '/system/role/allExcludeAdmin',
+    method: 'get'
+  })
+}

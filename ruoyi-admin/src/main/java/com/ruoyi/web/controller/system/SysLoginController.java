@@ -9,8 +9,10 @@ import com.ruoyi.common.core.domain.model.EmailLoginBody;
 import com.ruoyi.common.core.domain.model.LoginBody;
 import com.ruoyi.common.core.domain.model.LoginUser;
 import com.ruoyi.common.core.domain.model.SmsLoginBody;
+import com.ruoyi.common.core.domain.model.XcxLoginBody;
 import com.ruoyi.common.helper.LoginHelper;
 import com.ruoyi.system.domain.vo.RouterVo;
+import com.ruoyi.system.service.ILicenseService;
 import com.ruoyi.system.service.ISysMenuService;
 import com.ruoyi.system.service.ISysUserService;
 import com.ruoyi.system.service.SysLoginService;
@@ -21,7 +23,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.constraints.NotBlank;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,7 @@ public class SysLoginController {
     private final SysLoginService loginService;
     private final ISysMenuService menuService;
     private final ISysUserService userService;
+    private final ILicenseService licenseService;
 
     /**
      * 登录方法
@@ -52,7 +54,7 @@ public class SysLoginController {
         Map<String, Object> ajax = new HashMap<>();
         // 生成令牌
         String token = loginService.login(loginBody.getUsername(), loginBody.getPassword(), loginBody.getCode(),
-            loginBody.getUuid());
+            loginBody.getUuid(), loginBody.getTenantId(), loginBody.getOpenid());
         ajax.put(Constants.TOKEN, token);
         return R.ok(ajax);
     }
@@ -89,17 +91,17 @@ public class SysLoginController {
     }
 
     /**
-     * 小程序登录(示例)
+     * 小程序登录（T13.1 code2session + 双阶段租户识别）
      *
-     * @param xcxCode 小程序code
+     * @param xcxLoginBody 小程序登录信息（wx.login code + 选定门店 tenantId）
      * @return 结果
      */
     @SaIgnore
     @PostMapping("/xcxLogin")
-    public R<Map<String, Object>> xcxLogin(@NotBlank(message = "{xcx.code.not.blank}") String xcxCode) {
+    public R<Map<String, Object>> xcxLogin(@Validated @RequestBody XcxLoginBody xcxLoginBody) {
         Map<String, Object> ajax = new HashMap<>();
         // 生成令牌
-        String token = loginService.xcxLogin(xcxCode);
+        String token = loginService.xcxLogin(xcxLoginBody.getXcxCode(), xcxLoginBody.getTenantId());
         ajax.put(Constants.TOKEN, token);
         return R.ok(ajax);
     }
@@ -127,6 +129,9 @@ public class SysLoginController {
         ajax.put("user", user);
         ajax.put("roles", loginUser.getRolePermission());
         ajax.put("permissions", loginUser.getMenuPermission());
+        // License功能列表（前端据此过滤菜单/路由）
+        ajax.put("features", licenseService.getActiveFeatures());
+        ajax.put("edition", licenseService.getCurrentEdition());
         return R.ok(ajax);
     }
 

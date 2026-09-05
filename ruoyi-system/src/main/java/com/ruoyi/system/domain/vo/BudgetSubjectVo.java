@@ -107,5 +107,10 @@ public class BudgetSubjectVo {
     @ExcelProperty(value = "科目类型")
     private String subjectType;
 
+    /**
+     * 费用大类编码（映射B，系统内置固定，T5.13）
+     */
+    @ExcelProperty(value = "费用大类编码")
+    private String categoryCode;
 
 }

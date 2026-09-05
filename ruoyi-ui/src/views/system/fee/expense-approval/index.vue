@@ -9,13 +9,35 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item v-if="canEvidenceChain" label="证据等级">
+        <el-select v-model="queryParams.evidenceLevel" placeholder="全部" clearable style="width: 130px;">
+          <el-option label="强（strong）" value="strong" />
+          <el-option label="中（medium）" value="medium" />
+          <el-option label="弱（weak）" value="weak" />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
-    <el-table v-loading="loading" :data="approvalList">
+    <el-row v-if="canEvidenceChain" :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="el-icon-check" size="mini" :disabled="!selectedIds.length"
+                   @click="handleBatchApprove" v-hasPermi="['fee:expense:batchApprove']">批量通过</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="danger" plain icon="el-icon-close" size="mini" :disabled="!selectedIds.length"
+                   @click="handleBatchReject" v-hasPermi="['fee:expense:batchReject']">批量驳回</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <span style="color:#909399;font-size:12px;line-height:28px;">已选 {{ selectedIds.length }} 条</span>
+      </el-col>
+    </el-row>
+
+    <el-table v-loading="loading" :data="approvalList" @selection-change="handleSelectionChange">
+      <el-table-column v-if="canEvidenceChain" type="selection" width="55" align="center" />
       <el-table-column label="单据编号" align="center" prop="billNo" width="260" :show-overflow-tooltip="true" />
       <el-table-column label="申请人" align="center" prop="applicantName" width="100" />
       <el-table-column label="部门名称" align="center" prop="deptName" width="130" />
@@ -32,6 +54,11 @@
         </template>
       </el-table-column>
       <el-table-column label="预算科目" align="center" prop="calcBudgetSubjectName" :show-overflow-tooltip="true" />
+      <el-table-column v-if="canEvidenceChain" label="证据等级" align="center" width="90">
+        <template slot-scope="scope">
+          <el-tag :type="evidenceTagType(scope.row.evidenceLevel)" size="small">{{ scope.row.evidenceLevel || '-' }}</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="提交时间" align="center" prop="createTime" width="150">
         <template slot-scope="scope">
           {{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}') }}
@@ -107,11 +134,24 @@
         <el-button type="primary" @click="handleReject" :loading="submitLoading">确认驳回</el-button>
       </div>
     </el-dialog>
+    <!-- 批量驳回对话框 -->
+    <el-dialog title="批量驳回原因" :visible.sync="batchRejectVisible" width="500px" append-to-body>
+      <el-form :model="rejectForm" :rules="rejectRules" ref="batchRejectForm" label-width="100px">
+        <el-form-item label="驳回原因" prop="reason">
+          <el-input v-model="rejectForm.reason" type="textarea" :rows="4" placeholder="请输入驳回原因（5-500字符）" />
+        </el-form-item>
+      </el-form>
+      <div slot="footer">
+        <el-button @click="batchRejectVisible = false">取消</el-button>
+        <el-button type="primary" @click="doBatchReject" :loading="submitLoading">确认驳回</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listPendingApproval, approveExpenseBill, rejectExpenseBill } from "@/api/system/fee/expense";
+import { listPendingApproval, approveExpenseBill, rejectExpenseBill, batchApproveExpenseBill, batchRejectExpenseBill } from "@/api/system/fee/expense";
+import { loadFeatures, featureVisible } from "@/utils/feature";
 
 export default {
   name: "ExpenseApproval",
@@ -121,6 +161,10 @@ export default {
       showSearch: true,
       total: 0,
       approvalList: [],
+      // T6.7 证据链分级：开关开启后启用多选批量审核与证据筛选（FEAT_EVIDENCE_CHAIN）
+      canEvidenceChain: false,
+      selectedIds: [],
+      batchRejectVisible: false,
       queryParams: {
         pageNum: 1,
         pageSize: 10
@@ -149,8 +193,53 @@ export default {
   },
   created() {
     this.getList();
+    loadFeatures().then(() => {
+      this.canEvidenceChain = featureVisible('FEAT_EVIDENCE_CHAIN');
+    });
   },
   methods: {
+    evidenceTagType(level) {
+      const map = { strong: 'success', medium: 'warning', weak: 'danger' };
+      return map[level] || 'info';
+    },
+    handleSelectionChange(selection) {
+      this.selectedIds = selection.map(item => item.id);
+    },
+    showBatchResult(result, actionText) {
+      const data = result.data || {};
+      const successNum = data.successNum || 0;
+      const failures = data.failures || [];
+      if (failures.length === 0) {
+        this.$message.success('批量' + actionText + '成功，共 ' + successNum + ' 条');
+      } else {
+        this.$alert('成功 ' + successNum + ' 条，失败 ' + failures.length + ' 条：<br/>' + failures.join('<br/>'), '批量' + actionText + '结果', { dangerouslyUseHTMLString: true });
+      }
+      this.getList();
+    },
+    handleBatchApprove() {
+      if (!this.selectedIds.length) return;
+      this.$modal.confirm('确认批量通过选中的 ' + this.selectedIds.length + ' 张报销单？').then(() => {
+        this.submitLoading = true;
+        return batchApproveExpenseBill(this.selectedIds, null);
+      }).then(res => {
+        this.showBatchResult(res, '审批');
+      }).catch(() => {}).finally(() => { this.submitLoading = false; });
+    },
+    handleBatchReject() {
+      if (!this.selectedIds.length) return;
+      this.rejectForm = { reason: '', opinion: '' };
+      this.batchRejectVisible = true;
+    },
+    doBatchReject() {
+      this.$refs.batchRejectForm.validate(valid => {
+        if (!valid) return;
+        this.submitLoading = true;
+        batchRejectExpenseBill(this.selectedIds, this.rejectForm.reason, null).then(res => {
+          this.batchRejectVisible = false;
+          this.showBatchResult(res, '驳回');
+        }).finally(() => { this.submitLoading = false; });
+      });
+    },
     getList() {
       this.loading = true;
       listPendingApproval(this.queryParams).then(response => {

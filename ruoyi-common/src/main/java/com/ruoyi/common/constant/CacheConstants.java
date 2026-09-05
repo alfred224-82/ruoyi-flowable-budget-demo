@@ -41,4 +41,9 @@ public interface CacheConstants {
      * 登录账户密码错误次数 redis key
      */
     String PWD_ERR_CNT_KEY = "pwd_err_cnt:";
+
+    /**
+     * 租户状态缓存 redis key（T3.4 到期拦截，缓存值：状态编码，-1=租户不存在）
+     */
+    String TENANT_STATUS_KEY = "tenant_status:";
 }

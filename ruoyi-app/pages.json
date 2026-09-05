@@ -1,0 +1,38 @@
+{
+    "pages": [
+        "pages/store/select",
+        "pages/login/index",
+        "pages/tab-home/index",
+        "pages/tab-work/index",
+        "pages/tab-approve/index",
+        "pages/tab-mine/index",
+        "pages/dashboard/category",
+        "pages/project/list",
+        "pages/project/detail",
+        "pages/project/income",
+        "pages/project/incomeCreate",
+        "pages/approval/list",
+        "pages/approval/detail",
+        "pages/expense/create",
+        "pages/expense/mine",
+        "pages/expense/supplement"
+    ],
+    "globalStyle": {
+        "navigationBarTextStyle": "black",
+        "navigationBarTitleText": "资金管控",
+        "navigationBarBackgroundColor": "#FFFFFF",
+        "backgroundColor": "#F5F6F8"
+    },
+    "tabBar": {
+        "color": "#909399",
+        "selectedColor": "#409EFF",
+        "backgroundColor": "#FFFFFF",
+        "borderStyle": "black",
+        "list": [
+            { "pagePath": "pages/tab-home/index", "text": "首页" },
+            { "pagePath": "pages/tab-work/index", "text": "工作台" },
+            { "pagePath": "pages/tab-approve/index", "text": "审批" },
+            { "pagePath": "pages/tab-mine/index", "text": "我的" }
+        ]
+    }
+}

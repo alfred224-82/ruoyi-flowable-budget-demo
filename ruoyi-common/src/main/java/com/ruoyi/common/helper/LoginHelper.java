@@ -96,6 +96,17 @@ public class LoginHelper {
     }
 
     /**
+     * 获取租户ID
+     */
+    public static Long getTenantId() {
+        try {
+            return getLoginUser().getTenantId();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
      * 获取部门ID
      */
     public static Long getDeptId() {

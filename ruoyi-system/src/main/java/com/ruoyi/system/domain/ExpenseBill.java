@@ -2,7 +2,7 @@ package com.ruoyi.system.domain;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.ruoyi.common.core.domain.BaseEntity;
+import com.ruoyi.common.core.domain.TenantEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -18,7 +18,7 @@ import java.util.Date;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("fee_expense_bill")
-public class ExpenseBill extends BaseEntity {
+public class ExpenseBill extends TenantEntity {
 
     private static final long serialVersionUID = 1L;
 
@@ -54,6 +54,16 @@ public class ExpenseBill extends BaseEntity {
     private String projectCode;
 
     /**
+     * 关联资金管控项目ID（T5.7，0=公司级，未选默认公司级）
+     */
+    private Long projectId;
+
+    /**
+     * 是否发票后补(0否 1是，T5.8 无发票后补通道)
+     */
+    private Integer invoiceDefer;
+
+    /**
      * 计算后预算科目编码
      */
     private String calcBudgetSubject;
@@ -64,9 +74,59 @@ public class ExpenseBill extends BaseEntity {
     private String calcAccountingClass;
 
     /**
-     * 报销金额
+     * 费用大类编码（映射B定位，T5.17 大类管控维度）
+     */
+    private String categoryCode;
+
+    /**
+     * 发票号码（T5.18 验真/查重）
+     */
+    private String invoiceNo;
+
+    /**
+     * 发票金额（与报销金额比对，T5.18）
+     */
+    private BigDecimal invoiceAmount;
+
+    /**
+     * 发票验真状态（UNVERIFIED/VERIFIED/MISMATCH，T5.18）
+     */
+    private String invoiceVerifyStatus;
+
+    /**
+     * 科目匹配阶段依据（EXACT/KEYWORD/FALLBACK/MANUAL，T5.18）
+     */
+    private String matchStage;
+
+    /**
+     * 报销金额（人民币）
      */
     private BigDecimal amount;
+
+    /**
+     * 币种编码（CNY/USD/EUR/GBP/JPY）
+     */
+    private String currencyCode;
+
+    /**
+     * 原币金额（外币时填写）
+     */
+    private BigDecimal originalAmount;
+
+    /**
+     * 使用汇率
+     */
+    private BigDecimal exchangeRate;
+
+    /**
+     * 补助金额
+     */
+    private BigDecimal subsidyAmount;
+
+    /**
+     * 出差天数（用于补助核算）
+     */
+    private Integer travelDays;
 
     /**
      * 费用发生日期
@@ -94,6 +154,11 @@ public class ExpenseBill extends BaseEntity {
     private String expenditureType;
 
     /**
+     * 费用确认方式(DIRECT/DEPRECIATION/ACCRUAL/FEE_RATE)
+     */
+    private String costMethod;
+
+    /**
      * 是否超预算(0否 1是)
      */
     private Integer isOverBudget;
@@ -112,6 +177,11 @@ public class ExpenseBill extends BaseEntity {
      * 分摊状态(NONE/PENDING/ALLOCATED)
      */
     private String allocationStatus;
+
+    /**
+     * 合规校验状态（PASS/FAIL/PENDING_SEAL）
+     */
+    private String complianceStatus;
 
     /**
      * 申请人ID
@@ -147,4 +217,24 @@ public class ExpenseBill extends BaseEntity {
      * 备注
      */
     private String remark;
+
+    /**
+     * 证据等级 strong/medium/weak（T6.7 / FEAT_EVIDENCE_CHAIN）
+     */
+    private String evidenceLevel;
+
+    /**
+     * 映射规则匹配链路JSON（T6.4 / FEAT_RULE_ENGINE_CUSTOM）
+     */
+    private String matchTrace;
+
+    /**
+     * 提交时信用等级快照（T6.3 / FEAT_CREDIT_SCORE）
+     */
+    private String creditLevel;
+
+    /**
+     * 是否已扣部门额度(0否 1是，T6.1)
+     */
+    private Integer deptBudgetDeducted;
 }

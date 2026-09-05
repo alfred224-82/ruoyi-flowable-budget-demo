@@ -23,6 +23,11 @@ public class FeeOperationLog {
     private Long logId;
 
     /**
+     * 租户ID
+     */
+    private Long tenantId;
+
+    /**
      * 所属模块：EXPENSE/OVER_BUDGET/BUDGET_ADJUST
      */
     private String module;

@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 
-import com.ruoyi.common.core.domain.BaseEntity;
+import com.ruoyi.common.core.domain.TenantEntity;
 
 /**
  * 预算科目规则校验对象 budget_validation_rule
@@ -16,7 +16,7 @@ import com.ruoyi.common.core.domain.BaseEntity;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("budget_validation_rule")
-public class BudgetValidationRule extends BaseEntity {
+public class BudgetValidationRule extends TenantEntity {
 
     private static final long serialVersionUID = 1L;
 

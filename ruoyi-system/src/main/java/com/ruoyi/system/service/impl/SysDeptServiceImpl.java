@@ -61,7 +61,37 @@ public class SysDeptServiceImpl implements ISysDeptService, DeptService {
             .eq(StringUtils.isNotBlank(dept.getStatus()), SysDept::getStatus, dept.getStatus())
             .orderByAsc(SysDept::getParentId)
             .orderByAsc(SysDept::getOrderNum);
-        return baseMapper.selectDeptList(lqw);
+        List<SysDept> list = baseMapper.selectDeptList(lqw);
+        // 租户隔离：租户用户无任何过滤条件查询且结果为空时，自动补建租户根部门（总公司），保证上级部门树可选（T2.4）
+        boolean noFilter = ObjectUtil.isNull(dept.getDeptId()) && ObjectUtil.isNull(dept.getParentId())
+            && StringUtils.isBlank(dept.getDeptName()) && StringUtils.isBlank(dept.getStatus());
+        if (CollUtil.isEmpty(list) && noFilter && !LoginHelper.isAdmin() && LoginHelper.getTenantId() != null) {
+            ensureTenantRootDept(LoginHelper.getTenantId());
+            list = baseMapper.selectDeptList(lqw);
+        }
+        return list;
+    }
+
+    /**
+     * 确保租户存在根部门（总公司），不存在则创建（并发下重复创建直接忽略）
+     *
+     * @param tenantId 租户ID
+     */
+    private void ensureTenantRootDept(Long tenantId) {
+        try {
+            SysDept root = new SysDept();
+            root.setDeptId(System.currentTimeMillis());
+            root.setTenantId(tenantId);
+            root.setParentId(0L);
+            root.setAncestors("0");
+            root.setDeptName("总公司");
+            root.setOrderNum(0);
+            root.setStatus(UserConstants.DEPT_NORMAL);
+            root.setDelFlag("0");
+            baseMapper.insert(root);
+        } catch (Exception ignored) {
+            // 并发重复创建或主键冲突时忽略，后续重新查询即可
+        }
     }
 
     /**
@@ -220,7 +250,15 @@ public class SysDeptServiceImpl implements ISysDeptService, DeptService {
      */
     @Override
     public int insertDept(SysDept dept) {
+        // 租户隔离：新建部门强制绑定当前租户ID，防止跨租户挂接（T2.4）
+        if (!LoginHelper.isAdmin()) {
+            dept.setTenantId(LoginHelper.getTenantId());
+        }
         SysDept info = baseMapper.selectById(dept.getParentId());
+        // 父部门不存在或不在当前租户可见范围内（被租户过滤器拦截）
+        if (ObjectUtil.isNull(info)) {
+            throw new ServiceException("上级部门不存在或不属于当前租户");
+        }
         // 如果父节点不为正常状态,则不允许新增子节点
         if (!UserConstants.DEPT_NORMAL.equals(info.getStatus())) {
             throw new ServiceException("部门停用，不允许新增");

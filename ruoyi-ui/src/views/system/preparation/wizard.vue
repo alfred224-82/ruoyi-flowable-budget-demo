@@ -98,6 +98,18 @@
 
       <!-- 第二步：科目预算编制（树形表格） -->
       <div v-show="currentStep === 1" class="step-content">
+        <!-- T5.14② 大类额度按比例拆分科目生成初稿 -->
+        <div v-if="!viewOnly && preparationData.id" style="margin-bottom: 10px; text-align: right;">
+          <el-button
+            v-hasPermi="['system:preparation:splitDraft']"
+            type="warning"
+            size="small"
+            :loading="splitDraftLoading"
+            @click="handleSplitDraft"
+          >
+            <i class="el-icon-magic-stick"></i> 生成拆分初稿（按大类额度比例）
+          </el-button>
+        </div>
         <el-tabs :key="step2Key" v-model="activeTab" type="border-card" @tab-click="handleTabClick">
           <el-tab-pane
             v-for="type in budgetTypes"
@@ -287,7 +299,7 @@
 </template>
 
 <script>
-import { addPreparation, updatePreparation, getPreparation, batchSavePreparationDetail, listPreparationDetail, listAllSubjects, executeValidation, getPreviousMonthDetails, completePreparation } from "@/api/system/preparation";
+import { addPreparation, updatePreparation, getPreparation, batchSavePreparationDetail, listPreparationDetail, listAllSubjects, executeValidation, getPreviousMonthDetails, completePreparation, generateSplitDraft } from "@/api/system/preparation";
 import { getInfo } from "@/api/login";
 
 export default {
@@ -326,7 +338,9 @@ export default {
       // 规则校验相关
       validationResults: [],
       validationLoading: false,
-      submitLoading: false
+      submitLoading: false,
+      // T5.14② 拆分初稿
+      splitDraftLoading: false
     };
   },
   computed: {
@@ -599,6 +613,33 @@ export default {
 
     handleTabClick(tab) {
       console.log('切换到Tab:', tab.name);
+    },
+
+    /** T5.14② 生成拆分初稿：大类额度按比例拆到科目明细（历史实绩优先→财务默认比例→均分） */
+    async handleSplitDraft() {
+      try {
+        await this.$modal.confirm('将按老板录入的大类预算额度比例拆分生成科目明细初稿，并覆盖当前科目明细，是否继续？');
+      } catch (e) {
+        return;
+      }
+      this.splitDraftLoading = true;
+      try {
+        const response = await generateSplitDraft(this.preparationData.id);
+        const result = response.data || {};
+        // 重新加载明细并强制重建树表，使金额刷新生效
+        await this.loadDetailData(this.preparationData.id);
+        this.step2Key++;
+        const skipped = result.skippedCategories || [];
+        let msg = '拆分初稿生成成功，共 ' + (result.detailCount || 0) + ' 条科目明细，可继续微调';
+        if (skipped.length > 0) {
+          msg += '；大类[' + skipped.join('、') + ']无映射科目已跳过';
+        }
+        this.$modal.msgSuccess(msg);
+      } catch (error) {
+        this.$modal.msgError('生成拆分初稿失败：' + (error.message || '未知错误'));
+      } finally {
+        this.splitDraftLoading = false;
+      }
     },
 
     /** 月份改变时，重新加载上月报销实际数据 */

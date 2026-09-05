@@ -68,7 +68,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ORDER BY FIELD(e.calc_accounting_class, 'ASSET','LIABILITY','EQUITY','INCOME','COST','EXPENSE')
     </select>
 
-    <!-- 报销单分页列表（含用途标签名称、预算科目名称） -->
+    <!-- 报销单分页列表（含用途标签名称、预算科目名称、V5.4新增字段） -->
     <select id="selectExpenseBillPage" resultType="com.ruoyi.system.domain.vo.ExpenseBillVo">
         SELECT
             e.id, e.bill_no AS billNo, e.dept_id AS deptId,
@@ -78,22 +78,42 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             e.purpose_tag AS purposeTag,
             pt.tag_name AS purposeTagName,
             e.project_code AS projectCode,
+            e.project_id AS projectId,
+            fp.project_name AS projectName,
+            e.invoice_defer AS invoiceDefer,
             e.calc_budget_subject AS calcBudgetSubject,
             bs.subject_name AS calcBudgetSubjectName,
             e.calc_accounting_class AS calcAccountingClass,
-            e.amount, e.expense_date AS expenseDate,
+            e.amount,
+            e.currency_code AS currencyCode,
+            e.original_amount AS originalAmount,
+            e.exchange_rate AS exchangeRate,
+            e.subsidy_amount AS subsidyAmount,
+            e.travel_days AS travelDays,
+            e.expense_date AS expenseDate,
             e.expense_period AS expensePeriod,
             e.is_fixed_asset AS isFixedAsset,
             e.expenditure_type AS expenditureType,
             e.is_over_budget AS isOverBudget,
             e.over_budget_approval_id AS overBudgetApprovalId,
             e.status, e.allocation_status AS allocationStatus,
+            e.compliance_status AS complianceStatus,
+            e.category_code AS categoryCode,
+            e.invoice_no AS invoiceNo,
+            e.invoice_amount AS invoiceAmount,
+            e.invoice_verify_status AS invoiceVerifyStatus,
+            e.match_stage AS matchStage,
+            e.evidence_level AS evidenceLevel,
+            e.match_trace AS matchTrace,
+            e.credit_level AS creditLevel,
+            e.reject_reason AS rejectReason, e.approve_time AS approveTime,
             e.remark, e.create_by AS createBy, e.create_time AS createTime,
             e.update_by AS updateBy, e.update_time AS updateTime
         FROM fee_expense_bill e
         LEFT JOIN sys_dept sd ON e.dept_id = sd.dept_id
         LEFT JOIN fee_purpose_tag pt ON e.purpose_tag = pt.tag_code
         LEFT JOIN budget_subject bs ON e.calc_budget_subject = bs.subject_code
+        LEFT JOIN fee_project fp ON e.project_id = fp.id
         ${ew.customSqlSegment}
         ORDER BY e.create_time DESC
     </select>
@@ -126,6 +146,42 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           AND MONTH(e.expense_date) = #{month}
           AND e.calc_budget_subject IS NOT NULL
         GROUP BY e.calc_budget_subject, bs.subject_name, bs.subject_type
+    </select>
+
+    <!-- T5.17 大类已用额度统计：已审批通过 + 在途占用（防拆单绕过） -->
+    <select id="sumUsedAmountByCategory" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(amount), 0)
+        FROM fee_expense_bill
+        WHERE dept_id = #{deptId}
+          AND category_code = #{categoryCode}
+          AND expense_period = CONCAT(#{year}, '-', LPAD(#{month}, 2, '0'))
+          AND status IN ('APPROVED', 'SUBMITTED', 'OVER_BUDGET_PENDING')
+    </select>
+
+    <!-- T5.14② 历史实绩按科目汇总（起始日期之后已审批通过） -->
+    <select id="sumApprovedExpenseBySubjectSince" resultType="java.util.Map">
+        SELECT
+            e.calc_budget_subject AS subjectCode,
+            SUM(e.amount)         AS totalAmount
+        FROM fee_expense_bill e
+        WHERE e.status = 'APPROVED'
+          AND e.calc_budget_subject IS NOT NULL
+          AND e.expense_date &gt;= #{sinceDate}
+        <if test="deptId != null">
+          AND e.dept_id = #{deptId}
+        </if>
+        GROUP BY e.calc_budget_subject
+    </select>
+
+    <!-- T5.18 发票查重 -->
+    <select id="countByInvoiceNo" resultType="java.lang.Long">
+        SELECT COUNT(1)
+        FROM fee_expense_bill
+        WHERE invoice_no = #{invoiceNo}
+          AND status != 'REJECTED'
+        <if test="excludeId != null">
+          AND id != #{excludeId}
+        </if>
     </select>
 
 </mapper>

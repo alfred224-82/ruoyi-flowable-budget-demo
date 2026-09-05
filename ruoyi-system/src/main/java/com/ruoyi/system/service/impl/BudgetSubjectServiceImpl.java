@@ -94,6 +94,8 @@ public class BudgetSubjectServiceImpl implements IBudgetSubjectService {
     @Override
     public Boolean updateByBo(BudgetSubjectBo bo) {
         BudgetSubject update = BeanUtil.toBean(bo, BudgetSubject.class);
+        // 映射B（科目→费用大类）系统内置固定，普通编辑不允许覆盖（T5.13）
+        update.setCategoryCode(null);
         validEntityBeforeSave(update);
         return baseMapper.updateById(update) > 0;
     }

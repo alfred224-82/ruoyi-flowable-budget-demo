@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { Notification, MessageBox, Message, Loading } from 'element-ui'
 import store from '@/store'
+import router from '@/router'
 import { getToken } from '@/utils/auth'
 import errorCode from '@/utils/errorCode'
 import { tansParams, blobValidate } from "@/utils/ruoyi";
@@ -91,7 +92,26 @@ service.interceptors.response.use(res => {
     }
       return Promise.reject('无效的会话，或者会话已过期，请重新登录。')
     } else if (code === 500) {
-      Message({ message: msg, type: 'error' })
+      // License功能未授权错误：使用模态框提示（而非普通toast），阻止用户继续操作
+      if (msg && (msg.includes('升级License') || msg.includes('未授权'))) {
+        MessageBox.alert(msg, '功能未授权', {
+          confirmButtonText: '我知道了',
+          type: 'warning',
+          callback: () => {
+            // 关闭当前页面，返回首页
+            store.dispatch('tagsView/delView', router.currentRoute).then(({ visitedViews }) => {
+              const latestView = visitedViews.slice(-1)[0]
+              if (latestView) {
+                router.push(latestView.fullPath)
+              } else {
+                router.push('/')
+              }
+            })
+          }
+        })
+      } else {
+        Message({ message: msg, type: 'error' })
+      }
       return Promise.reject(new Error(msg))
     } else if (code === 601) {
       Message({ message: msg, type: 'warning' })

@@ -3,7 +3,7 @@ package com.ruoyi.system.domain;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.ruoyi.common.core.domain.BaseEntity;
+import com.ruoyi.common.core.domain.TenantEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("fee_reserved_budget")
-public class ReservedBudget extends BaseEntity {
+public class ReservedBudget extends TenantEntity {
 
     private static final long serialVersionUID = 1L;
 

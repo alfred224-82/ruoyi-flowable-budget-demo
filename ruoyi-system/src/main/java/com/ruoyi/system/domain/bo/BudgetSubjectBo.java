@@ -98,4 +98,9 @@ public class BudgetSubjectBo extends BaseEntity {
      */
     private String subjectType;
 
+    /**
+     * 费用大类编码（映射B，系统内置固定，普通编辑不覆盖，T5.13）
+     */
+    private String categoryCode;
+
 }

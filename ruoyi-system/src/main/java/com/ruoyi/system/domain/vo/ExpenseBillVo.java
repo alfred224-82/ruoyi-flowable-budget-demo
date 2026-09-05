@@ -80,6 +80,21 @@ public class ExpenseBillVo implements Serializable {
     private String projectCode;
 
     /**
+     * 关联资金管控项目ID（T5.7，0=公司级）
+     */
+    private Long projectId;
+
+    /**
+     * 关联项目名称（小程序展示用，关联查询填充）
+     */
+    private String projectName;
+
+    /**
+     * 是否发票后补(0否 1是，T5.8)
+     */
+    private Integer invoiceDefer;
+
+    /**
      * 计算后预算科目编码
      */
     @ExcelProperty(value = "预算科目编码")
@@ -98,10 +113,66 @@ public class ExpenseBillVo implements Serializable {
     private String calcAccountingClass;
 
     /**
-     * 报销金额
+     * 费用大类编码（T5.17 大类管控维度）
+     */
+    @ExcelProperty(value = "费用大类")
+    private String categoryCode;
+
+    /**
+     * 发票号码（T5.18）
+     */
+    private String invoiceNo;
+
+    /**
+     * 发票金额（T5.18）
+     */
+    private BigDecimal invoiceAmount;
+
+    /**
+     * 发票验真状态（UNVERIFIED/VERIFIED/MISMATCH，T5.18）
+     */
+    private String invoiceVerifyStatus;
+
+    /**
+     * 科目匹配阶段依据（EXACT/KEYWORD/FALLBACK/MANUAL，T5.18）
+     */
+    private String matchStage;
+
+    /**
+     * 报销金额（人民币）
      */
     @ExcelProperty(value = "报销金额")
     private BigDecimal amount;
+
+    /**
+     * 币种编码
+     */
+    @ExcelProperty(value = "币种")
+    private String currencyCode;
+
+    /**
+     * 原币金额
+     */
+    @ExcelProperty(value = "原币金额")
+    private BigDecimal originalAmount;
+
+    /**
+     * 使用汇率
+     */
+    @ExcelProperty(value = "汇率")
+    private BigDecimal exchangeRate;
+
+    /**
+     * 补助金额
+     */
+    @ExcelProperty(value = "补助金额")
+    private BigDecimal subsidyAmount;
+
+    /**
+     * 出差天数
+     */
+    @ExcelProperty(value = "出差天数")
+    private Integer travelDays;
 
     /**
      * 费用发生日期
@@ -134,6 +205,12 @@ public class ExpenseBillVo implements Serializable {
     private String expenditureType;
 
     /**
+     * 费用确认方式(DIRECT/DEPRECIATION/ACCRUAL/FEE_RATE)
+     */
+    @ExcelProperty(value = "费用确认方式")
+    private String costMethod;
+
+    /**
      * 是否超预算(0否 1是)
      */
     @ExcelProperty(value = "是否超预算")
@@ -158,10 +235,41 @@ public class ExpenseBillVo implements Serializable {
     private String allocationStatus;
 
     /**
+     * 合规校验状态（PASS/FAIL/PENDING_SEAL）
+     */
+    @ExcelProperty(value = "合规状态")
+    private String complianceStatus;
+
+    /**
      * 备注
      */
     @ExcelProperty(value = "备注")
     private String remark;
+
+    /**
+     * 证据等级 strong/medium/weak（T6.7 / FEAT_EVIDENCE_CHAIN）
+     */
+    private String evidenceLevel;
+
+    /**
+     * 映射规则匹配链路JSON（T6.4）
+     */
+    private String matchTrace;
+
+    /**
+     * 提交时信用等级快照（T6.3）
+     */
+    private String creditLevel;
+
+    /**
+     * 驳回原因（小程序展示驳回待办用）
+     */
+    private String rejectReason;
+
+    /**
+     * 审批时间
+     */
+    private Date approveTime;
 
     /**
      * 创建者

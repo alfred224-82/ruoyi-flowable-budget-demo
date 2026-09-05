@@ -43,6 +43,16 @@ public class BudgetPreparationVo {
     private String orgName;
 
     /**
+     * 部门ID（高级版部门级预算双粒度，T6.1，空=公司级）
+     */
+    private Long departmentId;
+
+    /**
+     * 部门名称（冗余展示）
+     */
+    private String departmentName;
+
+    /**
      * 预算年度
      */
     @ExcelProperty(value = "预算年度")
@@ -101,6 +111,12 @@ public class BudgetPreparationVo {
      */
     @ExcelProperty(value = "预算总额")
     private BigDecimal totalBudget;
+
+    /**
+     * 老板设定的大类预算额度(粗粒度) JSON（T5.14 ①）
+     * 格式：[{"categoryCode":"TRAVEL","categoryName":"差旅招待","amount":50000}]
+     */
+    private String categoryQuotas;
 
     /**
      * 实际总额

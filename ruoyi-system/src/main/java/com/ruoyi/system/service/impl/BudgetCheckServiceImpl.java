@@ -4,11 +4,13 @@ import com.ruoyi.system.domain.vo.BudgetCheckResultVo;
 import com.ruoyi.system.mapper.BudgetPreparationDetailMapper;
 import com.ruoyi.system.mapper.ExpenseBillMapper;
 import com.ruoyi.system.service.IBudgetCheckService;
+import com.ruoyi.system.service.IElasticQuotaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * 预算校验Service业务层处理
@@ -23,6 +25,8 @@ public class BudgetCheckServiceImpl implements IBudgetCheckService {
 
     private final BudgetPreparationDetailMapper budgetPreparationDetailMapper;
     private final ExpenseBillMapper expenseBillMapper;
+    // M6 T6.1 弹性额度（FEAT_ELASTIC_QUOTA）：部门大类超支阈值内预警放行，开关关闭时内部返回 null 自动退化
+    private final IElasticQuotaService elasticQuotaService;
 
     @Override
     public BudgetCheckResultVo checkBudget(Long deptId, String budgetSubjectCode, BigDecimal amount,
@@ -54,6 +58,20 @@ public class BudgetCheckServiceImpl implements IBudgetCheckService {
             result.setOverBudget(false);
             result.setMessage("该科目尚未编制预算，需先联系财务编制");
         } else if (remaining.compareTo(amount) < 0) {
+            // T6.1 弹性额度：部门大类超支但在弹性阈值内 → 预警放行（不拦截）
+            BigDecimal elasticPct = elasticQuotaService.getThresholdPct(null);
+            if (elasticPct != null && totalBudget.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal elasticLimit = totalBudget.multiply(
+                    BigDecimal.ONE.add(elasticPct.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP)));
+                if (usedAmount.add(amount).compareTo(elasticLimit) <= 0) {
+                    result.setPassed(true);
+                    result.setOverBudget(false);
+                    result.setMessage("部门额度已超支但在弹性阈值(+" + elasticPct + "%)内，预警放行。含弹性剩余：" + elasticLimit.subtract(usedAmount));
+                    log.warn("弹性额度预警放行: deptId={}, subject={}, pct={}%, 本次={}",
+                        deptId, budgetSubjectCode, elasticPct, amount);
+                    return result;
+                }
+            }
             // 场景2：预算不足 → 触发超预算审批流程
             result.setPassed(false);
             result.setOverBudget(true);

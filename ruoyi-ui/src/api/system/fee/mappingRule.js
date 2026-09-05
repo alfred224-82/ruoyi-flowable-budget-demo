@@ -51,3 +51,30 @@ export function previewMapping(data) {
     data: data
   })
 }
+
+// ========== T6.4 规则引擎租户级自定义（FEAT_RULE_ENGINE_CUSTOM） ==========
+
+// 发布规则（草稿→已发布）
+export function publishMappingRule(id) {
+  return request({
+    url: '/fee/mappingRule/publish/' + id,
+    method: 'post'
+  })
+}
+
+// 影响分析（发布前评估）
+export function impactMappingRule(id) {
+  return request({
+    url: '/fee/mappingRule/impact/' + id,
+    method: 'get'
+  })
+}
+
+// 规则变更审计日志（匹配链路追溯）
+export function listMappingAudit(query) {
+  return request({
+    url: '/fee/mappingRule/audit/list',
+    method: 'get',
+    params: query
+  })
+}

@@ -7,12 +7,16 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.PageQuery;
 import com.ruoyi.common.core.page.TableDataInfo;
+import com.ruoyi.common.core.service.FeatureChecker;
 import com.ruoyi.common.core.domain.entity.SysRole;
+import com.ruoyi.common.core.domain.entity.SysDept;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.helper.LoginHelper;
+import com.ruoyi.common.utils.JsonUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.*;
 import com.ruoyi.system.domain.bo.BudgetPreparationBo;
+import com.ruoyi.system.domain.bo.BudgetCategoryQuotaBo;
 import com.ruoyi.system.domain.vo.*;
 import com.ruoyi.system.config.BudgetProcessDeployer;
 import com.ruoyi.system.mapper.*;
@@ -32,6 +36,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -61,6 +67,12 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
     private final ISysMessageService sysMessageService;
     private final IBudgetNotificationService budgetNotificationService;
     private final ExpenseBillMapper expenseBillMapper;
+    private final FeeRuleVersionMapper feeRuleVersionMapper;
+    private final FeatureChecker featureChecker;
+    private final FeeExpenseCategoryMapper feeExpenseCategoryMapper;
+    private final FeeCategorySplitRatioMapper feeCategorySplitRatioMapper;
+    private final FeeTenantCategoryMapper feeTenantCategoryMapper;
+    private final SysDeptMapper sysDeptMapper;
 
     /**
      * 查询预算编制
@@ -525,6 +537,8 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
             preparation.setStatus("Approved");
             preparation.setApprovalStage("None");
             preparation.setCurrentHandler(null);
+            // 锁定预算时记录当时规则快照（T7.4 / FEAT_RULE_GRAYSCALE，规则迭代不腐蚀历史）
+            stampRuleVersion(preparation);
         }
         
         if (StringUtils.isNotBlank(remark)) {
@@ -532,6 +546,27 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
         }
         
         return baseMapper.updateById(preparation) > 0;
+    }
+
+    /**
+     * 审批通过时记录当时生效的规则版本快照（仅专业版开关开启时生效，失败不阻断审批）
+     */
+    private void stampRuleVersion(BudgetPreparation preparation) {
+        try {
+            if (!featureChecker.isFeatureEnabled("FEAT_RULE_GRAYSCALE")) {
+                return;
+            }
+            FeeRuleVersion active = feeRuleVersionMapper.selectOne(
+                Wrappers.<FeeRuleVersion>lambdaQuery()
+                    .in(FeeRuleVersion::getGrayscaleStatus, "FULL", "GRAYSCALE")
+                    .orderByDesc(FeeRuleVersion::getVersionNo)
+                    .last("LIMIT 1"));
+            if (active != null) {
+                preparation.setRuleVersionId(active.getId());
+            }
+        } catch (Exception e) {
+            log.warn("记录规则版本快照失败（不阻断审批）: {}", e.getMessage());
+        }
     }
 
     /**
@@ -833,21 +868,26 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
     }
 
     /**
-     * 生成预算单号
+     * 生成预算单号（并发/存量安全）：循环直到找到不存在的单号，避免 uk_sheet_no 冲突
      * 格式：BG-YYYYMM-XXX
      */
     private String generateSheetNo(Integer year, Integer month) {
         String dateStr = String.format("%04d%02d", year, month);
-        
-        // 查询当月已有的单据数量
-        LambdaQueryWrapper<BudgetPreparation> lqw = Wrappers.lambdaQuery();
-        lqw.likeRight(BudgetPreparation::getSheetNo, "BG-" + dateStr);
-        long count = baseMapper.selectCount(lqw);
-        
-        // 生成序号（3位）
-        String seqNo = String.format("%03d", count + 1);
-        
-        return "BG-" + dateStr + "-" + seqNo;
+        // 当月已有单据数量作为起始序号（逻辑删除的单据不参与统计，可能产生空洞，由 exists 兜底跳过）
+        long count = baseMapper.selectCount(Wrappers.<BudgetPreparation>lambdaQuery()
+            .likeRight(BudgetPreparation::getSheetNo, "BG-" + dateStr));
+        long seq = count + 1;
+        // 兜底：跳过已存在的单号，防止 count 因空洞/并发算出重复序号触发唯一键冲突；上限 1000 张防死循环
+        for (int i = 0; i < 1000; i++) {
+            String candidate = "BG-" + dateStr + "-" + String.format("%03d", seq);
+            boolean exists = baseMapper.exists(Wrappers.<BudgetPreparation>lambdaQuery()
+                .eq(BudgetPreparation::getSheetNo, candidate));
+            if (!exists) {
+                return candidate;
+            }
+            seq++;
+        }
+        throw new ServiceException("预算单号生成失败：当月单据数量已达上限");
     }
 
     /**
@@ -923,6 +963,306 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
         Map<String, Object> variables = new HashMap<>();
         variables.put("result", result);
         taskService.complete(task.getId(), variables);
+    }
+
+    /**
+     * 查询老板大类预算额度（T5.14 ①）：启用大类主数据 + 当期已录额度 + 单据状态
+     * 支持年月+部门双维度（T5.13/T5.14）
+     */
+    @Override
+    public Map<String, Object> getCategoryQuotas(Integer budgetYear, Integer budgetMonth, Long departmentId) {
+        Map<String, Object> result = new HashMap<>();
+        // 确定目标部门：传入 departmentId 优先，否则取用户所属部门
+        Long targetDeptId = departmentId != null ? departmentId : LoginHelper.getDeptId();
+        Long orgId = LoginHelper.getDeptId();
+
+        // 当期编制单（同期间+同部门可能多单，取最近更新的一张）
+        // 按部门维度隔离：不同部门各自独立编制单（兼容存量记录 department_id 为 NULL 时按 org_id 定位）
+        BudgetPreparation preparation = baseMapper.selectOne(Wrappers.<BudgetPreparation>lambdaQuery()
+            .and(w -> w.eq(BudgetPreparation::getDepartmentId, targetDeptId)
+                .or().eq(BudgetPreparation::getOrgId, targetDeptId))
+            .eq(BudgetPreparation::getBudgetYear, budgetYear)
+            .eq(BudgetPreparation::getBudgetMonth, budgetMonth)
+            .orderByDesc(BudgetPreparation::getUpdateTime)
+            .orderByDesc(BudgetPreparation::getId)
+            .last("LIMIT 1"));
+
+        // 启用费用大类主数据（三层角色分工：仅返回当前租户已启用的大类）
+        List<FeeExpenseCategory> categories = queryTenantEnabledCategories();
+
+        // 已保存额度按大类编码合并到主数据行（大类名称以主数据为准）
+        Map<String, BigDecimal> savedAmount = new HashMap<>();
+        if (preparation != null && StringUtils.isNotBlank(preparation.getCategoryQuotas())) {
+            List<BudgetCategoryQuotaItemVo> parsed =
+                JsonUtils.parseArray(preparation.getCategoryQuotas(), BudgetCategoryQuotaItemVo.class);
+            if (parsed != null) {
+                for (BudgetCategoryQuotaItemVo item : parsed) {
+                    if (StringUtils.isNotBlank(item.getCategoryCode())) {
+                        savedAmount.put(item.getCategoryCode(), item.getAmount());
+                    }
+                }
+            }
+        }
+
+        List<BudgetCategoryQuotaItemVo> quotas = new ArrayList<>();
+        for (FeeExpenseCategory category : categories) {
+            BudgetCategoryQuotaItemVo item = new BudgetCategoryQuotaItemVo();
+            item.setCategoryCode(category.getCategoryCode());
+            item.setCategoryName(category.getCategoryName());
+            item.setAmount(savedAmount.get(category.getCategoryCode()));
+            quotas.add(item);
+        }
+
+        // 只有草稿/驳回状态可继续编辑大类额度（与既有编制状态模型一致）
+        boolean editable = preparation == null
+            || "Draft".equals(preparation.getStatus())
+            || "Rejected".equals(preparation.getStatus());
+        result.put("preparationId", preparation != null ? preparation.getId() : null);
+        result.put("sheetNo", preparation != null ? preparation.getSheetNo() : null);
+        result.put("status", preparation != null ? preparation.getStatus() : null);
+        result.put("editable", editable);
+        result.put("quotas", quotas);
+        // 返回当前部门信息（年月+部门维度）
+        result.put("departmentId", targetDeptId);
+        String deptName = resolveDeptName(targetDeptId);
+        result.put("departmentName", deptName);
+        return result;
+    }
+
+    /**
+     * 老板保存大类预算额度（粗粒度，T5.14 ①）
+     * 额度以 JSON 挂 budget_preparation 主表，total_budget 同步为大类额度合计；
+     * 科目级拆分初稿由后续编制步骤生成，不在此处理（只管粗粒度）
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long saveCategoryQuotas(BudgetCategoryQuotaBo bo) {
+        // 1. 对照大类主数据校验：编码必须存在且租户已启用、不可重复；名称以主数据为准回填
+        List<FeeExpenseCategory> categories = queryTenantEnabledCategories();
+        Map<String, String> codeNameMap = categories.stream()
+            .collect(Collectors.toMap(FeeExpenseCategory::getCategoryCode,
+                FeeExpenseCategory::getCategoryName, (a, b) -> a));
+
+        Set<String> seenCodes = new HashSet<>();
+        BigDecimal total = BigDecimal.ZERO;
+        List<BudgetCategoryQuotaItemVo> normalized = new ArrayList<>();
+        for (BudgetCategoryQuotaItemVo item : bo.getQuotas()) {
+            String code = item.getCategoryCode();
+            if (!codeNameMap.containsKey(code)) {
+                throw new ServiceException("费用大类不存在或已停用：" + code);
+            }
+            if (!seenCodes.add(code)) {
+                throw new ServiceException("费用大类重复：" + code);
+            }
+            BudgetCategoryQuotaItemVo row = new BudgetCategoryQuotaItemVo();
+            row.setCategoryCode(code);
+            row.setCategoryName(codeNameMap.get(code));
+            row.setAmount(item.getAmount());
+            normalized.add(row);
+            total = total.add(item.getAmount());
+        }
+
+        // 2. 复用当期编制单；无单则新建草稿单（单号/状态与既有新增逻辑一致）
+        // 确定目标部门（年月+部门维度）
+        Long targetDeptId = bo.getDepartmentId() != null ? bo.getDepartmentId() : LoginHelper.getDeptId();
+        String targetDeptName = resolveDeptName(targetDeptId);
+        // 当期编制单：按部门维度隔离，不同部门各自独立编制单
+        // 兼容存量记录 department_id 为 NULL 时按 org_id 定位
+        BudgetPreparation preparation = baseMapper.selectOne(Wrappers.<BudgetPreparation>lambdaQuery()
+            .and(w -> w.eq(BudgetPreparation::getDepartmentId, targetDeptId)
+                .or().eq(BudgetPreparation::getOrgId, targetDeptId))
+            .eq(BudgetPreparation::getBudgetYear, bo.getBudgetYear())
+            .eq(BudgetPreparation::getBudgetMonth, bo.getBudgetMonth())
+            .orderByDesc(BudgetPreparation::getUpdateTime)
+            .orderByDesc(BudgetPreparation::getId)
+            .last("LIMIT 1"));
+
+        String quotasJson = JsonUtils.toJsonString(normalized);
+        if (preparation != null) {
+            String status = preparation.getStatus();
+            if (!"Draft".equals(status) && !"Rejected".equals(status)) {
+                throw new ServiceException("预算单[" + preparation.getSheetNo() + "]当前状态不可修改大类额度，如需变更请走预算调整申请");
+            }
+            preparation.setCategoryQuotas(quotasJson);
+            preparation.setTotalBudget(total);
+            if (StringUtils.isNotBlank(bo.getRemark())) {
+                preparation.setRemark(bo.getRemark());
+            }
+            baseMapper.updateById(preparation);
+            return preparation.getId();
+        }
+
+        BudgetPreparation add = new BudgetPreparation();
+        add.setOrgId(LoginHelper.getDeptId());
+        add.setOrgName(LoginHelper.getLoginUser().getDeptName());
+        add.setDepartmentId(targetDeptId);
+        add.setBudgetYear(bo.getBudgetYear());
+        add.setBudgetMonth(bo.getBudgetMonth());
+        add.setSheetNo(generateSheetNo(bo.getBudgetYear(), bo.getBudgetMonth()));
+        add.setStatus("Draft");
+        add.setApprovalStage("None");
+        add.setCurrentHandler(LoginHelper.getUsername());
+        add.setTotalBudget(total);
+        add.setTotalActual(BigDecimal.ZERO);
+        add.setVarianceRate(BigDecimal.ZERO);
+        add.setCategoryQuotas(quotasJson);
+        add.setRemark(bo.getRemark());
+        baseMapper.insert(add);
+        return add.getId();
+    }
+
+    /**
+     * 大类额度按比例拆分到预算科目生成初稿（T5.14 ②）
+     * 拆分依据优先级：近3个月历史实绩比例 → 财务预设默认拆分比例 → 均分（设计文档 2.2 #2）；
+     * 尾差修正到首行，保证科目明细合计 = 大类额度。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Map<String, Object> generateSplitDraft(Long sheetId) {
+        BudgetPreparation preparation = baseMapper.selectById(sheetId);
+        if (preparation == null) {
+            throw new ServiceException("预算编制单不存在");
+        }
+        String status = preparation.getStatus();
+        if (!"Draft".equals(status) && !"Rejected".equals(status)) {
+            throw new ServiceException("只有草稿/驳回状态的编制单可生成拆分初稿");
+        }
+        if (StringUtils.isBlank(preparation.getCategoryQuotas())) {
+            throw new ServiceException("请先录入大类预算额度，再生成拆分初稿");
+        }
+        List<BudgetCategoryQuotaItemVo> quotas =
+            JsonUtils.parseArray(preparation.getCategoryQuotas(), BudgetCategoryQuotaItemVo.class);
+        if (quotas == null || quotas.isEmpty()) {
+            throw new ServiceException("大类预算额度为空，无法生成拆分初稿");
+        }
+
+        // 映射B：启用预算科目按费用大类分组（只拆叶子科目）
+        List<BudgetSubject> allSubjects = subjectMapper.selectList(Wrappers.<BudgetSubject>lambdaQuery()
+            .eq(BudgetSubject::getIsActive, 1)
+            .eq(BudgetSubject::getIsLeaf, 1));
+        Map<String, List<BudgetSubject>> subjectsByCategory = allSubjects.stream()
+            .filter(s -> StringUtils.isNotBlank(s.getCategoryCode()))
+            .collect(Collectors.groupingBy(BudgetSubject::getCategoryCode));
+
+        // 历史实绩：编制期前近3个月已审批通过报销（按科目汇总）
+        LocalDate periodStart = LocalDate.of(preparation.getBudgetYear(), preparation.getBudgetMonth(), 1);
+        Date sinceDate = Date.from(periodStart.minusMonths(3)
+            .atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Map<String, BigDecimal> historyBySubject = new HashMap<>();
+        List<Map<String, Object>> historyRows = expenseBillMapper
+            .sumApprovedExpenseBySubjectSince(preparation.getOrgId(), sinceDate);
+        if (historyRows != null) {
+            for (Map<String, Object> row : historyRows) {
+                String code = getStringVal(row, "subjectCode");
+                if (StringUtils.isNotBlank(code)) {
+                    historyBySubject.put(code, toBigDecimal(row.get("totalAmount")));
+                }
+            }
+        }
+
+        // 财务预设默认拆分比例（无历史实绩时的兜底）
+        List<FeeCategorySplitRatio> allRatios = feeCategorySplitRatioMapper.selectList(
+            Wrappers.<FeeCategorySplitRatio>lambdaQuery());
+        Map<String, List<FeeCategorySplitRatio>> ratiosByCategory = allRatios.stream()
+            .filter(r -> StringUtils.isNotBlank(r.getCategoryCode()))
+            .collect(Collectors.groupingBy(FeeCategorySplitRatio::getCategoryCode));
+
+        List<BudgetPreparationDetail> drafts = new ArrayList<>();
+        List<String> skippedCategories = new ArrayList<>();
+        int sortOrder = 1;
+        for (BudgetCategoryQuotaItemVo quotaItem : quotas) {
+            BigDecimal quota = quotaItem.getAmount();
+            if (quota == null || quota.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+            List<BudgetSubject> subjects = subjectsByCategory.get(quotaItem.getCategoryCode());
+            if (subjects == null || subjects.isEmpty()) {
+                skippedCategories.add(quotaItem.getCategoryCode());
+                continue;
+            }
+
+            // 确定权重：历史实绩优先 → 默认拆分比例 → 均分
+            LinkedHashMap<String, BigDecimal> weights = new LinkedHashMap<>();
+            BigDecimal historyTotal = BigDecimal.ZERO;
+            for (BudgetSubject s : subjects) {
+                BigDecimal h = historyBySubject.getOrDefault(s.getSubjectCode(), BigDecimal.ZERO);
+                weights.put(s.getSubjectCode(), h);
+                historyTotal = historyTotal.add(h);
+            }
+            String splitSource;
+            if (historyTotal.compareTo(BigDecimal.ZERO) > 0) {
+                splitSource = "HISTORY";
+            } else {
+                List<FeeCategorySplitRatio> ratios = ratiosByCategory.get(quotaItem.getCategoryCode());
+                if (ratios != null && !ratios.isEmpty()) {
+                    weights.replaceAll((k, v) -> BigDecimal.ZERO);
+                    for (FeeCategorySplitRatio r : ratios) {
+                        if (weights.containsKey(r.getSubjectCode()) && r.getRatioPercent() != null) {
+                            weights.put(r.getSubjectCode(), r.getRatioPercent());
+                        }
+                    }
+                    splitSource = "RATIO";
+                } else {
+                    weights.replaceAll((k, v) -> BigDecimal.ONE);
+                    splitSource = "EVEN";
+                }
+            }
+            BigDecimal weightTotal = weights.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+            if (weightTotal.compareTo(BigDecimal.ZERO) <= 0) {
+                weights.replaceAll((k, v) -> BigDecimal.ONE);
+                weightTotal = new BigDecimal(weights.size());
+                splitSource = "EVEN";
+            }
+
+            // 按权重拆金额（保留2位），尾差修正到首行保证合计=额度
+            Map<String, BudgetSubject> subjectMap = subjects.stream()
+                .collect(Collectors.toMap(BudgetSubject::getSubjectCode, s -> s, (a, b) -> a));
+            BigDecimal allocated = BigDecimal.ZERO;
+            List<BudgetPreparationDetail> catDrafts = new ArrayList<>();
+            for (Map.Entry<String, BigDecimal> e : weights.entrySet()) {
+                BigDecimal amount = quota.multiply(e.getValue())
+                    .divide(weightTotal, 2, RoundingMode.HALF_UP);
+                BudgetSubject subject = subjectMap.get(e.getKey());
+                BudgetPreparationDetail detail = new BudgetPreparationDetail();
+                detail.setSheetId(sheetId);
+                detail.setSubjectCode(subject.getSubjectCode());
+                detail.setSubjectName(subject.getSubjectName());
+                detail.setSubjectType(subject.getSubjectType());
+                detail.setBudgetAmount(amount);
+                detail.setActualAmount(BigDecimal.ZERO);
+                detail.setDeptId(preparation.getDepartmentId() != null ? preparation.getDepartmentId() : preparation.getOrgId());
+                detail.setDeptName(preparation.getDepartmentId() != null ? resolveDeptName(preparation.getDepartmentId()) : preparation.getOrgName());
+                detail.setSortOrder(sortOrder++);
+                catDrafts.add(detail);
+                allocated = allocated.add(amount);
+            }
+            BigDecimal diff = quota.subtract(allocated);
+            if (diff.compareTo(BigDecimal.ZERO) != 0 && !catDrafts.isEmpty()) {
+                BudgetPreparationDetail first = catDrafts.get(0);
+                first.setBudgetAmount(first.getBudgetAmount().add(diff));
+            }
+            drafts.addAll(catDrafts);
+            log.info("拆分初稿: 大类={}, 额度={}, 科目数={}, 拆分依据={}",
+                quotaItem.getCategoryCode(), quota, catDrafts.size(), splitSource);
+        }
+
+        if (drafts.isEmpty()) {
+            throw new ServiceException("未生成任何拆分初稿：请确认预算科目已启用且已配置费用大类（映射B）");
+        }
+
+        // 先删后插覆盖旧明细，保持与大类额度一致（初稿可由财务继续微调）
+        detailMapper.delete(Wrappers.<BudgetPreparationDetail>lambdaQuery()
+            .eq(BudgetPreparationDetail::getSheetId, sheetId));
+        for (BudgetPreparationDetail detail : drafts) {
+            detailMapper.insert(detail);
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("sheetId", sheetId);
+        result.put("detailCount", drafts.size());
+        result.put("skippedCategories", skippedCategories);
+        result.put("details", drafts);
+        return result;
     }
 
     /**
@@ -1051,5 +1391,52 @@ public class BudgetPreparationServiceImpl implements IBudgetPreparationService {
             return (BigDecimal) v;
         }
         return new BigDecimal(v.toString());
+    }
+
+    /**
+     * 查询当前租户已启用的费用大类（三层角色分工：admin 主数据 ∩ platform_admin 勾选）
+     * 存量兼容：租户无配置记录时视为全部启用
+     */
+    private List<FeeExpenseCategory> queryTenantEnabledCategories() {
+        List<FeeTenantCategory> tenantCategories = feeTenantCategoryMapper.selectList(
+            Wrappers.<FeeTenantCategory>lambdaQuery()
+                .eq(FeeTenantCategory::getIsEnabled, 1));
+        boolean hasConfig = feeTenantCategoryMapper.selectCount(
+            Wrappers.<FeeTenantCategory>lambdaQuery().select(FeeTenantCategory::getId)) > 0;
+        if (!hasConfig) {
+            // 存量兼容：无配置时全部启用
+            return feeExpenseCategoryMapper.selectList(
+                Wrappers.<FeeExpenseCategory>lambdaQuery()
+                    .eq(FeeExpenseCategory::getIsActive, 1)
+                    .orderByAsc(FeeExpenseCategory::getSortOrder)
+                    .orderByAsc(FeeExpenseCategory::getId));
+        }
+        Set<String> enabledCodes = tenantCategories.stream()
+            .map(FeeTenantCategory::getCategoryCode)
+            .collect(Collectors.toSet());
+        return feeExpenseCategoryMapper.selectList(
+            Wrappers.<FeeExpenseCategory>lambdaQuery()
+                .eq(FeeExpenseCategory::getIsActive, 1)
+                .in(FeeExpenseCategory::getCategoryCode, enabledCodes)
+                .orderByAsc(FeeExpenseCategory::getSortOrder)
+                .orderByAsc(FeeExpenseCategory::getId));
+    }
+
+    /**
+     * 根据部门ID解析部门名称（年月+部门维度辅助方法）
+     */
+    private String resolveDeptName(Long deptId) {
+        if (deptId == null) {
+            return LoginHelper.getLoginUser().getDeptName();
+        }
+        try {
+            SysDept dept = sysDeptMapper.selectById(deptId);
+            if (dept != null) {
+                return dept.getDeptName();
+            }
+        } catch (Exception e) {
+            log.warn("解析部门名称失败: deptId={}, error={}", deptId, e.getMessage());
+        }
+        return LoginHelper.getLoginUser().getDeptName();
     }
 }

@@ -26,6 +26,11 @@ public class BudgetAdjustmentLog {
     private Long id;
 
     /**
+     * 租户ID
+     */
+    private Long tenantId;
+
+    /**
      * 调出科目编码
      */
     private String fromSubject;

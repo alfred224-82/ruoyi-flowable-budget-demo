@@ -3,14 +3,14 @@ package com.ruoyi.system.domain;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import com.ruoyi.common.core.domain.BaseEntity;
+import com.ruoyi.common.core.domain.TenantEntity;
 import java.math.BigDecimal;
 import java.util.Date;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("budget_sheet")
-public class BudgetSheet extends BaseEntity {
+public class BudgetSheet extends TenantEntity {
 
     private static final long serialVersionUID = 1L;
 
