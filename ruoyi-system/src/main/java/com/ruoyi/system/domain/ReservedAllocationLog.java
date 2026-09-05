@@ -24,6 +24,11 @@ public class ReservedAllocationLog {
     private Long id;
 
     /**
+     * 租户ID
+     */
+    private Long tenantId;
+
+    /**
      * 关联预留预算ID
      */
     private Long reservedId;

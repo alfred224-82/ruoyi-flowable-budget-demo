@@ -224,4 +224,15 @@ public class SysRoleController extends BaseController {
         ajax.put("depts", deptService.selectDeptTreeList(new SysDept()));
         return R.ok(ajax);
     }
+
+    /**
+     * 获取所有角色选项（排除admin），无需权限校验
+     * 用于系统初始化等公共配置页面的角色下拉选择
+     */
+    @GetMapping("/allExcludeAdmin")
+    public R<List<SysRole>> allExcludeAdmin() {
+        List<SysRole> roles = roleService.selectRoleAll();
+        roles.removeIf(SysRole::isAdmin);
+        return R.ok(roles);
+    }
 }

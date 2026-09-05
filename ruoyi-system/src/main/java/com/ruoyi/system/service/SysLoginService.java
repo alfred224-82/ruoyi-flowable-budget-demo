@@ -16,6 +16,7 @@ import com.ruoyi.common.core.domain.model.XcxLoginUser;
 import com.ruoyi.common.enums.DeviceType;
 import com.ruoyi.common.enums.LoginType;
 import com.ruoyi.common.enums.UserStatus;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.exception.user.CaptchaException;
 import com.ruoyi.common.exception.user.CaptchaExpireException;
 import com.ruoyi.common.exception.user.UserException;
@@ -26,7 +27,10 @@ import com.ruoyi.common.utils.ServletUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.utils.redis.RedisUtils;
 import com.ruoyi.common.utils.spring.SpringUtils;
+import com.ruoyi.system.domain.vo.UserTenantBindVo;
 import com.ruoyi.system.mapper.SysUserMapper;
+import com.ruoyi.system.service.wx.IWxMiniappService;
+import com.ruoyi.system.service.wx.WxCode2SessionResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,6 +53,9 @@ public class SysLoginService {
     private final SysUserMapper userMapper;
     private final ISysConfigService configService;
     private final SysPermissionService permissionService;
+    private final TenantStatusChecker tenantStatusChecker;
+    private final IUserTenantBindService userTenantBindService;
+    private final IWxMiniappService wxMiniappService;
 
     @Value("${user.password.maxRetryCount}")
     private Integer maxRetryCount;
@@ -63,20 +70,38 @@ public class SysLoginService {
      * @param password 密码
      * @param code     验证码
      * @param uuid     唯一标识
+     * @param tenantId 选定门店租户ID（可选）：非空时校验账号归属，防跨门店串号登录（T13.1）
+     * @param openid   微信 openid（可选）：非空时登录后回填 user_tenant_bind.userId（T13.1 第二阶段）
      * @return 结果
      */
-    public String login(String username, String password, String code, String uuid) {
+    public String login(String username, String password, String code, String uuid, Long tenantId, String openid) {
         boolean captchaEnabled = configService.selectCaptchaEnabled();
         // 验证码开关
         if (captchaEnabled) {
             validateCaptcha(username, code, uuid);
         }
         SysUser user = loadUserByUsername(username);
+        // T13.1 门店约束校验：引导态显式选定门店后，账号必须归属该门店，防跨租户串号登录；
+        // tenantId 为空（PC 端/未选店）则维持原行为，按全局唯一用户名登录
+        if (tenantId != null && !tenantId.equals(user.getTenantId())) {
+            log.info("登录用户：{} 不属于所选门店 {}.", username, tenantId);
+            recordLogininfor(username, Constants.LOGIN_FAIL, "账号不属于所选门店");
+            throw new ServiceException("该账号不属于所选门店，请重新选择门店或使用对应门店的账号登录");
+        }
         checkLogin(LoginType.PASSWORD, username, () -> !BCrypt.checkpw(password, user.getPassword()));
         // 此处可根据登录用户的数据不同 自行创建 loginUser
         LoginUser loginUser = buildLoginUser(user);
         // 生成token
         LoginHelper.loginByDevice(loginUser, DeviceType.PC);
+
+        // T13.1 第二阶段：登录成功后回填 openid→userId 绑定（openid 依赖 code2session，缺省则跳过；失败不阻断登录）
+        if (StringUtils.isNotBlank(openid)) {
+            try {
+                userTenantBindService.fillUserId(openid, user.getTenantId(), user.getUserId());
+            } catch (Exception e) {
+                log.warn("回填用户租户绑定失败 openid={}, userId={}", openid, user.getUserId(), e);
+            }
+        }
 
         recordLogininfor(username, Constants.LOGIN_SUCCESS, MessageUtils.message("user.login.success"));
         recordLoginInfo(user.getUserId(), username);
@@ -113,18 +138,26 @@ public class SysLoginService {
         return StpUtil.getTokenValue();
     }
 
-    public String xcxLogin(String xcxCode) {
-        // xcxCode 为 小程序调用 wx.login 授权后获取
-        // todo 以下自行实现
-        // 校验 appid + appsrcret + xcxCode 调用登录凭证校验接口 获取 session_key 与 openid
-        String openid = "";
-        SysUser user = loadUserByOpenid(openid);
-
+    /**
+     * 小程序登录（T13.1 code2session + 双阶段租户识别）
+     *
+     * @param xcxCode  wx.login 返回的临时登录凭证 code
+     * @param tenantId 选定门店租户ID（必填）：按 openid+tenantId 查绑定用户，禁止自动猜测租户
+     * @return 结果
+     */
+    public String xcxLogin(String xcxCode, Long tenantId) {
+        // code2session：以 code 换取真实 openid（未配置 wx.miniapp.appid/secret 时抛 ServiceException）
+        WxCode2SessionResult session = wxMiniappService.code2session(xcxCode);
+        String openid = session.getOpenid();
+        // 双阶段租户识别：按 openid + 选定门店查已绑定用户，未绑定则引导先用账号密码登录回填
+        SysUser user = loadUserByOpenid(openid, tenantId);
+        // T3.4 租户到期/停用拦截：到期租户禁止登录（防“过期续用”）
+        if (ObjectUtil.isNotNull(user.getTenantId())) {
+            tenantStatusChecker.checkTenant(user.getTenantId());
+        }
         // 此处可根据登录用户的数据不同 自行创建 loginUser
         XcxLoginUser loginUser = new XcxLoginUser();
-        loginUser.setUserId(user.getUserId());
-        loginUser.setUsername(user.getUserName());
-        loginUser.setUserType(user.getUserType());
+        populateLoginUser(loginUser, user);
         loginUser.setOpenid(openid);
         // 生成token
         LoginHelper.loginByDevice(loginUser, DeviceType.XCX);
@@ -249,16 +282,29 @@ public class SysLoginService {
         return userMapper.selectUserByEmail(email);
     }
 
-    private SysUser loadUserByOpenid(String openid) {
-        // 使用 openid 查询绑定用户 如未绑定用户 则根据业务自行处理 例如 创建默认用户
-        // todo 自行实现 userService.selectUserByOpenid(openid);
-        SysUser user = new SysUser();
+    /**
+     * 按 openid + 选定门店加载绑定用户（T13.1 双阶段租户识别）
+     * <p>openid→userId 映射存于 user_tenant_bind；必须显式选定门店（tenantId），禁止按 openid 自动猜测租户。
+     * 首次微信登录时绑定记录 userId 为空（仅引导态绑定），须先用账号密码登录回填 userId 后方可一键登录。
+     */
+    private SysUser loadUserByOpenid(String openid, Long tenantId) {
+        if (tenantId == null) {
+            throw new ServiceException("请先选择门店后再使用微信一键登录");
+        }
+        UserTenantBindVo bind = userTenantBindService.listByOpenid(openid).stream()
+            .filter(b -> tenantId.equals(b.getTenantId()))
+            .findFirst().orElse(null);
+        if (bind == null || bind.getUserId() == null) {
+            log.info("微信 openid={} 在门店 {} 未绑定系统用户.", openid, tenantId);
+            throw new ServiceException("该微信尚未绑定此门店账号，请先用账号密码登录完成绑定");
+        }
+        SysUser user = userMapper.selectUserById(bind.getUserId());
         if (ObjectUtil.isNull(user)) {
-            log.info("登录用户：{} 不存在.", openid);
-            // todo 用户不存在 业务逻辑自行实现
+            log.info("登录用户：{} 不存在.", bind.getUserId());
+            throw new UserException("user.not.exists", openid);
         } else if (UserStatus.DISABLE.getCode().equals(user.getStatus())) {
-            log.info("登录用户：{} 已被停用.", openid);
-            // todo 用户已被停用 业务逻辑自行实现
+            log.info("登录用户：{} 已被停用.", bind.getUserId());
+            throw new UserException("user.blocked", openid);
         }
         return user;
     }
@@ -267,8 +313,21 @@ public class SysLoginService {
      * 构建登录用户
      */
     private LoginUser buildLoginUser(SysUser user) {
+        // T3.4 租户到期/停用拦截：到期租户禁止登录（防"过期续用"）
+        if (ObjectUtil.isNotNull(user.getTenantId())) {
+            tenantStatusChecker.checkTenant(user.getTenantId());
+        }
         LoginUser loginUser = new LoginUser();
+        populateLoginUser(loginUser, user);
+        return loginUser;
+    }
+
+    /**
+     * 填充登录用户身份权限（PC/APP/小程序登录共用）
+     */
+    private void populateLoginUser(LoginUser loginUser, SysUser user) {
         loginUser.setUserId(user.getUserId());
+        loginUser.setTenantId(user.getTenantId());
         loginUser.setDeptId(user.getDeptId());
         loginUser.setUsername(user.getUserName());
         loginUser.setNickName(user.getNickName());
@@ -278,7 +337,6 @@ public class SysLoginService {
         loginUser.setDeptName(ObjectUtil.isNull(user.getDept()) ? "" : user.getDept().getDeptName());
         List<RoleDTO> roles = BeanUtil.copyToList(user.getRoles(), RoleDTO.class);
         loginUser.setRoles(roles);
-        return loginUser;
     }
 
     /**

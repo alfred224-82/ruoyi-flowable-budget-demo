@@ -23,6 +23,11 @@ public class BudgetPreparationDetail implements Serializable {
      */
     @TableId(value = "id")
     private Long id;
+
+    /**
+     * 租户ID
+     */
+    private Long tenantId;
     
     /**
      * 预算单ID（外键，关联budget_preparation.id）

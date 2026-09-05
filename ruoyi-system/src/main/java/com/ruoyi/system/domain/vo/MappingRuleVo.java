@@ -62,6 +62,12 @@ public class MappingRuleVo implements Serializable {
     private Integer isFixedAsset;
 
     /**
+     * 费用确认方式(DIRECT直接费用化/DEPRECIATION折旧/ACCRUAL计提摊销/FEE_RATE费率利息)
+     */
+    @ExcelProperty(value = "费用确认方式")
+    private String costMethod;
+
+    /**
      * 优先级(数值越大优先级越高)
      */
     @ExcelProperty(value = "优先级")
@@ -72,6 +78,21 @@ public class MappingRuleVo implements Serializable {
      */
     @ExcelProperty(value = "状态")
     private String status;
+
+    /**
+     * 发布状态(DRAFT草稿/PUBLISHED已发布，T6.4)
+     */
+    private String publishStatus;
+
+    /**
+     * 发布时间
+     */
+    private Date publishTime;
+
+    /**
+     * 发布人
+     */
+    private Long publishedBy;
 
     /**
      * 创建者

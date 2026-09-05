@@ -35,7 +35,7 @@ export default {
   },
   data() {
     return {
-      title: 'RuoYi-Flowable-Plus',
+      title: '预算智控系统',
       logo: logoImg
     }
   }

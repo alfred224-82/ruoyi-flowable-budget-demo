@@ -101,6 +101,11 @@ public class LoginUser implements Serializable {
     private List<RoleDTO> roles;
 
     /**
+     * 租户ID
+     */
+    private Long tenantId;
+
+    /**
      * 数据权限 当前角色ID
      */
     private Long roleId;

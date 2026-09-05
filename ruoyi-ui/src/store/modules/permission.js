@@ -4,6 +4,7 @@ import { getRouters } from '@/api/menu'
 import Layout from '@/layout/index'
 import ParentView from '@/components/ParentView'
 import InnerLink from '@/layout/components/InnerLink'
+import { filterRoutesByFeature } from '@/utils/feature'
 
 const permission = {
   state: {
@@ -34,8 +35,10 @@ const permission = {
       return new Promise(resolve => {
         // 向后端请求路由数据
         getRouters().then(res => {
-          const sdata = JSON.parse(JSON.stringify(res.data))
-          const rdata = JSON.parse(JSON.stringify(res.data))
+          // 根据License功能过滤路由（未授权功能的页面不加载）
+          const filteredData = filterRoutesByFeature(res.data)
+          const sdata = JSON.parse(JSON.stringify(filteredData))
+          const rdata = JSON.parse(JSON.stringify(filteredData))
           const sidebarRoutes = filterAsyncRouter(sdata)
           const rewriteRoutes = filterAsyncRouter(rdata, false, true)
           const asyncRoutes = filterDynamicRoutes(dynamicRoutes);

@@ -7,7 +7,9 @@ const user = {
     name: '',
     avatar: '',
     roles: [],
-    permissions: []
+    permissions: [],
+    features: [],
+    edition: 'BASIC'
   },
 
   mutations: {
@@ -25,6 +27,12 @@ const user = {
     },
     SET_PERMISSIONS: (state, permissions) => {
       state.permissions = permissions
+    },
+    SET_FEATURES: (state, features) => {
+      state.features = features || []
+    },
+    SET_EDITION: (state, edition) => {
+      state.edition = edition || 'BASIC'
     }
   },
 
@@ -60,6 +68,9 @@ const user = {
           }
           commit('SET_NAME', user.userName)
           commit('SET_AVATAR', avatar)
+          // License功能列表
+          commit('SET_FEATURES', res.data.features)
+          commit('SET_EDITION', res.data.edition)
           resolve(res)
         }).catch(error => {
           reject(error)
@@ -74,6 +85,8 @@ const user = {
           commit('SET_TOKEN', '')
           commit('SET_ROLES', [])
           commit('SET_PERMISSIONS', [])
+          commit('SET_FEATURES', [])
+          commit('SET_EDITION', 'BASIC')
           removeToken()
           resolve()
         }).catch(error => {

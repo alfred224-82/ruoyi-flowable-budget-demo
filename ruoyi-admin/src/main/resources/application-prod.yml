@@ -161,6 +161,16 @@ mail:
   # Socket连接超时值，单位毫秒，缺省值不超时
   connectionTimeout: 0
 
+--- # License授权配置（生产环境加固模式）
+license:
+  # 生产环境强制使用hard模式：RSA签名验证 + 机器指纹绑定
+  enforce-mode: hard
+  # RSA公钥(Base64) - 由 LicenseGenerateTool keygen 生成，将公钥填入此处
+  # 示例: public-key: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A...
+  public-key:
+  verify-fingerprint: true
+  allow-plain-switch: false
+
 --- # sms 短信
 sms:
   enabled: false
@@ -172,3 +182,9 @@ sms:
   signName: 测试
   # 腾讯专用
   sdkAppId:
+
+--- # 微信小程序（T13.1 code2session 一键登录；未配置 appid/secret 时一键登录不可用，仍可账号密码登录）
+wx:
+  miniapp:
+    appid:
+    secret:

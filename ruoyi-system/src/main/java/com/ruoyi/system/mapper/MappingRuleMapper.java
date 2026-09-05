@@ -23,7 +23,9 @@ public interface MappingRuleMapper extends BaseMapperPlus<MappingRuleMapper, Map
      */
     @Select("SELECT * FROM fee_mapping_rule WHERE item_category = #{itemCategory} " +
             "AND purpose_tag = #{purposeTag} " +
-            "AND status = 'ENABLED' ORDER BY priority DESC LIMIT 1")
+            "AND status = 'ENABLED' " +
+            "AND (publish_status IS NULL OR publish_status = 'PUBLISHED') " +
+            "ORDER BY priority DESC LIMIT 1")
     MappingRule matchExact(@Param("itemCategory") String itemCategory,
                            @Param("purposeTag") String purposeTag);
 }

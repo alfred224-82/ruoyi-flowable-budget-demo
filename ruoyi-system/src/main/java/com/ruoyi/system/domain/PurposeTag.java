@@ -2,7 +2,7 @@ package com.ruoyi.system.domain;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.ruoyi.common.core.domain.BaseEntity;
+import com.ruoyi.common.core.domain.TenantEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -15,7 +15,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("fee_purpose_tag")
-public class PurposeTag extends BaseEntity {
+public class PurposeTag extends TenantEntity {
 
     private static final long serialVersionUID = 1L;
 

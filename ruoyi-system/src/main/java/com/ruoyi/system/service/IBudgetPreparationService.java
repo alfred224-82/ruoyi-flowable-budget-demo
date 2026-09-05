@@ -6,6 +6,7 @@ import com.ruoyi.system.domain.vo.BudgetPreparationDetailVo;
 import com.ruoyi.system.domain.vo.BudgetRejectHistoryVo;
 import com.ruoyi.system.domain.vo.ValidationResultVo;
 import com.ruoyi.system.domain.bo.BudgetPreparationBo;
+import com.ruoyi.system.domain.bo.BudgetCategoryQuotaBo;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.core.domain.PageQuery;
 
@@ -109,4 +110,30 @@ public interface IBudgetPreparationService {
      * @return Map包含 dataSource(EXPENSE/BUDGET/NONE) + details(明细列表)
      */
     Map<String, Object> getPreviousMonthApprovedDetails(Long orgId, Integer budgetYear, Integer budgetMonth);
+
+    /**
+     * 查询老板大类预算额度（T5.14 ①）：返回启用费用大类主数据 + 当期已录额度 + 单据状态
+     * @param budgetYear 预算年度
+     * @param budgetMonth 预算月份
+     * @param departmentId 部门ID（年月+部门维度，null=用户所属部门）
+     * @return Map包含 preparationId/sheetNo/status/editable/quotas/departmentId/departmentName
+     */
+    Map<String, Object> getCategoryQuotas(Integer budgetYear, Integer budgetMonth, Long departmentId);
+
+    /**
+     * 老板保存大类预算额度（粗粒度，只管大类不管科目，T5.14 ①）
+     * 当期无编制单则新建草稿单；已有草稿/驳回单则复用更新；其余状态拦截
+     * @param bo 大类额度保存对象
+     * @return 预算编制单ID
+     */
+    Long saveCategoryQuotas(BudgetCategoryQuotaBo bo);
+
+    /**
+     * 大类额度按比例拆分到预算科目生成初稿（T5.14 ②）
+     * 拆分依据优先级：近3个月历史实绩比例 → 财务预设默认拆分比例 → 均分；尾差修正保证合计=大类额度。
+     * 仅草稿/驳回单可生成；先删后插覆盖旧明细。
+     * @param sheetId 预算编制单ID（已录入大类额度）
+     * @return Map包含 sheetId/detailCount/details
+     */
+    Map<String, Object> generateSplitDraft(Long sheetId);
 }

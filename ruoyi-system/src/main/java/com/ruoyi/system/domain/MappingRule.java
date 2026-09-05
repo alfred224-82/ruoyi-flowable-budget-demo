@@ -2,9 +2,11 @@ package com.ruoyi.system.domain;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.ruoyi.common.core.domain.BaseEntity;
+import com.ruoyi.common.core.domain.TenantEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+
+import java.util.Date;
 
 /**
  * 映射规则对象 fee_mapping_rule
@@ -15,7 +17,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("fee_mapping_rule")
-public class MappingRule extends BaseEntity {
+public class MappingRule extends TenantEntity {
 
     private static final long serialVersionUID = 1L;
 
@@ -56,6 +58,11 @@ public class MappingRule extends BaseEntity {
     private Integer isFixedAsset;
 
     /**
+     * 费用确认方式(DIRECT直接费用化/DEPRECIATION折旧/ACCRUAL计提摊销/FEE_RATE费率利息)
+     */
+    private String costMethod;
+
+    /**
      * 优先级(数值越大优先级越高)
      */
     private Integer priority;
@@ -64,4 +71,19 @@ public class MappingRule extends BaseEntity {
      * 状态(ENABLED/DISABLED)
      */
     private String status;
+
+    /**
+     * 发布状态(DRAFT草稿/PUBLISHED已发布，T6.4 / FEAT_RULE_ENGINE_CUSTOM)
+     */
+    private String publishStatus;
+
+    /**
+     * 发布时间
+     */
+    private Date publishTime;
+
+    /**
+     * 发布人
+     */
+    private Long publishedBy;
 }

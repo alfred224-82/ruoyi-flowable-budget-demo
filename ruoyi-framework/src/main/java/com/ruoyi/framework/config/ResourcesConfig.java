@@ -1,6 +1,8 @@
 package com.ruoyi.framework.config;
 
+import com.ruoyi.framework.interceptor.FeatureInterceptor;
 import com.ruoyi.framework.interceptor.PlusWebInvokeTimeInterceptor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -16,12 +18,17 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * @author Lion Li
  */
 @Configuration
+@RequiredArgsConstructor
 public class ResourcesConfig implements WebMvcConfigurer {
+
+    private final FeatureInterceptor featureInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         // 全局访问性能拦截
         registry.addInterceptor(new PlusWebInvokeTimeInterceptor());
+        // 功能开关拦截（@RequireFeature 注解校验）
+        registry.addInterceptor(featureInterceptor).addPathPatterns("/**");
     }
 
     @Override

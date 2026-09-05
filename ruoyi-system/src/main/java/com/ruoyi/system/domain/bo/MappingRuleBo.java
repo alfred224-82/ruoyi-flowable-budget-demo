@@ -61,6 +61,11 @@ public class MappingRuleBo extends BaseEntity {
     private Integer isFixedAsset;
 
     /**
+     * 费用确认方式(DIRECT直接费用化/DEPRECIATION折旧/ACCRUAL计提摊销/FEE_RATE费率利息)
+     */
+    private String costMethod;
+
+    /**
      * 优先级(数值越大优先级越高)
      */
     private Integer priority;
@@ -69,4 +74,9 @@ public class MappingRuleBo extends BaseEntity {
      * 状态(ENABLED/DISABLED)
      */
     private String status;
+
+    /**
+     * 发布状态筛选(DRAFT/PUBLISHED，T6.4)
+     */
+    private String publishStatus;
 }

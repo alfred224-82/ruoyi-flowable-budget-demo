@@ -2,7 +2,10 @@ package com.ruoyi.system.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.PageQuery;
+import com.ruoyi.system.domain.vo.BatchApprovalResultVo;
 import com.ruoyi.system.domain.vo.ExpenseBillVo;
+
+import java.util.List;
 
 /**
  * 报销单审批Service接口
@@ -19,6 +22,31 @@ public interface IExpenseApprovalService {
      * @return 待审批报销单分页列表
      */
     Page<ExpenseBillVo> selectPendingApprovalPage(PageQuery pageQuery);
+
+    /**
+     * 查询待审批报销单列表（支持证据等级筛选，T6.7 / FEAT_EVIDENCE_CHAIN）
+     *
+     * @param pageQuery     分页参数
+     * @param evidenceLevel 证据等级（可空，开关关闭时忽略）
+     */
+    Page<ExpenseBillVo> selectPendingApprovalPage(PageQuery pageQuery, String evidenceLevel);
+
+    /**
+     * 批量审批通过（逐条独立事务，返回成功数+失败明细，T6.7）
+     *
+     * @param billIds 报销单ID列表
+     * @param opinion 审批意见
+     */
+    BatchApprovalResultVo batchApprove(List<Long> billIds, String opinion);
+
+    /**
+     * 批量驳回（逐条独立事务，返回成功数+失败明细，T6.7）
+     *
+     * @param billIds 报销单ID列表
+     * @param reason  驳回原因
+     * @param opinion 审批意见
+     */
+    BatchApprovalResultVo batchReject(List<Long> billIds, String reason, String opinion);
 
     /**
      * 部门经理审批通过

@@ -1,5 +1,6 @@
 package com.ruoyi.system.domain.bo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.core.validate.AddGroup;
 import com.ruoyi.common.core.validate.EditGroup;
 import lombok.Data;
@@ -44,6 +45,11 @@ public class BudgetPreparationBo extends BaseEntity {
     private String orgName;
 
     /**
+     * 部门ID（高级版部门级预算双粒度，T6.1，空=公司级）
+     */
+    private Long departmentId;
+
+    /**
      * 预算年度
      */
     @NotNull(message = "预算年度不能为空", groups = { AddGroup.class, EditGroup.class })
@@ -85,6 +91,7 @@ public class BudgetPreparationBo extends BaseEntity {
     /**
      * 截止时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private Date deadlineTime;
 
     /**

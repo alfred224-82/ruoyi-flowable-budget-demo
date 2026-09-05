@@ -7,7 +7,7 @@ import java.io.Serializable;
 import java.util.Date;
 import java.math.BigDecimal;
 
-import com.ruoyi.common.core.domain.BaseEntity;
+import com.ruoyi.common.core.domain.TenantEntity;
 
 /**
  * 预算科目对象 budget_subject
@@ -18,7 +18,7 @@ import com.ruoyi.common.core.domain.BaseEntity;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("budget_subject")
-public class BudgetSubject extends BaseEntity {
+public class BudgetSubject extends TenantEntity {
 
     private static final long serialVersionUID=1L;
 
@@ -76,5 +76,10 @@ public class BudgetSubject extends BaseEntity {
      * 科目类型（INCOME-收入类，COST-成本类，EXPENSE-费用类，ASSET-资产类，LIABILITY-负债类，EQUITY-权益类）
      */
     private String subjectType;
+
+    /**
+     * 费用大类编码（映射B，系统内置固定，财务可查看不可随意变更，T5.13）
+     */
+    private String categoryCode;
 
 }

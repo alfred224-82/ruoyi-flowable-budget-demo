@@ -20,10 +20,12 @@ import com.ruoyi.common.utils.StreamUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.SysRoleDept;
 import com.ruoyi.system.domain.SysRoleMenu;
+import com.ruoyi.system.domain.SysTenant;
 import com.ruoyi.system.domain.SysUserRole;
 import com.ruoyi.system.mapper.SysRoleDeptMapper;
 import com.ruoyi.system.mapper.SysRoleMapper;
 import com.ruoyi.system.mapper.SysRoleMenuMapper;
+import com.ruoyi.system.mapper.SysTenantMapper;
 import com.ruoyi.system.mapper.SysUserRoleMapper;
 import com.ruoyi.system.service.ISysRoleService;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +47,7 @@ public class SysRoleServiceImpl implements ISysRoleService {
     private final SysRoleMenuMapper roleMenuMapper;
     private final SysUserRoleMapper userRoleMapper;
     private final SysRoleDeptMapper roleDeptMapper;
+    private final SysTenantMapper tenantMapper;
 
     @Override
     public TableDataInfo<SysRole> selectPageRoleList(SysRole role, PageQuery pageQuery) {
@@ -74,6 +77,14 @@ public class SysRoleServiceImpl implements ISysRoleService {
             .between(params.get("beginTime") != null && params.get("endTime") != null,
                 "r.create_time", params.get("beginTime"), params.get("endTime"))
             .orderByAsc("r.role_sort").orderByAsc("r.create_time");
+        // 租户隔离：非 admin 超管时按 tenant_id 过滤角色（T2.4）
+        // 共享业务角色（9201~9205）tenant_id 为 NULL，不受此影响
+        if (!LoginHelper.isAdmin()) {
+            Long tenantId = LoginHelper.getTenantId();
+            if (tenantId != null) {
+                wrapper.and(w -> w.eq("r.tenant_id", tenantId).or().isNull("r.tenant_id"));
+            }
+        }
         return wrapper;
     }
 
@@ -225,9 +236,40 @@ public class SysRoleServiceImpl implements ISysRoleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertRole(SysRole role) {
+        // 租户隔离：新建角色时自动绑定当前租户ID（T2.4）
+        if (role.getTenantId() == null && !LoginHelper.isAdmin()) {
+            role.setTenantId(LoginHelper.getTenantId());
+        }
+        // 角色数分层授权：达版本上限时拦截并提示升级（T2.5④）
+        checkRoleCountLimit(role.getTenantId());
         // 新增角色信息
         baseMapper.insert(role);
         return insertRoleMenu(role);
+    }
+
+    /**
+     * 校验租户自有角色数是否已达版本上限（T2.5④）。
+     * <p>max_roles 由版本决定（BASIC=2/ADVANCED=6/PROFESSIONAL 及 ENTERPRISE/PRO=NULL 不限）；
+     * 仅统计本租户自有角色（tenant_id=当前租户），全局共享角色（tenant_id 为 NULL，如 9201~9205）
+     * 与平台管理员建角色不受限；已删除角色由 @TableLogic 自动排除。
+     *
+     * @param tenantId 目标租户ID（为空或平台管理员时跳过）
+     */
+    private void checkRoleCountLimit(Long tenantId) {
+        if (LoginHelper.isAdmin() || tenantId == null) {
+            return;
+        }
+        SysTenant tenant = tenantMapper.selectById(tenantId);
+        if (tenant == null || tenant.getMaxRoles() == null) {
+            // 版本不限角色数（专业版/兼容枚举），或租户缺失时不拦截
+            return;
+        }
+        Long ownedCount = baseMapper.selectCount(new LambdaQueryWrapper<SysRole>()
+            .eq(SysRole::getTenantId, tenantId));
+        if (ownedCount != null && ownedCount >= tenant.getMaxRoles()) {
+            throw new ServiceException(String.format(
+                "当前版本最多可创建 %d 个角色，已达上限，请升级版本后重试", tenant.getMaxRoles()));
+        }
     }
 
     /**

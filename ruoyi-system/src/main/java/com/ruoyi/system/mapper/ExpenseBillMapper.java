@@ -93,4 +93,38 @@ public interface ExpenseBillMapper extends BaseMapperPlus<ExpenseBillMapper, Exp
     List<Map<String, Object>> sumApprovedExpenseGroupBySubject(@Param("deptId") Long deptId,
                                                                 @Param("year") Integer year,
                                                                 @Param("month") Integer month);
+
+    /**
+     * 统计指定部门、费用大类在指定期间的已用额度（T5.17 大类硬拦截）
+     * 已用 = 已审批通过 + 在途占用（SUBMITTED/OVER_BUDGET_PENDING，防拆单绕过）
+     *
+     * @param deptId       部门ID
+     * @param categoryCode 费用大类编码
+     * @param year         年份（按报销年月）
+     * @param month        月份（按报销年月）
+     * @return 已用额度合计
+     */
+    BigDecimal sumUsedAmountByCategory(@Param("deptId") Long deptId,
+                                        @Param("categoryCode") String categoryCode,
+                                        @Param("year") Integer year,
+                                        @Param("month") Integer month);
+
+    /**
+     * 按科目汇总指定日期之后已审批通过的报销实绩（T5.14② 历史实绩比例拆科目）
+     *
+     * @param deptId    部门ID（null=全租户）
+     * @param sinceDate 起始日期（含）
+     * @return 每行包含 subjectCode / totalAmount
+     */
+    List<Map<String, Object>> sumApprovedExpenseBySubjectSince(@Param("deptId") Long deptId,
+                                                                @Param("sinceDate") java.util.Date sinceDate);
+
+    /**
+     * 发票查重：统计同一发票号已存在的非驳回单据数（T5.18 验真）
+     *
+     * @param invoiceNo 发票号码
+     * @param excludeId 排除的单据ID（可为null）
+     * @return 重复单据数
+     */
+    Long countByInvoiceNo(@Param("invoiceNo") String invoiceNo, @Param("excludeId") Long excludeId);
 }

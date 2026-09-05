@@ -39,6 +39,11 @@ public class SysRole extends BaseEntity {
     private Long roleId;
 
     /**
+     * 租户ID（租户隔离，T2.4；null=全局共享角色）
+     */
+    private Long tenantId;
+
+    /**
      * 角色名称
      */
     @ExcelProperty(value = "角色名称")

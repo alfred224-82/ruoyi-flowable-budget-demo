@@ -7,6 +7,7 @@ import cn.dev33.satoken.router.SaRouter;
 import cn.dev33.satoken.stp.StpInterface;
 import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
+import com.ruoyi.common.core.service.TenantChecker;
 import com.ruoyi.common.utils.spring.SpringUtils;
 import com.ruoyi.framework.config.properties.SecurityProperties;
 import com.ruoyi.framework.handler.AllUrlHandler;
@@ -47,6 +48,10 @@ public class SaTokenConfig implements WebMvcConfigurer {
                 .check(() -> {
                     // 检查是否登录 是否有token
                     StpUtil.checkLogin();
+
+                    // T3.4 租户到期/停用全局拦截：已登录会话在租户到期后访问任意接口被拦截（admin 豁免）
+                    // 按 common 层 TenantChecker 接口获取（framework 不依赖 system，避免模块循环依赖）
+                    SpringUtils.getBean(TenantChecker.class).checkCurrentTenant();
 
                     // 有效率影响 用于临时测试
                     // if (log.isDebugEnabled()) {

@@ -1,5 +1,6 @@
 package com.ruoyi.common.core.domain.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -29,6 +30,11 @@ public class SysDept extends TreeEntity<SysDept> {
      */
     @TableId(value = "dept_id")
     private Long deptId;
+
+    /**
+     * 租户ID（租户隔离，T2.4）
+     */
+    private Long tenantId;
 
     /**
      * 部门名称

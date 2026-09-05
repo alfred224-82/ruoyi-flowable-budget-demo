@@ -34,6 +34,16 @@
           v-hasPermi="['fee:expense:add']"
         >填写报销单</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="info"
+          plain
+          icon="el-icon-upload2"
+          size="mini"
+          @click="handleImport"
+          v-hasPermi="['fee:expense:import']"
+        >导入</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -51,6 +61,20 @@
           ¥{{ Number(scope.row.amount).toFixed(2) }}
         </template>
       </el-table-column>
+      <!-- V5.4: 币种 -->
+      <el-table-column label="币种" align="center" prop="currencyCode" width="80">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.currencyCode !== 'CNY'" type="warning" size="mini">{{ scope.row.currencyCode }}</el-tag>
+          <span v-else>CNY</span>
+        </template>
+      </el-table-column>
+      <!-- V5.4: 补助金额 -->
+      <el-table-column label="补助" align="center" prop="subsidyAmount" width="100">
+        <template slot-scope="scope">
+          <span v-if="scope.row.subsidyAmount">¥{{ Number(scope.row.subsidyAmount).toFixed(2) }}</span>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="费用日期" align="center" prop="expenseDate" width="120">
         <template slot-scope="scope">
           {{ parseTime(scope.row.expenseDate, '{y}-{m}-{d}') }}
@@ -65,6 +89,15 @@
           <el-tag v-else-if="scope.row.status === 'APPROVED'" type="success">已批准</el-tag>
           <el-tag v-else-if="scope.row.status === 'REJECTED'" type="danger">已驳回</el-tag>
           <el-tag v-else>{{ scope.row.status }}</el-tag>
+        </template>
+      </el-table-column>
+      <!-- V5.4: 合规状态 -->
+      <el-table-column label="合规" align="center" prop="complianceStatus" width="100">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.complianceStatus === 'PASS'" type="success" size="mini">通过</el-tag>
+          <el-tag v-else-if="scope.row.complianceStatus === 'FAIL'" type="danger" size="mini">不通过</el-tag>
+          <el-tag v-else-if="scope.row.complianceStatus === 'PENDING_SEAL'" type="warning" size="mini">待盖章</el-tag>
+          <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100">
@@ -86,11 +119,42 @@
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+
+    <!-- 导入弹窗 -->
+    <el-dialog :title="upload.title" :visible.sync="upload.open" width="400px" append-to-body>
+      <el-upload
+        ref="upload"
+        :limit="1"
+        accept=".xlsx, .xls"
+        :headers="upload.headers"
+        :action="upload.url"
+        :disabled="upload.isUploading"
+        :on-progress="handleFileUploadProgress"
+        :on-success="handleFileSuccess"
+        :auto-upload="false"
+        drag
+      >
+        <i class="el-icon-upload"></i>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+        <div class="el-upload__tip text-center" slot="tip">
+          <div class="el-upload__tip" slot="tip">
+            <el-checkbox v-model="upload.updateSupport" /> 是否更新已经存在的数据
+          </div>
+          <span>仅允许导入xls、xlsx格式文件。</span>
+          <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importTemplate">下载模板</el-link>
+        </div>
+      </el-upload>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="submitFileForm">确 定</el-button>
+        <el-button @click="upload.open = false">取 消</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listExpenseBill } from "@/api/system/fee/expense";
+import { listExpenseBill, importTemplate } from "@/api/system/fee/expense";
+import { getToken } from "@/utils/auth";
 
 export default {
   name: "Expense",
@@ -106,6 +170,15 @@ export default {
         pageSize: 10,
         billNo: undefined,
         status: undefined,
+      },
+      // 导入参数
+      upload: {
+        open: false,
+        title: "报销单导入",
+        isUploading: false,
+        updateSupport: false,
+        headers: { Authorization: "Bearer " + getToken() },
+        url: process.env.VUE_APP_BASE_API + "/fee/expense/importData"
       }
     };
   },
@@ -140,6 +213,31 @@ export default {
     },
     handleView(row) {
       this.$router.push({ path: '/system/fee/expense/form', query: { view: '1', id: row.id } });
+    },
+    /** 导入按钮 */
+    handleImport() {
+      this.upload.open = true;
+    },
+    /** 下载模板 */
+    importTemplate() {
+      importTemplate().then(response => {
+        this.$download.saveAs(response, "报销单导入模板.xlsx");
+      });
+    },
+    /** 文件上传中 */
+    handleFileUploadProgress() {
+      this.upload.isUploading = true;
+    },
+    /** 文件上传成功 */
+    handleFileSuccess(response) {
+      this.upload.isUploading = false;
+      this.$refs.upload.clearFiles();
+      this.$alert("<div style='overflow: auto;overflow-x: hidden;max-height: 70vh;padding: 10px 20px 0;'>" + response.msg + "</div>", "导入结果", { dangerouslyUseHTMLString: true });
+      this.getList();
+    },
+    /** 提交上传文件 */
+    submitFileForm() {
+      this.$refs.upload.submit();
     }
   }
 };

@@ -4,6 +4,7 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.http.HttpStatus;
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import com.ruoyi.common.core.domain.BaseEntity;
+import com.ruoyi.common.core.domain.TenantEntity;
 import com.ruoyi.common.core.domain.model.LoginUser;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.helper.LoginHelper;
@@ -37,6 +38,13 @@ public class CreateAndUpdateMetaObjectHandler implements MetaObjectHandler {
                 baseEntity.setCreateBy(username);
                 // 当前已登录 且 更新人为空 则填充
                 baseEntity.setUpdateBy(username);
+                // 租户ID自动填充
+                if (baseEntity instanceof TenantEntity) {
+                    TenantEntity tenantEntity = (TenantEntity) baseEntity;
+                    if (tenantEntity.getTenantId() == null) {
+                        tenantEntity.setTenantId(LoginHelper.getTenantId());
+                    }
+                }
             }
         } catch (Exception e) {
             throw new ServiceException("自动注入异常 => " + e.getMessage(), HttpStatus.HTTP_UNAUTHORIZED);

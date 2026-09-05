@@ -49,6 +49,7 @@ public class BudgetAdjustmentAppServiceImpl implements IBudgetAdjustmentAppServi
     private final SysDeptMapper sysDeptMapper;
     private final IMappingRuleService mappingRuleService;
     private final BudgetSubjectMapper budgetSubjectMapper;
+    private final IFundPoolConfigService fundPoolConfigService;
 
     @Override
     public BudgetAdjustmentAppVo queryById(Long id) {
@@ -692,15 +693,15 @@ public class BudgetAdjustmentAppServiceImpl implements IBudgetAdjustmentAppServi
         switch (app.getCurrentLevel()) {
             case 1:
                 levelType = "DEPT";
-                defaultTotal = new BigDecimal("100000.00"); // 部门10万
+                defaultTotal = fundPoolConfigService.getInitialAmount("DEPT");
                 break;
             case 2:
                 levelType = "BRANCH";
-                defaultTotal = new BigDecimal("500000.00"); // 分公司50万
+                defaultTotal = fundPoolConfigService.getInitialAmount("BRANCH");
                 break;
             case 3:
                 levelType = "HQ";
-                defaultTotal = new BigDecimal("1000000.00"); // 总公司100万
+                defaultTotal = fundPoolConfigService.getInitialAmount("HQ");
                 deptId = null;
                 break;
             default:
@@ -723,7 +724,7 @@ public class BudgetAdjustmentAppServiceImpl implements IBudgetAdjustmentAppServi
         newReserved.setDeptName(deptName);
         newReserved.setTotalAmount(defaultTotal);
         newReserved.setAllocatedAmount(BigDecimal.ZERO);
-        newReserved.setWarningThreshold(new BigDecimal("80.00"));
+        newReserved.setWarningThreshold(fundPoolConfigService.getWarningThreshold(levelType));
         newReserved.setCreatorId(LoginHelper.getUserId());
         newReserved.setStatus("ACTIVE");
         newReserved.setRemark("审批时自动创建的默认资金池");

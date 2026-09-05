@@ -13,6 +13,7 @@ import com.ruoyi.system.domain.bo.BudgetAdjustmentAppBo;
 import com.ruoyi.system.domain.vo.BudgetAdjustmentAppVo;
 import com.ruoyi.system.domain.ReservedBudget;
 import com.ruoyi.system.service.IBudgetAdjustmentAppService;
+import com.ruoyi.system.service.IFundPoolConfigService;
 import com.ruoyi.system.service.IReservedBudgetService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -34,6 +35,7 @@ public class BudgetAdjustmentAppController extends BaseController {
 
     private final IBudgetAdjustmentAppService budgetAdjustmentAppService;
     private final IReservedBudgetService reservedBudgetService;
+    private final IFundPoolConfigService fundPoolConfigService;
 
     /**
      * 提交预算调整申请
@@ -122,22 +124,15 @@ public class BudgetAdjustmentAppController extends BaseController {
         String budgetPeriod = cal.get(java.util.Calendar.YEAR) + "-" + String.format("%02d", cal.get(java.util.Calendar.MONTH) + 1);
         ReservedBudget reserved = reservedBudgetService.getMyReservedBudget(budgetPeriod);
         if (reserved == null) {
-            // 无记录时返回默认资金池额度（分公司50万，部门10万）
+            // 无记录时返回默认资金池额度（从配置表读取）
             reserved = new ReservedBudget();
             reserved.setBudgetPeriod(budgetPeriod);
-            // 根据当前用户角色判断层级并设置默认额度
+            // 根据当前用户角色判断层级并从配置表读取额度
             java.util.Set<String> roleKeys = com.ruoyi.common.helper.LoginHelper.getLoginUser().getRolePermission();
             String roleKey = (roleKeys != null && !roleKeys.isEmpty()) ? roleKeys.iterator().next() : "";
-            if ("admin".equals(roleKey) || "headquarters".equals(roleKey)) {
-                reserved.setLevelType("HQ");
-                reserved.setTotalAmount(new java.math.BigDecimal("1000000.00")); // 总公司100万
-            } else if ("branch".equals(roleKey)) {
-                reserved.setLevelType("BRANCH");
-                reserved.setTotalAmount(new java.math.BigDecimal("500000.00")); // 分公司50万
-            } else {
-                reserved.setLevelType("DEPT");
-                reserved.setTotalAmount(new java.math.BigDecimal("100000.00")); // 部门10万
-            }
+            String levelType = fundPoolConfigService.getLevelTypeByRoleKey(roleKey);
+            reserved.setLevelType(levelType);
+            reserved.setTotalAmount(fundPoolConfigService.getInitialAmount(levelType));
             reserved.setAllocatedAmount(java.math.BigDecimal.ZERO);
             reserved.setAvailableAmount(reserved.getTotalAmount());
             return R.ok(reserved);

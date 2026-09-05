@@ -41,6 +41,9 @@ nbdist/
 *.xml.versionsBackup
 *.swp
 
+# Deployment/runtime artifacts (exceed GitHub's 100MB file size limit)
+docs/run/server/app.jar
+
 !*/build/*.java
 !*/build/*.html
 !*/build/*.xml

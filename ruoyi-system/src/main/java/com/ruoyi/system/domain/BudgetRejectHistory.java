@@ -6,7 +6,7 @@ import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 import java.util.Date;
 
-import com.ruoyi.common.core.domain.BaseEntity;
+import com.ruoyi.common.core.domain.TenantEntity;
 
 /**
  * 预算驳回历史记录对象 budget_reject_history
@@ -17,7 +17,7 @@ import com.ruoyi.common.core.domain.BaseEntity;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("budget_reject_history")
-public class BudgetRejectHistory extends BaseEntity {
+public class BudgetRejectHistory extends TenantEntity {
 
     private static final long serialVersionUID = 1L;
 

@@ -187,3 +187,29 @@ export function getPreviousMonthDetails(orgId, budgetYear, budgetMonth) {
     params: { orgId, budgetYear, budgetMonth }
   })
 }
+
+// 查询大类预算额度（老板粗粒度定，T5.14①，支持年月+部门维度）
+export function getCategoryQuota(budgetYear, budgetMonth, departmentId) {
+  return request({
+    url: '/system/preparation/categoryQuota',
+    method: 'get',
+    params: { budgetYear, budgetMonth, departmentId }
+  })
+}
+
+// 保存大类预算额度（老板粗粒度设定，T5.14①）
+export function saveCategoryQuota(data) {
+  return request({
+    url: '/system/preparation/categoryQuota',
+    method: 'post',
+    data: data
+  })
+}
+
+// 生成拆分初稿（大类额度按比例拆分到预算科目，T5.14②）
+export function generateSplitDraft(id) {
+  return request({
+    url: '/system/preparation/splitDraft/' + id,
+    method: 'post'
+  })
+}

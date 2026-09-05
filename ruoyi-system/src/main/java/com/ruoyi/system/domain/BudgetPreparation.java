@@ -7,7 +7,7 @@ import java.io.Serializable;
 import java.util.Date;
 import java.math.BigDecimal;
 
-import com.ruoyi.common.core.domain.BaseEntity;
+import com.ruoyi.common.core.domain.TenantEntity;
 
 /**
  * 预算编制主表对象 budget_preparationd
@@ -18,7 +18,7 @@ import com.ruoyi.common.core.domain.BaseEntity;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("budget_preparation")
-public class BudgetPreparation extends BaseEntity {
+public class BudgetPreparation extends TenantEntity {
 
     private static final long serialVersionUID=1L;
 
@@ -42,6 +42,11 @@ public class BudgetPreparation extends BaseEntity {
      * 组织名称（冗余字段，便于查询）
      */
     private String orgName;
+
+    /**
+     * 部门ID（高级版部门级预算双粒度，T6.1 / FEAT_DEPT_BUDGET，空=公司级）
+     */
+    private Long departmentId;
 
     /**
      * 预算年度
@@ -95,6 +100,12 @@ public class BudgetPreparation extends BaseEntity {
     private BigDecimal totalBudget;
 
     /**
+     * 老板设定的大类预算额度(粗粒度) JSON（T5.14 ①）
+     * 格式：[{"categoryCode":"TRAVEL","categoryName":"差旅招待","amount":50000}]
+     */
+    private String categoryQuotas;
+
+    /**
      * 实际总额
      */
     private BigDecimal totalActual;
@@ -108,6 +119,12 @@ public class BudgetPreparation extends BaseEntity {
      * Flowable流程实例ID
      */
     private String processInstanceId;
+
+    /**
+     * 锁定时的规则版本快照ID（fee_rule_version，FEAT_RULE_GRAYSCALE）
+     * 已批准预算永远使用当时的规则快照，规则迭代不腐蚀历史（T7.4）
+     */
+    private Long ruleVersionId;
 
     /**
      * 备注

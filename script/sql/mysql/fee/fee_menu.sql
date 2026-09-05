@@ -132,3 +132,37 @@ INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component,
 (3111, '报销单审批查询', 3016, 1, '#', '', '', 1, 0, 'F', '0', '0', 'fee:expenseApproval:query', '#', 'admin', sysdate(), '', NULL, ''),
 (3112, '报销单审批通过', 3016, 2, '#', '', '', 1, 0, 'F', '0', '0', 'fee:expenseApproval:approve', '#', 'admin', sysdate(), '', NULL, ''),
 (3113, '报销单审批驳回', 3016, 3, '#', '', '', 1, 0, 'F', '0', '0', 'fee:expenseApproval:reject', '#', 'admin', sysdate(), '', NULL, '');
+
+-- ----------------------------
+-- 补充：系统消息中心（隐藏菜单，挂在系统管理目录下）
+-- ----------------------------
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark) VALUES
+(3114, '消息中心', 1, 11, 'message', 'system/message/index', '', 1, 0, 'C', '1', '0', 'system:message:list', 'message', 'admin', sysdate(), '', NULL, '系统消息中心（隐藏菜单，通过导航栏铃铛进入）');
+
+-- ----------------------------
+-- 补充：AI提示词配置（企业版，挂在费用管控目录下）
+-- ----------------------------
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark) VALUES
+(3115, 'AI提示词配置', 3000, 13, 'aiPrompt', 'system/fee/ai-prompt/index', '', 1, 0, 'C', '0', '0', 'fee:aiPrompt:list', 'message', 'admin', sysdate(), '', NULL, 'AI提示词配置菜单');
+
+-- ----------------------------
+-- 补充：系统初始化配置（挂在费用管控目录下）
+-- ----------------------------
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark) VALUES
+(3116, '系统初始化', 3000, 14, 'init', 'system/fee/init/index', '', 1, 0, 'C', '0', '0', 'fee:init:list', 'edit', 'admin', sysdate(), '', NULL, '系统初始化配置菜单（工作流配置+资金池配置）');
+
+-- ----------------------------
+-- 补充：超预算审批列表（隐藏菜单，over-budget 模块入口）
+-- ----------------------------
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark) VALUES
+(3117, '超预算审批', 3000, 15, 'overBudget', 'system/fee/over-budget/index', '', 1, 0, 'C', '1', '0', 'fee:overBudget:list', 'warning', 'admin', sysdate(), '', NULL, '超预算审批列表（隐藏菜单）');
+
+-- ----------------------------
+-- 补充：隐藏子页面菜单（路由注册用，visible=1 不显示在侧边栏）
+-- ----------------------------
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark) VALUES
+(3121, '超预算审批详情', 3117, 1, 'detail', 'system/fee/over-budget/detail', '', 1, 0, 'C', '1', '0', 'fee:overBudget:query', '#', 'admin', sysdate(), '', NULL, '超预算审批详情页面'),
+(3122, '预算调整申请', 3010, 6, 'apply', 'system/fee/budget-adjustment/apply', '', 1, 0, 'C', '1', '0', 'fee:budgetAdjustment:apply', '#', 'admin', sysdate(), '', NULL, '预算调整申请页面'),
+(3123, '预算调整审批详情', 3010, 7, 'approvalDetail', 'system/fee/budget-adjustment/approvalDetail', '', 1, 0, 'C', '1', '0', 'fee:budgetAdjustment:query', '#', 'admin', sysdate(), '', NULL, '预算调整审批详情页面'),
+(3124, '报销单详情', 3004, 7, 'detail', 'system/fee/expense/detail', '', 1, 0, 'C', '1', '0', 'fee:expense:query', '#', 'admin', sysdate(), '', NULL, '报销单详情页面'),
+(3125, '报销单表单', 3004, 8, 'form', 'system/fee/expense/form', '', 1, 0, 'C', '1', '0', 'fee:expense:add', '#', 'admin', sysdate(), '', NULL, '报销单新增/编辑表单页面');
