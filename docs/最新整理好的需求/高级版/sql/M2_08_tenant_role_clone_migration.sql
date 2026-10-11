@@ -62,6 +62,7 @@ WHERE r.`tenant_id` IS NOT NULL
 -- 3. 租户用户的角色指针：共享预设角色 → 本租户克隆角色
 -- ----------------------------
 -- 3.1 改指（跳过已持有克隆角色的用户，避免 sys_user_role 联合主键冲突）
+SET SQL_SAFE_UPDATES = 0;
 UPDATE `sys_user_role` ur
   JOIN `sys_user` u      ON u.`user_id` = ur.`user_id`
                         AND u.`tenant_id` IS NOT NULL AND u.`tenant_id` <> 0
@@ -75,6 +76,7 @@ WHERE NOT EXISTS (
     SELECT 1 FROM (SELECT * FROM `sys_user_role`) x
     WHERE x.`user_id` = ur.`user_id` AND x.`role_id` = clone.`role_id`
 );
+SET SQL_SAFE_UPDATES = 1;
 
 -- 3.2 清理改指后残留的共享角色关联（仅清理已有克隆角色对应的记录）
 DELETE ur FROM `sys_user_role` ur

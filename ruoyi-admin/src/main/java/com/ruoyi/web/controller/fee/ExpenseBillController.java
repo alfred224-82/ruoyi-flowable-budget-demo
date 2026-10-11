@@ -44,6 +44,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/fee/expense")
+@RequireFeature("FEAT_EXPENSE_CONTROL")
 public class ExpenseBillController extends BaseController {
 
     private final IExpenseBillService expenseBillService;

@@ -30,8 +30,7 @@ public class ProjectBo implements Serializable {
     /** 业态包编码（空则取当前租户 biz_code，默认 fund_control） */
     private String bizCode;
 
-    /** 容器类型：activity/team_buy/general */
-    @NotBlank(message = "容器类型不能为空", groups = {AddGroup.class})
+    /** 容器类型：activity/team_buy/general（ActivityController 自动填充，ProjectController 需前端传值，业务层校验） */
     private String type;
 
     /** 项目/活动名称 */

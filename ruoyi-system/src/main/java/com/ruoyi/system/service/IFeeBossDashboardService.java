@@ -1,6 +1,7 @@
 package com.ruoyi.system.service;
 
 import com.ruoyi.system.domain.vo.FeeDashboardVo;
+import com.ruoyi.system.domain.vo.FeeLightOverviewVo;
 import com.ruoyi.system.domain.vo.FeeMemberLoadVo;
 import com.ruoyi.system.domain.vo.FeeProjectVo;
 
@@ -39,4 +40,10 @@ public interface IFeeBossDashboardService {
      * 进行中项目成员按用户聚合：投入比例合计>100% 标记负载超限（仅提示不拦截）
      */
     List<FeeMemberLoadVo> memberLoad();
+
+    /**
+     * 轻量收支概览（T5.19④，基础版首页标配，不设功能开关）
+     * 本月收入（已核验）/ 本月支出（已审批报销+付款）/ 本月结余，不含大类下钻
+     */
+    FeeLightOverviewVo getLightOverview();
 }

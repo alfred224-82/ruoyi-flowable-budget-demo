@@ -91,6 +91,14 @@ public class SysRole extends BaseEntity {
     private String status;
 
     /**
+     * 角色产品线归属（T15.25 角色可见性硬隔离）：micro(小微专属)/enterprise(企业专属)/both(双线共用)。
+     * <p>★硬隔离发生在数据源层：平台管理员「可选角色列表」按本租户 tenant_type 过滤
+     * {@code tenant_type_scope IN (tenant_type, 'both')}；tenant_role_mapping 写入校验 scope 匹配，越线报错。
+     * 标准角色归属：boss/platform_admin=both；salesman/customer=micro；manager/employee/finance=enterprise。
+     */
+    private String tenantTypeScope;
+
+    /**
      * 删除标志（0代表存在 2代表删除）
      */
     @TableLogic

@@ -6,8 +6,12 @@ import cn.dev33.satoken.exception.NotRoleException;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.http.HttpStatus;
 import com.ruoyi.common.core.domain.R;
+import com.ruoyi.common.exception.BusinessException;
 import com.ruoyi.common.exception.DemoModeException;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.exception.SystemBugException;
+import com.ruoyi.common.exception.TechnicalException;
+import com.ruoyi.common.utils.LogStructUtil;
 import com.ruoyi.common.utils.StreamUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.MyBatisSystemException;
@@ -58,7 +62,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotLoginException.class)
     public R<Void> handleNotLoginException(NotLoginException e, HttpServletRequest request) {
         String requestURI = request.getRequestURI();
-        log.error("请求地址'{}',认证失败'{}',无法访问系统资源", requestURI, e.getMessage());
+        // 登录态过期/失效属于预期的客户端状态（前端轮询会高频触发），非服务端错误，降级为 WARN 避免日志噪音
+        log.warn("请求地址'{}',认证失败'{}',无法访问系统资源", requestURI, e.getMessage());
         return R.fail(HttpStatus.HTTP_UNAUTHORIZED, "认证失败，无法访问系统资源");
     }
 
@@ -156,6 +161,41 @@ public class GlobalExceptionHandler {
         log.error(e.getMessage(), e);
         String message = e.getBindingResult().getFieldError().getDefaultMessage();
         return R.fail(message);
+    }
+
+    /**
+     * 业务异常（新分层体系）
+     * 对应开发规范"二、异常分层设计" BUSINESS 类型
+     */
+    @ExceptionHandler(BusinessException.class)
+    public R<Void> handleBusinessException(BusinessException e, HttpServletRequest request) {
+        String requestURI = request.getRequestURI();
+        LogStructUtil.logBusinessError(log, e);
+        // 返回 errorCode 作为 code，userMessage 作为提示
+        return R.fail(e.getErrorCode() != null ? e.getErrorCode().hashCode() : HttpStatus.HTTP_INTERNAL_ERROR,
+            e.getUserMessage());
+    }
+
+    /**
+     * 技术异常（新分层体系）
+     * 对应开发规范"二、异常分层设计" TECHNICAL 类型
+     * 对用户隐藏技术细节，仅返回通用提示
+     */
+    @ExceptionHandler(TechnicalException.class)
+    public R<Void> handleTechnicalException(TechnicalException e, HttpServletRequest request) {
+        LogStructUtil.logTechnicalError(log, e);
+        return R.fail("系统繁忙，请稍后重试");
+    }
+
+    /**
+     * 系统 Bug 异常（新分层体系）
+     * 对应开发规范"二、异常分层设计" SYSTEM_BUG 类型
+     * 对用户隐藏内部细节，仅返回通用提示
+     */
+    @ExceptionHandler(SystemBugException.class)
+    public R<Void> handleSystemBugException(SystemBugException e, HttpServletRequest request) {
+        LogStructUtil.logSystemBugError(log, e);
+        return R.fail("系统内部错误，请联系管理员");
     }
 
     /**

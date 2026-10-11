@@ -43,6 +43,9 @@ public class SysBillingPlan extends BaseEntity {
     /** 默认授予版本：BASIC/ADVANCED/PROFESSIONAL */
     private String edition;
 
+    /** 适用版本档位（T15.27 分档计费）：micro_lite/micro_pro/basic/advanced/pro；NULL=通用套餐 */
+    private String versionType;
+
     /** 是否仅首次可用(0否 1是；首月特惠同租户仅一次) */
     private Integer firstOnly;
 

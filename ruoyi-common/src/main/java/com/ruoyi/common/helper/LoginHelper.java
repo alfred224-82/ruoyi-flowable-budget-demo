@@ -97,8 +97,15 @@ public class LoginHelper {
 
     /**
      * 获取租户ID
+     * <p>
+     * 定时任务 / 异步线程无 Sa-Token 登录态，优先取 {@link TenantHelper} 显式设置的租户上下文
+     * （T15.21 @TenantJob 切面逐个租户 set）；Web 请求线程从不设置该上下文，故行为不变。
      */
     public static Long getTenantId() {
+        Long contextTenantId = TenantHelper.getTenantId();
+        if (contextTenantId != null) {
+            return contextTenantId;
+        }
         try {
             return getLoginUser().getTenantId();
         } catch (Exception e) {

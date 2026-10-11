@@ -5,10 +5,12 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ruoyi.common.constant.CacheConstants;
 import com.ruoyi.common.constant.EditionFeatureConfig;
 import com.ruoyi.common.core.service.FeatureChecker;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.helper.LoginHelper;
+import com.ruoyi.common.utils.redis.RedisUtils;
 import com.ruoyi.system.config.LicenseProperties;
 import com.ruoyi.system.domain.SysLicense;
 import com.ruoyi.system.domain.SysTenant;
@@ -114,7 +116,8 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
 
             currentLicense = license;
             // 加载版本等级
-            currentEdition = StrUtil.isNotBlank(license.getEdition()) ? license.getEdition() : EditionFeatureConfig.EDITION_BASIC;
+            // ★T3.11 归一化：保证内部状态变量始终为标准编码 BASIC/ADVANCED/PROFESSIONAL
+            currentEdition = EditionFeatureConfig.normalizeEdition(license.getEdition());
             // 加载功能列表：优先从features JSON解析，若为空则按edition默认配置
             activeFeatures = parseFeatures(license.getFeatures(), currentEdition);
             // 加载授权行业
@@ -262,6 +265,16 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
     }
 
     @Override
+    public String getCurrentBizCode() {
+        // T10.5：租户上下文感知，返回当前登录租户业态包编码（前端据此加载 biz_copy 文案）
+        Long tenantId = getCurrentTenantId();
+        if (tenantId != null) {
+            return loadTenantBizCode(tenantId);
+        }
+        return BizBundleServiceImpl.DEFAULT_BIZ_CODE;
+    }
+
+    @Override
     public boolean hasFeature(String featureCode) {
         // T3.12：租户上下文感知——租户用户从租户级 License 读取
         Long tenantId = getCurrentTenantId();
@@ -343,7 +356,9 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
      * hard模式：仅接受带有效RSA签名的License文件，禁止明文切换
      *
      * 支持JSON字段：
-     * - edition: 版本等级（BASIC/ADVANCED/ENTERPRISE）
+     * - edition: 版本等级（BASIC/ADVANCED/PROFESSIONAL/MICRO）
+     * - tenantType: 产品线（micro/enterprise，T3.18 v1.29 新增，用于小微版档位区分）
+     * - versionType: 版本档位（micro_lite/micro_pro/basic/advanced/pro，T3.18 v1.29 新增）
      * - licenseType: 授权类型（TRIAL=试用/FORMAL=正式）
      * - durationDays: 授权期限天数（7=7天试用, 90=3个月, 365=1年, null=永久）
      * - customer: 客户名称
@@ -367,6 +382,14 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
             }
 
             String edition = getJsonText(node, "edition");
+            // ★T3.18 v1.29：支持 tenantType/versionType，versionType 优先推导 edition（与前端 syncEditionFromVersionType 一致）
+            String versionType = getJsonText(node, "versionType");
+            if (StrUtil.isNotBlank(versionType)) {
+                String derived = deriveEditionFromVersionType(versionType);
+                if (StrUtil.isNotBlank(derived)) {
+                    edition = derived;
+                }
+            }
             String licenseType = getJsonText(node, "licenseType");
             String customer = getJsonText(node, "customer");
             String features = getJsonText(node, "features");
@@ -386,7 +409,8 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
             if (existing != null) {
                 // === 更新现有License ===
                 if (StrUtil.isNotBlank(edition)) {
-                    existing.setEdition(edition);
+                    // ★T3.11 归一化：pro/ENTERPRISE → PROFESSIONAL，adv → ADVANCED
+                    existing.setEdition(EditionFeatureConfig.normalizeEdition(edition));
                 }
                 if (StrUtil.isNotBlank(licenseType)) {
                     existing.setLicenseType(licenseType);
@@ -425,7 +449,8 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
                 // === 新增License ===
                 SysLicense newLicense = new SysLicense();
                 newLicense.setLicenseId("LIC-" + new SimpleDateFormat("yyyy").format(new Date()) + "-" + String.format("%06d", new Random().nextInt(999999)));
-                newLicense.setEdition(StrUtil.isNotBlank(edition) ? edition : EditionFeatureConfig.EDITION_BASIC);
+                // ★T3.11 归一化：License JSON 的 edition 原值（pro/ENTERPRISE 等）统一为标准编码
+                newLicense.setEdition(EditionFeatureConfig.normalizeEdition(edition));
                 newLicense.setLicenseType(StrUtil.isNotBlank(licenseType) ? licenseType : "FORMAL");
                 newLicense.setCustomer(StrUtil.isNotBlank(customer) ? customer : "未命名客户");
                 newLicense.setMachineFingerprint(exportFingerprint());
@@ -604,9 +629,23 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
         }
         // 业态维度：读取租户 biz_code（T10.8 第③维）
         String bizCode = loadTenantBizCode(tenantId);
+        // ★M20_04：读取 sys_tenant.version_type 作为小微版识别兜底
+        //   小微版租户可能无 License 记录或 License edition 非 MICRO，
+        //   但 version_type 是可靠的版本标识，以此为准保证 FEAT_RATING 等小微版功能可用
+        String tenantVersionType = loadTenantVersionType(tenantId);
+        boolean isMicroTenant = isMicroVersionType(tenantVersionType);
         SysLicense license = loadTenantLicense(tenantId);
         if (license == null) {
-            // 无 License 的租户降级为基础版默认能力，仍受业态包过滤（三维一致）
+            // 无 License 的租户
+            if (isMicroTenant) {
+                // ★小微版无 License 时按 MICRO_FEATURES 授权（version_type 为权威来源）
+                Set<String> microFeatures = Collections.unmodifiableSet(
+                    applyBizFilter(EditionFeatureConfig.MICRO_FEATURES, bizCode));
+                tenantFeaturesCache.put(tenantId, microFeatures);
+                tenantEditionCache.put(tenantId, EditionFeatureConfig.EDITION_MICRO);
+                return microFeatures;
+            }
+            // 非小微版降级为基础版默认能力，仍受业态包过滤（三维一致）
             Set<String> basic = applyBizFilter(EditionFeatureConfig.BASIC_FEATURES, bizCode);
             Set<String> basicImmutable = Collections.unmodifiableSet(basic);
             tenantFeaturesCache.put(tenantId, basicImmutable);
@@ -614,7 +653,16 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
             return basicImmutable;
         }
         // 租户版本等级
-        String edition = StrUtil.isNotBlank(license.getEdition()) ? license.getEdition() : EditionFeatureConfig.EDITION_BASIC;
+        // ★T3.11 归一化：保证 tenantEditionCache 缓存标准编码
+        String edition = EditionFeatureConfig.normalizeEdition(license.getEdition());
+        // ★M20_04：sys_tenant.version_type 优先级高于 License.edition
+        //   小微版租户（micro_lite/micro_pro）即使 License 缺失或 edition 不匹配，
+        //   也强制使用 MICRO 版本功能集，确保 FEAT_RATING / FEAT_PROMOTION_DISTRIBUTION 等可用
+        if (isMicroTenant && !EditionFeatureConfig.EDITION_MICRO.equals(edition)) {
+            log.info("[License] 租户 {} version_type={} 但 License edition={}，以 version_type 为准升级为 MICRO",
+                tenantId, tenantVersionType, license.getEdition());
+            edition = EditionFeatureConfig.EDITION_MICRO;
+        }
         tenantEditionCache.put(tenantId, edition);
         // 维度①：License 授权功能（并集策略：版本默认 ∪ 数据库存储）
         Set<String> licenseFeatures = parseFeatures(license.getFeatures(), edition);
@@ -642,6 +690,33 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
             log.warn("[License] 读取租户 {} 业态编码失败，回落默认业态包", tenantId, e);
         }
         return BizBundleServiceImpl.DEFAULT_BIZ_CODE;
+    }
+
+    /**
+     * 读取租户版本类型（M20_04 新增）
+     * 用于小微版（micro_lite/micro_pro）识别兜底，当 License 缺失或 edition 不匹配时以 version_type 为准
+     */
+    private String loadTenantVersionType(Long tenantId) {
+        try {
+            SysTenant tenant = tenantMapper.selectById(tenantId);
+            if (tenant != null && StrUtil.isNotBlank(tenant.getVersionType())) {
+                return tenant.getVersionType();
+            }
+        } catch (Exception e) {
+            log.warn("[License] 读取租户 {} 版本类型失败", tenantId, e);
+        }
+        return null;
+    }
+
+    /**
+     * 判断 version_type 是否属于小微版（micro_lite / micro_pro / micro）
+     */
+    private boolean isMicroVersionType(String versionType) {
+        if (StrUtil.isBlank(versionType)) {
+            return false;
+        }
+        String v = versionType.trim().toLowerCase(Locale.ROOT);
+        return "micro".equals(v) || "micro_lite".equals(v) || "micro_pro".equals(v);
     }
 
     /**
@@ -704,20 +779,51 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
             } else {
                 vo.setExpiresAt("永久");
             }
-            String edition = StrUtil.isNotBlank(license.getEdition()) ? license.getEdition() : EditionFeatureConfig.EDITION_BASIC;
+            // ★T3.11 归一化：保证 API 返回标准编码
+            String edition = EditionFeatureConfig.normalizeEdition(license.getEdition());
             vo.setEdition(edition);
             vo.setFeatures(getTenantActiveFeatures(tenantId));
             vo.setIndustries(parseJsonSet(license.getIndustries()));
+            // ★试用剩余小时数：基于租户 License 的 activatedAt + trialDays 计算
+            vo.setTrialRemainingHours(calcTenantTrialRemainingHours(license));
         } else {
-            // 无 License，降级为基础版默认
-            vo.setLicenseId("未授权");
-            vo.setEdition(EditionFeatureConfig.EDITION_BASIC);
-            vo.setFeatures(EditionFeatureConfig.BASIC_FEATURES);
-            vo.setIndustries(Collections.emptySet());
-            vo.setStatus("NONE");
-            vo.setExpiresAt("-");
+            // ★M20_04：无 License 时检查是否小微版租户（以 version_type 为准）
+            String vt = loadTenantVersionType(tenantId);
+            if (isMicroVersionType(vt)) {
+                vo.setLicenseId("小微版内置");
+                vo.setEdition(EditionFeatureConfig.EDITION_MICRO);
+                vo.setFeatures(getTenantActiveFeatures(tenantId));
+                vo.setIndustries(Collections.emptySet());
+                vo.setStatus("MICRO_BUILTIN");
+                vo.setExpiresAt("-");
+            } else {
+                // 非小微版，降级为基础版默认
+                vo.setLicenseId("未授权");
+                vo.setEdition(EditionFeatureConfig.EDITION_BASIC);
+                vo.setFeatures(EditionFeatureConfig.BASIC_FEATURES);
+                vo.setIndustries(Collections.emptySet());
+                vo.setStatus("NONE");
+                vo.setExpiresAt("-");
+            }
         }
         return vo;
+    }
+
+    /**
+     * 计算租户 License 的试用剩余小时数
+     * <p>非试用类型或 activatedAt 为空时返回 -1；已过期返回 0
+     */
+    private long calcTenantTrialRemainingHours(SysLicense license) {
+        if (!"TRIAL".equals(license.getLicenseType())) {
+            return -1;
+        }
+        if (license.getActivatedAt() == null) {
+            return -1;
+        }
+        long elapsedMs = System.currentTimeMillis() - license.getActivatedAt().getTime();
+        long totalMs = TimeUnit.DAYS.toMillis(license.getTrialDays() != null ? license.getTrialDays() : 0);
+        long remainingMs = totalMs - elapsedMs;
+        return remainingMs > 0 ? TimeUnit.MILLISECONDS.toHours(remainingMs) : 0;
     }
 
     /**
@@ -781,6 +887,17 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
                 fromEdition = tenant.getEdition();
             }
 
+            // ★T3.11 bizCode 匹配校验：License 声明的业态包必须与租户业态包一致（空=不限）
+            String licenseBizCode = getJsonText(node, "bizCode");
+            if (StrUtil.isNotBlank(licenseBizCode)) {
+                String tenantBizCode = StrUtil.isNotBlank(tenant.getBizCode())
+                    ? tenant.getBizCode() : BizBundleServiceImpl.DEFAULT_BIZ_CODE;
+                if (!licenseBizCode.equalsIgnoreCase(tenantBizCode)) {
+                    throw new ServiceException("License业态包[" + licenseBizCode
+                        + "]与租户业态包[" + tenantBizCode + "]不匹配，请使用对应业态包的License");
+                }
+            }
+
             // 创建新 License 记录
             SysLicense newLicense = new SysLicense();
             newLicense.setTenantId(tenantId);
@@ -789,7 +906,8 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
                 newLicense.setLicenseId("LIC-" + new SimpleDateFormat("yyyy").format(new Date())
                     + "-" + String.format("%06d", new Random().nextInt(999999)));
             }
-            newLicense.setEdition(StrUtil.isNotBlank(edition) ? edition : EditionFeatureConfig.EDITION_BASIC);
+            // ★T3.11 归一化（主目标）：License JSON 的 edition 原值统一为标准编码后落库
+            newLicense.setEdition(EditionFeatureConfig.normalizeEdition(edition));
             newLicense.setLicenseType(StrUtil.isNotBlank(licenseType) ? licenseType : "FORMAL");
             newLicense.setCustomer(StrUtil.isNotBlank(customer) ? customer : tenant.getCompanyName());
             newLicense.setIssuedAt(new Date());
@@ -797,7 +915,9 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
             newLicense.setLicenseVersion(licenseVersion);
             newLicense.setStatus("ACTIVE");
             newLicense.setIndustries(StrUtil.isNotBlank(industries) ? industries : null);
-            newLicense.setMachineFingerprint(StrUtil.isNotBlank(machineFingerprint) ? machineFingerprint : null);
+            // machine_fingerprint 列为 NOT NULL，签发时不绑定机器指纹（留空），
+            // 此处用空串而非 null，避免 MyBatis-Plus(NOT_NULL 策略) 剔除该列导致 SQL 报错
+            newLicense.setMachineFingerprint(StrUtil.isNotBlank(machineFingerprint) ? machineFingerprint : "");
             // 功能列表
             if (StrUtil.isNotBlank(features)) {
                 newLicense.setFeatures(features);
@@ -828,6 +948,24 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
             tenantUpdate.setLicenseType(newLicense.getLicenseType());
             tenantMapper.updateById(tenantUpdate);
 
+            // ★续期后主动恢复租户状态：新到期日在未来（或永久）时，将 EXPIRED/GRACE → NORMAL
+            // 解决 importLicenseForTenant 只更新 expireDate 不更新 status，导致首页仍显示"已到期"、
+            // 菜单过滤仍按 EXPIRED 拦截的问题（TenantStatusChecker 被动纠正仅在下次 API 调用时触发）
+            Date now = new Date();
+            boolean expireInFuture = (expiresAt == null || expiresAt.after(now));
+            String currentStatus = tenant.getStatus();
+            if (expireInFuture && ("EXPIRED".equals(currentStatus) || "GRACE".equals(currentStatus))) {
+                SysTenant statusUpdate = new SysTenant();
+                statusUpdate.setId(tenantId);
+                statusUpdate.setStatus("NORMAL");
+                statusUpdate.setUpdateBy("license-renewal");
+                tenantMapper.updateById(statusUpdate);
+                // 清除租户状态缓存 + 通知其他节点刷新
+                RedisUtils.deleteObject(CacheConstants.TENANT_STATUS_KEY + tenantId);
+                log.info("[License] 租户 {} 续期成功，状态已恢复为 NORMAL（原状态={}，新到期日={}）",
+                    tenantId, currentStatus, expiresAt);
+            }
+
             // 清除租户缓存，触发重新加载
             evictTenantCache(tenantId);
 
@@ -847,6 +985,143 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
     }
 
     /**
+     * Admin 侧签发：为指定租户生成可直接导入的 License JSON（T15.33+）。
+     * <p>输出格式与 {@link #importLicenseForTenant(Long, String)} 完全对齐：
+     * 包含 licenseId / tenantId / edition / licenseType / customer / features /
+     * industries / expiresAt / machineFingerprint / licenseVersion / signature。
+     * <p>soft 模式：signature = "LOCAL-GENERATED"（导入端 soft 模式不校验签名）；
+     * hard 模式：必须配置 {@code license.private-key}，使用 RSA-SHA256 真实签名。
+     */
+    @Override
+    public String generateLicenseForTenant(Long tenantId, String payloadJson) {
+        try {
+            JsonNode node = objectMapper.readTree(payloadJson);
+
+            // ① 解析签发参数
+            String editionRaw = getJsonText(node, "edition");
+            String versionType = getJsonText(node, "versionType");
+            String tenantType = getJsonText(node, "tenantType");
+            String licenseType = getJsonText(node, "licenseType");
+            String customer = getJsonText(node, "customer");
+            String industries = getJsonText(node, "industries");
+            String bizCode = getJsonText(node, "bizCode");
+            String plan = getJsonText(node, "plan");
+            Integer durationDays = (node.has("durationDays") && !node.get("durationDays").isNull())
+                ? node.get("durationDays").asInt() : null;
+            Integer licenseVersion = (node.has("licenseVersion") && !node.get("licenseVersion").isNull())
+                ? node.get("licenseVersion").asInt() : 1;
+
+            // ② versionType 优先推导 edition（与 replaceLicense / importLicenseForTenant 一致）
+            String edition = editionRaw;
+            if (StrUtil.isNotBlank(versionType)) {
+                String derived = deriveEditionFromVersionType(versionType);
+                if (StrUtil.isNotBlank(derived)) {
+                    edition = derived;
+                }
+            }
+            // ★T3.11 归一化：pro/ENTERPRISE/adv/micro 等别名统一为标准编码
+            edition = EditionFeatureConfig.normalizeEdition(edition);
+
+            // ③ 默认值兜底
+            if (StrUtil.isBlank(licenseType)) {
+                licenseType = "FORMAL";
+            }
+            if (StrUtil.isBlank(customer)) {
+                if (tenantId != null) {
+                    SysTenant t = tenantMapper.selectById(tenantId);
+                    customer = (t != null && StrUtil.isNotBlank(t.getCompanyName())) ? t.getCompanyName() : "未命名客户";
+                } else {
+                    customer = "未命名客户";
+                }
+            }
+
+            // ④ licenseId 自动生成：LIC-{year}-{6位随机}
+            String licenseId = "LIC-" + new SimpleDateFormat("yyyy").format(new Date())
+                + "-" + String.format("%06d", new Random().nextInt(999999));
+
+            // ⑤ 计算 expiresAt（durationDays 为 null 或 0 表示永久）
+            String expiresAt = "";
+            if (durationDays != null && durationDays > 0) {
+                Calendar cal = Calendar.getInstance();
+                cal.add(Calendar.DAY_OF_MONTH, durationDays);
+                expiresAt = new SimpleDateFormat("yyyy-MM-dd").format(cal.getTime());
+            }
+
+            // ⑥ features 从 EditionFeatureConfig 派生（排序后序列化为 JSON 数组字符串）
+            Set<String> featureSet = EditionFeatureConfig.getFeaturesByEdition(edition);
+            List<String> sortedFeatures = new ArrayList<>(featureSet);
+            Collections.sort(sortedFeatures);
+            String features = objectMapper.writeValueAsString(sortedFeatures);
+
+            // ⑦ machineFingerprint：签发时不绑定（留空），由租户导入端按需处理
+            String machineFingerprint = "";
+
+            // ⑧ 签名：soft 模式占位；hard 模式 RSA-SHA256 真实签名
+            String signContent = LicenseSignUtil.buildSignContent(
+                licenseId, edition, licenseType, customer, features, industries,
+                expiresAt, machineFingerprint, licenseVersion
+            );
+            String signature;
+            if (licenseProperties.isHardMode()) {
+                String privateKey = licenseProperties.getPrivateKey();
+                if (StrUtil.isBlank(privateKey)) {
+                    throw new ServiceException("生产模式(hard)签发 License 需要配置 license.private-key，"
+                        + "或改用 LicenseGenerateTool CLI 离线签发");
+                }
+                signature = LicenseSignUtil.sign(signContent, privateKey);
+            } else {
+                signature = "LOCAL-GENERATED";
+            }
+
+            // ⑨ 组装输出 JSON（LinkedHashMap 保证字段顺序稳定，便于人工比对）
+            Map<String, Object> out = new LinkedHashMap<>();
+            out.put("licenseId", licenseId);
+            if (tenantId != null) {
+                out.put("tenantId", tenantId);
+            }
+            if (StrUtil.isNotBlank(bizCode)) {
+                out.put("bizCode", bizCode);
+            }
+            if (StrUtil.isNotBlank(plan)) {
+                out.put("plan", plan);
+            }
+            if (StrUtil.isNotBlank(tenantType)) {
+                out.put("tenantType", tenantType);
+            }
+            if (StrUtil.isNotBlank(versionType)) {
+                out.put("versionType", versionType);
+            }
+            out.put("edition", edition);
+            out.put("licenseType", licenseType);
+            out.put("customer", customer);
+            out.put("features", features);
+            if (StrUtil.isNotBlank(industries)) {
+                out.put("industries", industries);
+            }
+            if (StrUtil.isNotBlank(expiresAt)) {
+                out.put("expiresAt", expiresAt);
+            }
+            if (durationDays != null && durationDays > 0) {
+                out.put("durationDays", durationDays);
+            }
+            if (StrUtil.isNotBlank(machineFingerprint)) {
+                out.put("machineFingerprint", machineFingerprint);
+            }
+            out.put("licenseVersion", licenseVersion);
+            out.put("signature", signature);
+
+            String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(out);
+            log.info("[License] Admin 签发 License | tenantId={} | edition={} | versionType={} | licenseId={} | hardMode={}",
+                tenantId, edition, versionType, licenseId, licenseProperties.isHardMode());
+            return json;
+        } catch (ServiceException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ServiceException("License签发失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * 获取按版本分组的租户选择器数据（T3.17）
      */
     @Override
@@ -862,11 +1137,9 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
         result.put("ADVANCED", new ArrayList<>());
         result.put("PROFESSIONAL", new ArrayList<>());
         for (SysTenant t : tenants) {
-            String edition = StrUtil.isNotBlank(t.getEdition()) ? t.getEdition() : EditionFeatureConfig.EDITION_BASIC;
-            // 兼容 ENTERPRISE
-            if ("ENTERPRISE".equalsIgnoreCase(edition)) {
-                edition = "PROFESSIONAL";
-            }
+            // ★T3.11 归一化（主目标）：移除 ENTERPRISE 硬编码兼容，统一走 normalizeEdition
+            // 覆盖 pro/professional/ENTERPRISE → PROFESSIONAL，adv/advanced → ADVANCED，base/basic/null → BASIC
+            String edition = EditionFeatureConfig.normalizeEdition(t.getEdition());
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("id", t.getId());
             item.put("companyName", t.getCompanyName());
@@ -917,6 +1190,30 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
             versionLogMapper.insert(log);
         } catch (Exception e) {
             log.error("[License] 写入版本变更日志失败", e);
+        }
+    }
+
+    /**
+     * ★T3.18 v1.29：version_type → edition 推导（与 SysTenantServiceImpl#deriveEditionFromVersionType 一致）
+     * <p>micro_lite/micro_pro → MICRO；basic → BASIC；advanced → ADVANCED；pro → PROFESSIONAL。
+     * 未知值返回 null，调用方保留原 edition。
+     */
+    private String deriveEditionFromVersionType(String versionType) {
+        if (StrUtil.isBlank(versionType)) {
+            return null;
+        }
+        switch (versionType) {
+            case "micro_lite":
+            case "micro_pro":
+                return EditionFeatureConfig.EDITION_MICRO;
+            case "advanced":
+                return EditionFeatureConfig.EDITION_ADVANCED;
+            case "pro":
+                return EditionFeatureConfig.EDITION_PROFESSIONAL;
+            case "basic":
+                return EditionFeatureConfig.EDITION_BASIC;
+            default:
+                return null;
         }
     }
 }

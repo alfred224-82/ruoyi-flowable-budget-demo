@@ -31,6 +31,15 @@ public class LicenseProperties {
     private String publicKey = "";
 
     /**
+     * RSA私钥（Base64编码，可选）
+     * <p>仅 Admin 侧签发 License 时使用（{@code POST /system/license/generate}）。
+     * hard 模式下必须配置，否则签发接口报错，提示改用 LicenseGenerateTool CLI；
+     * soft 模式下可留空，签发的 License 使用 "LOCAL-GENERATED" 占位签名。
+     * <p><b>安全提示</b>：生产环境建议将私钥放在独立配置中心或环境变量，禁止提交到代码仓库。
+     */
+    private String privateKey = "";
+
+    /**
      * 是否校验机器指纹（hard模式下强制为true）
      * soft模式下可设为false方便开发环境切换
      */

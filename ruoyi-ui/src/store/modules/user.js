@@ -9,7 +9,9 @@ const user = {
     roles: [],
     permissions: [],
     features: [],
-    edition: 'BASIC'
+    edition: 'BASIC',
+    tenantName: '',
+    versionType: ''
   },
 
   mutations: {
@@ -33,6 +35,12 @@ const user = {
     },
     SET_EDITION: (state, edition) => {
       state.edition = edition || 'BASIC'
+    },
+    SET_TENANT_NAME: (state, tenantName) => {
+      state.tenantName = tenantName || ''
+    },
+    SET_VERSION_TYPE: (state, versionType) => {
+      state.versionType = versionType || ''
     }
   },
 
@@ -43,8 +51,9 @@ const user = {
       const password = userInfo.password
       const code = userInfo.code
       const uuid = userInfo.uuid
+      const tenantId = userInfo.tenantId
       return new Promise((resolve, reject) => {
-        login(username, password, code, uuid).then(res => {
+        login(username, password, code, uuid, tenantId).then(res => {
           setToken(res.data.token)
           commit('SET_TOKEN', res.data.token)
           resolve()
@@ -55,7 +64,7 @@ const user = {
     },
 
     // 获取用户信息
-    GetInfo({ commit, state }) {
+    GetInfo({ commit, state, dispatch }) {
       return new Promise((resolve, reject) => {
         getInfo().then(res => {
           const user = res.data.user
@@ -71,6 +80,12 @@ const user = {
           // License功能列表
           commit('SET_FEATURES', res.data.features)
           commit('SET_EDITION', res.data.edition)
+          // 租户名称：控制台标题按「租户名称+管理系统」拼接（缺失时前端兜底「管理系统」）
+          commit('SET_TENANT_NAME', res.data.tenantName)
+          // 版本档位：前端据此区分 micro_lite / micro_pro 首页展示
+          commit('SET_VERSION_TYPE', res.data.versionType)
+          // T10.5：注入当前租户业态包编码，触发加载 biz_copy 文案映射（失败不阻断登录）
+          dispatch('bizCopy/switchBizCode', res.data.bizCode, { root: true }).catch(() => {})
           resolve(res)
         }).catch(error => {
           reject(error)
@@ -87,6 +102,8 @@ const user = {
           commit('SET_PERMISSIONS', [])
           commit('SET_FEATURES', [])
           commit('SET_EDITION', 'BASIC')
+          commit('SET_TENANT_NAME', '')
+          commit('SET_VERSION_TYPE', '')
           removeToken()
           resolve()
         }).catch(error => {

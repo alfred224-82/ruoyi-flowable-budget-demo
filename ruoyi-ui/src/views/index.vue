@@ -1,5 +1,16 @@
 <template>
-  <div class="home-dashboard">
+  <!-- Admin（平台管理员）→ 平台驾驶舱（V3.7 铁律） -->
+  <admin-dashboard v-if="isAdmin"></admin-dashboard>
+  <!-- ★V3.7：boss（老板）→ 经营概览（micro/dashboard） -->
+  <micro-dashboard v-else-if="isBoss"></micro-dashboard>
+  <!-- ★v1.36 platform_admin（小微版租户管理员）→ 企业概览（T18.6） -->
+  <tenant-overview v-else-if="isPlatformAdmin"></tenant-overview>
+  <!-- 基础版首页 = 轻量收支概览三卡片（T5.19④）；高级版起保留综合看板 -->
+  <light-overview v-else-if="isBasic"></light-overview>
+  <!-- ★M21_07：小微版租户兜底——未命中 boss/platform_admin 时仍按产品线走小微经营概览，
+       避免角色链路缺失时落到企业版综合看板（表现为「没有按租户区分开」） -->
+  <micro-dashboard v-else-if="isMicro"></micro-dashboard>
+  <div v-else class="home-dashboard">
     <!-- 顶部数据卡片 -->
     <el-row :gutter="16" class="stat-row">
       <!-- 本月预算总览 -->
@@ -124,7 +135,7 @@
       <el-col :xs="24" :sm="8">
         <div class="panel-card promo-panel">
           <div class="promo-title">解锁企业高管管控能力</div>
-          <div class="promo-version">当前版本：<span>免费基础版</span></div>
+          <div class="promo-version">当前版本：<span>{{ editionLabel }}</span></div>
           <div class="promo-features">
             <div class="promo-feature-item" v-for="(feat, idx) in promoFeatures" :key="idx">
               <i class="el-icon-lock"></i>
@@ -145,12 +156,16 @@
     </div>
   </div>
 </template>
-
 <script>
 import * as echarts from 'echarts'
+import LightOverview from '@/views/dashboard/LightOverview'
+import AdminDashboard from '@/views/system/dashboard/index.vue'
+import TenantOverview from '@/views/micro/tenantOverview/index.vue'
+import MicroDashboard from '@/views/micro/dashboard/index.vue'
 
 export default {
   name: "Index",
+  components: { LightOverview, AdminDashboard, TenantOverview, MicroDashboard },
   data() {
     return {
       warnItems: [
@@ -168,7 +183,40 @@ export default {
       ]
     };
   },
+  computed: {
+    /** V3.7：Admin（roleKey=admin）首页固定为平台驾驶舱 */
+    isAdmin() {
+      const roles = this.$store.getters.roles || []
+      return roles.includes('admin')
+    },
+    /** ★V3.7：boss（老板）首页固定为经营驾驶舱（T18.7），优先级高于 platform_admin */
+    isBoss() {
+      const roles = this.$store.getters.roles || []
+      return roles.includes('boss')
+    },
+    /** ★v1.36：platform_admin（小微版租户管理员）首页固定为企业概览（T18.6） */
+    isPlatformAdmin() {
+      const roles = this.$store.getters.roles || []
+      return roles.includes('platform_admin')
+    },
+    isBasic() {
+      return String(this.$store.getters.edition || '').toUpperCase() === 'BASIC';
+    },
+    /** ★M21_07：小微版租户判定（edition=MICRO 或档位 micro_*），用于首页兜底按产品线分流 */
+    isMicro() {
+      const edition = String(this.$store.getters.edition || '').toUpperCase();
+      const versionType = String(this.$store.getters.versionType || '');
+      return edition === 'MICRO' || versionType.indexOf('micro_') === 0;
+    },
+    editionLabel() {
+      const labels = { BASIC: '免费基础版', ADVANCED: '高级版', PROFESSIONAL: '企业专业版' };
+      return labels[String(this.$store.getters.edition || '').toUpperCase()] || this.$store.getters.edition;
+    }
+  },
   mounted() {
+    if (this.isAdmin || this.isBoss || this.isPlatformAdmin || this.isBasic || this.isMicro) {
+      return;
+    }
     this.initBudgetChart();
     this.initBillChart();
     this.initWarnBarChart();

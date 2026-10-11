@@ -1,7 +1,6 @@
 package com.ruoyi.system.service.message;
 
 import cn.hutool.core.util.StrUtil;
-import com.ruoyi.system.service.message.impl.WechatTemplateMessageStub;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -61,7 +60,7 @@ public class MessageProviderDispatcher {
         if (provider != null) {
             return provider;
         }
-        IMessageProvider def = providerMap.get(WechatTemplateMessageStub.WECHAT_TEMPLATE);
+        IMessageProvider def = providerMap.get(IMessageProvider.WECHAT_TEMPLATE);
         if (def == null) {
             throw new IllegalStateException("默认消息 Provider wechat_template 未注册");
         }

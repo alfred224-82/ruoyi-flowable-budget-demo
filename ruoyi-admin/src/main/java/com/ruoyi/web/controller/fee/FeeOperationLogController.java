@@ -2,6 +2,7 @@ package com.ruoyi.web.controller.fee;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.ruoyi.common.annotation.RequireFeature;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.PageQuery;
 import com.ruoyi.common.core.domain.R;
@@ -24,6 +25,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/fee/operationLog")
+@RequireFeature("FEAT_EXPENSE_CONTROL")
 public class FeeOperationLogController extends BaseController {
 
     private final IFeeOperationLogService feeOperationLogService;

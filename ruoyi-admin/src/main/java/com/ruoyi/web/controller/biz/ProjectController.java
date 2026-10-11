@@ -1,6 +1,7 @@
 package com.ruoyi.web.controller.biz;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.PageQuery;
@@ -10,6 +11,7 @@ import com.ruoyi.common.core.validate.AddGroup;
 import com.ruoyi.common.core.validate.EditGroup;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.system.domain.bo.ProjectBo;
+import com.ruoyi.system.domain.vo.FeeUserOptionVo;
 import com.ruoyi.system.domain.vo.ProjectMemberVo;
 import com.ruoyi.system.domain.vo.ProjectVo;
 import com.ruoyi.system.service.IProjectService;
@@ -131,5 +133,14 @@ public class ProjectController extends BaseController {
     @DeleteMapping("/members/{projectId}/{userId}")
     public R<Void> removeMember(@PathVariable Long projectId, @PathVariable Long userId) {
         return toAjax(projectService.removeMember(projectId, userId));
+    }
+
+    /**
+     * 本租户启用状态用户下拉（容器成员/任务指派选择用）
+     */
+    @SaCheckPermission(value = {"biz:member:edit", "biz:task:assign", "biz:project:add"}, mode = SaMode.OR)
+    @GetMapping("/userOptions")
+    public R<List<FeeUserOptionVo>> userOptions() {
+        return R.ok(projectService.listUserOptions());
     }
 }

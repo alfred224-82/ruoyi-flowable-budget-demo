@@ -27,6 +27,12 @@ public interface ILicenseService {
     String getCurrentEdition();
 
     /**
+     * 获取当前登录租户的业态包编码（T10.5 前端文案 i18n 加载依据）
+     * admin/未登录回落默认业态包 fund_control
+     */
+    String getCurrentBizCode();
+
+    /**
      * 获取授权行业列表
      */
     Set<String> getAuthorizedIndustries();
@@ -107,6 +113,21 @@ public interface ILicenseService {
      * @param licenseJson License JSON 内容
      */
     void importLicenseForTenant(Long tenantId, String licenseJson);
+
+    /**
+     * Admin 侧签发：为指定租户生成可直接导入的 License JSON 字符串。
+     * <p>输出格式与 {@link #importLicenseForTenant(Long, String)} 消费格式完全对齐，
+     * 租户管理员在「版本升级」页面粘贴即可激活。
+     * <p>soft 模式：signature 使用 "LOCAL-GENERATED" 占位；
+     * hard 模式：必须配置 {@code license.private-key}，使用 RSA-SHA256 真实签名。
+     *
+     * @param tenantId    目标租户ID（可为 null，表示系统级 License）
+     * @param payloadJson 签发参数 JSON，支持字段：
+     *                    edition / versionType / tenantType / licenseType /
+     *                    durationDays / customer / industries / bizCode / plan
+     * @return 标准 License JSON 字符串（pretty-print）
+     */
+    String generateLicenseForTenant(Long tenantId, String payloadJson);
 
     /**
      * 获取按版本分组的租户选择器数据（T3.17）

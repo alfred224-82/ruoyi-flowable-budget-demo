@@ -53,6 +53,17 @@ export function assignTenantVersion(id, edition) {
   })
 }
 
+// 分配版本档位（T15.26/T15.29 零迁移升降级）
+// version_type ∈ micro_lite/micro_pro/basic/advanced/pro；后端 assignVersionType 校验档位必须属于本租户产品线，
+// 跨线升降级抛 ServiceException；仅 UPDATE version_type + 发布缓存刷新，角色 code / 用户 / 业务数据零迁移
+export function assignTenantVersionType(id, versionType) {
+  return request({
+    url: '/system/tenant/assignVersionType/' + id,
+    method: 'post',
+    params: { versionType }
+  })
+}
+
 // 版本变更日志
 export function listVersionLog(id) {
   return request({

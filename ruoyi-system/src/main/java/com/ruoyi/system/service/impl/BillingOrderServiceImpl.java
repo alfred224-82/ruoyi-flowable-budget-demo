@@ -182,18 +182,24 @@ public class BillingOrderServiceImpl implements IBillingOrderService {
 
     /**
      * 开通/续费回写租户：license_type/edition/expire_date/status=NORMAL
+     * <p>★T15.27 分档计费联动：套餐携带 version_type 时同步回写（micro_pro 套餐→租户升至 micro_pro 档），
+     * 与菜单刷新同事务；micro_lite 免费档 need_pay=0/days=0 不激活计费周期，仅开通不写到期日。
      */
     private void activateTenant(Long tenantId, SysBillingPlan plan, Date periodEnd) {
         SysTenant update = new SysTenant();
         update.setId(tenantId);
         update.setLicenseType(plan.getLicenseType());
         update.setEdition(plan.getEdition());
+        // ★T15.27：套餐档位回写（NULL=通用套餐不改档位）
+        if (StrUtil.isNotBlank(plan.getVersionType())) {
+            update.setVersionType(plan.getVersionType());
+        }
         update.setExpireDate(periodEnd);
         update.setStatus("NORMAL");
         update.setUpdateBy("billing");
         tenantMapper.updateById(update);
-        log.info("[Billing] 租户 {} 开通/续费至 {}（licenseType={} edition={}）",
-            tenantId, DateUtil.formatDateTime(periodEnd), plan.getLicenseType(), plan.getEdition());
+        log.info("[Billing] 租户 {} 开通/续费至 {}（licenseType={} edition={} versionType={}）",
+            tenantId, DateUtil.formatDateTime(periodEnd), plan.getLicenseType(), plan.getEdition(), plan.getVersionType());
     }
 
     private void fillPlanName(List<SysBillingOrderVo> list) {

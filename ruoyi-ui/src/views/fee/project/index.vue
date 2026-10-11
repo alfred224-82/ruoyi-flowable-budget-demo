@@ -6,10 +6,11 @@
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-          <el-option label="待审批" value="PENDING" />
+          <el-option label="草稿" value="DRAFT" />
+          <el-option label="待审批" value="PENDING_APPROVAL" />
           <el-option label="进行中" value="ACTIVE" />
+          <el-option label="已完成" value="COMPLETED" />
           <el-option label="已关闭" value="CLOSED" />
-          <el-option label="已驳回" value="REJECTED" />
           <el-option label="烂账" value="LOST" />
         </el-select>
       </el-form-item>
@@ -46,7 +47,8 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220">
         <template slot-scope="scope">
           <el-button size="mini" type="text" icon="el-icon-view" @click="handleDetail(scope.row)" v-hasPermi="['fee:project:query']">详情</el-button>
-          <template v-if="scope.row.status === 'PENDING'">
+          <el-button v-if="scope.row.status === 'DRAFT'" size="mini" type="text" icon="el-icon-upload2" @click="handleSubmit(scope.row)" v-hasPermi="['fee:project:edit']">提交审批</el-button>
+          <template v-if="scope.row.status === 'PENDING_APPROVAL'">
             <el-button size="mini" type="text" icon="el-icon-check" @click="handleApprove(scope.row)" v-hasPermi="['fee:project:approve']">审批</el-button>
             <el-button size="mini" type="text" icon="el-icon-close" @click="handleReject(scope.row)" v-hasPermi="['fee:project:approve']">驳回</el-button>
           </template>
@@ -63,7 +65,7 @@
 </template>
 
 <script>
-import { listProject, approveProject, rejectProject, closeProject } from '@/api/system/fee/fundProject'
+import { listProject, approveProject, rejectProject, closeProject, submitProject } from '@/api/system/fee/fundProject'
 
 export default {
   name: 'FundProject',
@@ -95,11 +97,11 @@ export default {
       }).catch(() => { this.loading = false })
     },
     statusText(status) {
-      const map = { PENDING: '待审批', ACTIVE: '进行中', CLOSED: '已关闭', REJECTED: '已驳回', LOST: '烂账' }
+      const map = { DRAFT: '草稿', PENDING_APPROVAL: '待审批', ACTIVE: '进行中', COMPLETED: '已完成', CLOSED: '已关闭', LOST: '烂账' }
       return map[status] || status
     },
     statusTag(status) {
-      const map = { PENDING: 'warning', ACTIVE: 'success', CLOSED: 'info', REJECTED: 'danger', LOST: 'danger' }
+      const map = { DRAFT: 'info', PENDING_APPROVAL: 'warning', ACTIVE: 'success', COMPLETED: 'primary', CLOSED: 'info', LOST: 'danger' }
       return map[status] || 'info'
     },
     handleQuery() {
@@ -112,15 +114,24 @@ export default {
     },
     /** 立项（跳转隐藏页） */
     handleCreate() {
-      this.$router.push('/fee/fee/project/create')
+      this.$router.push('/fee/project/create')
     },
     /** 详情（跳转隐藏页） */
     handleDetail(row) {
-      this.$router.push('/fee/fee/project/detail?id=' + row.id)
+      this.$router.push('/fee/project/detail?id=' + row.id)
     },
     /** 成员维护（跳转隐藏页） */
     handleMembers(row) {
-      this.$router.push('/fee/fee/project/members?id=' + row.id)
+      this.$router.push('/fee/project/members?id=' + row.id)
+    },
+    /** 草稿（含驳回回退）提交审批 */
+    handleSubmit(row) {
+      this.$modal.confirm('确认提交项目【' + row.projectName + '】审批？').then(() => {
+        return submitProject(row.id)
+      }).then(() => {
+        this.getList()
+        this.$modal.msgSuccess('已提交审批')
+      }).catch(() => {})
     },
     /** 老板审批通过 */
     handleApprove(row) {

@@ -44,14 +44,24 @@ public class SysTenantVo implements Serializable {
     private String industry;
 
     /**
-     * 规模
-     */
-    private String scale;
-
-    /**
      * 分配版本
      */
     private String edition;
+
+    /**
+     * 产品线（T15.25 硬隔离 + T15.29 级联）：micro(小微版)/enterprise(企业版)
+     */
+    private String tenantType;
+
+    /**
+     * 版本档位（T15.26 小微版分档）：micro_lite/micro_pro/basic/advanced/pro
+     */
+    private String versionType;
+
+    /**
+     * 小程序全局主题key（T15.36）：theme_default/theme_warm/theme_fresh/theme_elegant
+     */
+    private String appThemeKey;
 
     /**
      * 业态包编码：fund_control/boardgame/fresh_food（T10.1）

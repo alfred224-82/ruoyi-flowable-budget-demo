@@ -2,6 +2,7 @@ package com.ruoyi.framework.config;
 
 import com.ruoyi.framework.interceptor.FeatureInterceptor;
 import com.ruoyi.framework.interceptor.PlusWebInvokeTimeInterceptor;
+import com.ruoyi.framework.interceptor.TenantWriteBlockInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +23,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class ResourcesConfig implements WebMvcConfigurer {
 
     private final FeatureInterceptor featureInterceptor;
+    private final TenantWriteBlockInterceptor tenantWriteBlockInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
@@ -29,6 +31,8 @@ public class ResourcesConfig implements WebMvcConfigurer {
         registry.addInterceptor(new PlusWebInvokeTimeInterceptor());
         // 功能开关拦截（@RequireFeature 注解校验）
         registry.addInterceptor(featureInterceptor).addPathPatterns("/**");
+        // 租户只读宽限期写操作拦截（T14.2：GRACE 状态禁止 POST/PUT/DELETE）
+        registry.addInterceptor(tenantWriteBlockInterceptor).addPathPatterns("/**");
     }
 
     @Override

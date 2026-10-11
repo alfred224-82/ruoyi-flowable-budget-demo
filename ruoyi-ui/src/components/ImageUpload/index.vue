@@ -93,6 +93,9 @@ export default {
           let list;
           if (Array.isArray(val)) {
             list = val;
+          } else if (typeof val === "string" && !/^\d+(,\d+)*$/.test(val)) {
+            // ★值已是完整 URL（服务端翻译后的详情/列表回填）：直接构建文件列表，不走 listByIds（ossId 路径变量会 400）
+            list = val.split(",").filter(url => url).map(url => ({ name: url.substring(url.lastIndexOf("/") + 1), url: url, ossId: null }));
           } else {
             await listByIds(val).then(res => {
               list = res.data;
@@ -100,8 +103,8 @@ export default {
           }
           // 然后将数组转为对象数组
           this.fileList = list.map(item => {
-            // 此处name使用ossId 防止删除出现重名
-            item = { name: item.ossId, url: item.url, ossId: item.ossId };
+            // 此处name使用ossId 防止删除出现重名；★URL 直填项无 ossId，用 url 兜底保证 name 唯一
+            item = { name: item.ossId || item.url, url: item.url, ossId: item.ossId };
             return item;
           });
         } else {
@@ -173,7 +176,10 @@ export default {
       const findex = this.fileList.map(f => f.name).indexOf(file.name);
       if(findex > -1) {
         let ossId = this.fileList[findex].ossId;
-        delOss(ossId);
+        // ★URL 直填项无 ossId：仅移除表单项，不调删除接口（避免 DELETE /system/oss/undefined）
+        if (ossId) {
+          delOss(ossId);
+        }
         this.fileList.splice(findex, 1);
         this.$emit("input", this.listToString(this.fileList));
       }

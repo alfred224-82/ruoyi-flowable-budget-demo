@@ -72,6 +72,16 @@ public interface ISysTenantService {
     int assignVersion(Long id, String edition);
 
     /**
+     * ★T15.26 分配/变更版本档位（version_type）：lite→pro 升级 = UPDATE version_type + 刷新菜单缓存，零迁移。
+     * <p>校验档位必须属于本租户产品线（micro→micro_lite/micro_pro；enterprise→basic/advanced/pro）；记录版本日志。
+     *
+     * @param id          租户ID
+     * @param versionType 目标版本档位
+     * @return 影响行数（档位未变化时返回 0）
+     */
+    int assignVersionType(Long id, String versionType);
+
+    /**
      * 查询租户版本变更日志
      *
      * @param tenantId 租户ID

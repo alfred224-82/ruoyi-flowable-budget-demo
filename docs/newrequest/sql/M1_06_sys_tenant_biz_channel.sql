@@ -1,9 +1,10 @@
 -- =====================================================================
--- M1_06 sys_tenant 业态包与访问通道扩展脚本（T1.8，v1.12 新增）
--- 版本：v1.0  日期：2026-09-05
+-- M1_06 sys_tenant 业态包与访问通道扩展脚本（T1.8 / T14.2，v1.12 新增）
+-- 版本：v1.1  日期：2026-09-12
 -- 依据：《资金管控系统开发任务文档》v1.12 T1.8
 --       《资金管控系统设计文档》v1.3 §1.4（三维组合：业态包×版本开关×访问通道）/ §1.8.1（租户实例层）
 --       《多业态SaaS平台需求规格说明书》v1.0 §4.1（访问通道与版本绑定）/ §7.2（公众号 AppID 反查）
+-- v1.1 变更：新增 grace_period_until 列（T14.2 只读宽限期，到期后 3 天只读访问）
 -- 前置依赖：M1_05_platform_foundation_tables.sql（biz_bundle 业态包初始数据）
 -- 规范：
 --   1. 基于 information_schema 条件判断，可安全重复执行（幂等，参照 M3_05 / BUG-002 教训）
@@ -14,7 +15,7 @@
 -- =====================================================================
 
 -- ----------------------------
--- 1. sys_tenant 逐列幂等补齐（业态包 / 访问通道 / 企微凭据 / 公众号 AppID）
+-- 1. sys_tenant 逐列幂等补齐（业态包 / 访问通道 / 企微凭据 / 公众号 AppID / 宽限期）
 -- ----------------------------
 DROP PROCEDURE IF EXISTS `m1_06_add_tenant_biz_channel`;
 DELIMITER $$
@@ -50,6 +51,13 @@ BEGIN
             ADD COLUMN `mp_app_id` VARCHAR(100) DEFAULT NULL COMMENT '微信公众号 AppID(引导态反查租户,不写 TenantContext)' AFTER `wecom_secret`,
             ADD KEY `idx_tenant_biz_code` (`biz_code`),
             ADD KEY `idx_tenant_mp_app_id` (`mp_app_id`);
+    END IF;
+
+    -- 1.5 只读宽限期截止日（T14.2：到期后 3 天内允许只读访问，GRACE 状态专用）
+    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_tenant' AND COLUMN_NAME = 'grace_period_until') THEN
+        ALTER TABLE `sys_tenant`
+            ADD COLUMN `grace_period_until` DATETIME DEFAULT NULL COMMENT '只读宽限期截止日（T14.2：到期后3天内允许只读访问）' AFTER `status`;
     END IF;
 END$$
 DELIMITER ;

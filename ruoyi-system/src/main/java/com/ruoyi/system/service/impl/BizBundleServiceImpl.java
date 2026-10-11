@@ -44,6 +44,12 @@ public class BizBundleServiceImpl implements IBizBundleService {
     private final ConcurrentHashMap<String, Set<String>> flagCache = new ConcurrentHashMap<>();
     /** 文案缓存：bizCode → copy 解析结果 */
     private final ConcurrentHashMap<String, Map<String, String>> copyCache = new ConcurrentHashMap<>();
+    /** 菜单声明缓存（T2.2）：bizCode → menus 解析后的 menu_id 集合 */
+    private final ConcurrentHashMap<String, Set<Long>> menuCache = new ConcurrentHashMap<>();
+    /** Schema 区块缓存（T10.2）：bizCode → schema_blocks 解析结果 */
+    private final ConcurrentHashMap<String, List<Map<String, Object>>> schemaCache = new ConcurrentHashMap<>();
+    /** 引擎策略缓存（T10.2）：bizCode → engine_strategy */
+    private final ConcurrentHashMap<String, String> strategyCache = new ConcurrentHashMap<>();
 
     @Override
     public BizBundle getBundle(String bizCode) {
@@ -88,6 +94,55 @@ public class BizBundleServiceImpl implements IBizBundleService {
         return copy;
     }
 
+    /**
+     * T2.2 业态菜单过滤：解析 biz_bundle.menus（JSON 数组，元素为 menu_id）
+     * <p>返回空集表示未声明 menus，调用方据此跳过业态过滤。
+     */
+    @Override
+    public Set<Long> getMenuIds(String bizCode) {
+        String code = StrUtil.isNotBlank(bizCode) ? bizCode : DEFAULT_BIZ_CODE;
+        Set<Long> cached = menuCache.get(code);
+        if (cached != null) {
+            return cached;
+        }
+        BizBundle bundle = getBundle(code);
+        Set<Long> ids = bundle == null ? Collections.emptySet() : parseLongSet(bundle.getMenus());
+        menuCache.put(code, ids);
+        return ids;
+    }
+
+    /**
+     * T10.2 Schema 页面区块声明：解析 biz_bundle.schema_blocks（JSON 数组）
+     */
+    @Override
+    public List<Map<String, Object>> getSchemaBlocks(String bizCode) {
+        String code = StrUtil.isNotBlank(bizCode) ? bizCode : DEFAULT_BIZ_CODE;
+        List<Map<String, Object>> cached = schemaCache.get(code);
+        if (cached != null) {
+            return cached;
+        }
+        BizBundle bundle = getBundle(code);
+        List<Map<String, Object>> blocks = bundle == null ? Collections.emptyList() : parseBlockList(bundle.getSchemaBlocks());
+        schemaCache.put(code, blocks);
+        return blocks;
+    }
+
+    /**
+     * T10.2 引擎策略 Bean 名：直接读取 biz_bundle.engine_strategy 字符串列
+     */
+    @Override
+    public String getEngineStrategy(String bizCode) {
+        String code = StrUtil.isNotBlank(bizCode) ? bizCode : DEFAULT_BIZ_CODE;
+        String cached = strategyCache.get(code);
+        if (cached != null) {
+            return cached;
+        }
+        BizBundle bundle = getBundle(code);
+        String strategy = bundle == null || bundle.getEngineStrategy() == null ? "" : bundle.getEngineStrategy().trim();
+        strategyCache.put(code, strategy);
+        return strategy;
+    }
+
     @Override
     public List<BizBundleVo> listBundles() {
         return bizBundleMapper.selectVoList(
@@ -118,11 +173,17 @@ public class BizBundleServiceImpl implements IBizBundleService {
             bundleCache.clear();
             flagCache.clear();
             copyCache.clear();
+            menuCache.clear();
+            schemaCache.clear();
+            strategyCache.clear();
             return;
         }
         bundleCache.remove(bizCode);
         flagCache.remove(bizCode);
         copyCache.remove(bizCode);
+        menuCache.remove(bizCode);
+        schemaCache.remove(bizCode);
+        strategyCache.remove(bizCode);
     }
 
     private Set<String> parseStringSet(String json) {
@@ -148,6 +209,52 @@ public class BizBundleServiceImpl implements IBizBundleService {
         } catch (Exception e) {
             log.warn("[BizBundle] copy JSON 解析失败: {}", json, e);
             return Collections.emptyMap();
+        }
+    }
+
+    /**
+     * 解析 menu_id JSON 数组（T2.2）：兼容字符串与数字两种元素形式
+     */
+    private Set<Long> parseLongSet(String json) {
+        if (StrUtil.isBlank(json)) {
+            return Collections.emptySet();
+        }
+        try {
+            List<Object> raw = objectMapper.readValue(json, new TypeReference<List<Object>>() {});
+            if (raw == null || raw.isEmpty()) {
+                return Collections.emptySet();
+            }
+            Set<Long> ids = new java.util.HashSet<>(raw.size());
+            for (Object o : raw) {
+                if (o == null) {
+                    continue;
+                }
+                try {
+                    ids.add(Long.valueOf(o.toString().trim()));
+                } catch (NumberFormatException nfe) {
+                    log.warn("[BizBundle] menus 元素非数字，已忽略: {}", o);
+                }
+            }
+            return Collections.unmodifiableSet(ids);
+        } catch (Exception e) {
+            log.warn("[BizBundle] menus JSON 解析失败: {}", json, e);
+            return Collections.emptySet();
+        }
+    }
+
+    /**
+     * 解析 schema_blocks JSON 数组（T10.2）：元素为对象，保留完整结构供前端渲染引擎使用
+     */
+    private List<Map<String, Object>> parseBlockList(String json) {
+        if (StrUtil.isBlank(json)) {
+            return Collections.emptyList();
+        }
+        try {
+            List<Map<String, Object>> list = objectMapper.readValue(json, new TypeReference<List<Map<String, Object>>>() {});
+            return list != null ? Collections.unmodifiableList(list) : Collections.emptyList();
+        } catch (Exception e) {
+            log.warn("[BizBundle] schema_blocks JSON 解析失败: {}", json, e);
+            return Collections.emptyList();
         }
     }
 }

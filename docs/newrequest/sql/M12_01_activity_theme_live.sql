@@ -1,6 +1,12 @@
 -- =====================================================================
 -- M12_01 业态功能模块建表脚本（T12.1~T12.8）
--- 版本：v1.0  日期：2026-09-05
+-- 版本：v1.2  日期：2026-09-06
+-- v1.2 变更：补登「活动删除」按钮权限 biz:activity:remove（3448）并授权 boss——
+--      ActivityController.remove 校验 biz:activity:remove，但 v1.1 未登记该按钮，
+--      导致 boss 活动管理页删除按钮隐藏且端点 403（删除为 boss 专属，与公告删除一致）
+-- v1.1 变更：补「角色×版本」授权模板登记（BOSS_/MANAGER_ × 三版本，由预设角色授权派生）
+--      + 存量租户克隆角色菜单对齐（INSERT IGNORE 幂等）；修复 v1.0 仅登记版本全量键
+--      导致克隆 boss/manager 侧边栏无「活动运营」菜单的问题
 -- 依据：《资金管控系统开发任务文档》v1.12 M12（业态功能模块）
 --       《多业态SaaS平台需求规格说明书》v1.0 §5.1 活动管理 / §5.2 海报主题 / §5.3 直播公告
 --       《资金管控系统设计文档》v1.3 §1.8.5
@@ -143,6 +149,7 @@ INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`
 (3444, '活动编辑', 3441, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'biz:activity:edit',    '#', 'admin', NOW(), '', NULL, ''),
 (3446, '活动发布', 3441, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'biz:activity:publish', '#', 'admin', NOW(), '', NULL, ''),
 (3447, '活动结束', 3441, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'biz:activity:finish',  '#', 'admin', NOW(), '', NULL, '结束后不可报名'),
+(3448, '活动删除', 3441, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'biz:activity:remove',  '#', 'admin', NOW(), '', NULL, 'boss 专属，与 ActivityController.remove 校验一致'),
 -- 直播公告（T12.6）
 (3445, '直播公告', 3440, 2, 'announcement', 'biz/announcement/index', NULL, 1, 0, 'C', '0', '0', 'biz:announcement:list', 'monitor', 'admin', NOW(), '', NULL, '直播公告状态机：living/pending/offline 派生展示态'),
 (3451, '公告查询', 3445, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'biz:announcement:query',  '#', 'admin', NOW(), '', NULL, ''),
@@ -169,12 +176,42 @@ SELECT e.edition, m.menu_id
 -- ----------------------------
 DELETE FROM `sys_role_menu` WHERE `menu_id` BETWEEN 3440 AND 3479 AND `role_id` IN (9201, 9202, 9203);
 INSERT INTO `sys_role_menu` (`role_id`, `menu_id`) VALUES
-(9201, 3440), (9201, 3441), (9201, 3442), (9201, 3443), (9201, 3444), (9201, 3446), (9201, 3447),
+(9201, 3440), (9201, 3441), (9201, 3442), (9201, 3443), (9201, 3444), (9201, 3446), (9201, 3447), (9201, 3448),
 (9201, 3445), (9201, 3451), (9201, 3452), (9201, 3453), (9201, 3454),
 (9201, 3450), (9201, 3455), (9201, 3456), (9201, 3457),
 (9203, 3440), (9203, 3441), (9203, 3442), (9203, 3443), (9203, 3444), (9203, 3446), (9203, 3447),
 (9203, 3445), (9203, 3451), (9203, 3452), (9203, 3453),
 (9203, 3450), (9203, 3455), (9203, 3456), (9203, 3457);
+
+-- ----------------------------
+-- 8.5 「角色×版本」授权模板登记（v1.1：克隆角色授权唯一依据，由预设角色授权派生）
+--     键格式 roleKey_edition（BOSS_BASIC 等）；employee/finance 无运营菜单不登记
+-- ----------------------------
+DELETE FROM `sys_edition_menu_template` WHERE `menu_id` BETWEEN 3440 AND 3479
+  AND `edition` IN ('BOSS_BASIC','BOSS_ADVANCED','BOSS_PROFESSIONAL',
+                    'MANAGER_BASIC','MANAGER_ADVANCED','MANAGER_PROFESSIONAL');
+INSERT INTO `sys_edition_menu_template` (`edition`, `menu_id`)
+SELECT CONCAT(UPPER(r.`role_key`), '_', e.`edition`), rm.`menu_id`
+  FROM `sys_role` r
+  JOIN `sys_role_menu` rm ON rm.`role_id` = r.`role_id`
+  CROSS JOIN (SELECT 'BASIC' AS edition UNION ALL SELECT 'ADVANCED' UNION ALL SELECT 'PROFESSIONAL') e
+ WHERE r.`tenant_id` IS NULL
+   AND r.`role_key` IN ('boss', 'manager')
+   AND rm.`menu_id` BETWEEN 3440 AND 3479;
+
+-- ----------------------------
+-- 8.6 存量租户克隆角色菜单对齐（v1.1：克隆 boss/manager 补齐活动运营菜单）
+--     角色保全：仅按 CONCAT(UPPER(role_key),'_',UPPER(tenant.edition)) 模板补本角色菜单
+-- ----------------------------
+INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`)
+SELECT r.`role_id`, tp.`menu_id`
+  FROM `sys_role` r
+  JOIN `sys_tenant` t ON t.`id` = r.`tenant_id`
+  JOIN `sys_edition_menu_template` tp
+    ON tp.`edition` = CONCAT(UPPER(r.`role_key`), '_', UPPER(t.`edition`))
+ WHERE r.`tenant_id` IS NOT NULL
+   AND r.`role_key` IN ('boss', 'manager')
+   AND tp.`menu_id` BETWEEN 3440 AND 3479;
 
 -- ----------------------------
 -- 9. biz_bundle.menus 追加活动运营菜单（boardgame/fresh_food 主打活动运营；fund_control 亦可用）
@@ -194,3 +231,9 @@ UPDATE `biz_bundle`
 --   AND TABLE_NAME IN ('biz_live_announcement','biz_content_security_log','biz_image_task');  -- 预期 3 行
 -- 10.3 菜单与模板
 -- SELECT menu_id, menu_name, perms FROM sys_menu WHERE menu_id BETWEEN 3440 AND 3479 ORDER BY menu_id;
+-- 10.4 角色×版本模板登记（v1.1：boss/manager × 3 版本，预期 6 行键）
+-- SELECT edition, COUNT(*) FROM sys_edition_menu_template WHERE menu_id BETWEEN 3440 AND 3479 GROUP BY edition;
+-- 10.5 存量克隆 boss 角色已含活动运营目录 3440（预期各租户克隆 boss 均 1 行）
+-- SELECT r.role_id, r.role_key, r.tenant_id FROM sys_role_menu rm
+--   JOIN sys_role r ON r.role_id = rm.role_id
+--  WHERE r.tenant_id IS NOT NULL AND r.role_key = 'boss' AND rm.menu_id = 3440;

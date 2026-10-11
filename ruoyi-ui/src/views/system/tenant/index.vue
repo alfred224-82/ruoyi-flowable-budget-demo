@@ -26,13 +26,6 @@
           <el-option label="已到期" value="EXPIRED" />
         </el-select>
       </el-form-item>
-      <el-form-item label="版本" prop="edition">
-        <el-select v-model="queryParams.edition" placeholder="版本等级" clearable>
-          <el-option label="基础版" value="BASIC" />
-          <el-option label="高级版" value="ADVANCED" />
-          <el-option label="专业版" value="PROFESSIONAL" />
-        </el-select>
-      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -61,11 +54,16 @@
       <el-table-column label="企业名称" align="center" prop="companyName" min-width="160" show-overflow-tooltip />
       <el-table-column label="联系人" align="center" prop="contactName" width="100" />
       <el-table-column label="联系电话" align="center" prop="contactPhone" width="120" />
-      <el-table-column label="版本" align="center" prop="edition" width="100">
+      <el-table-column label="产品线" align="center" prop="tenantType" width="90">
         <template slot-scope="scope">
-          <el-tag :type="editionTagType(scope.row.edition)" size="small" effect="dark">
-            {{ editionLabel(scope.row.edition) }}
+          <el-tag :type="scope.row.tenantType === 'micro' ? 'success' : 'info'" size="small">
+            {{ tenantTypeLabel(scope.row.tenantType) }}
           </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="版本档位" align="center" prop="versionType" width="160" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <span>{{ versionTypeLabel(scope.row.versionType) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="授权类型" align="center" prop="licenseType" width="90">
@@ -176,34 +174,49 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <!-- ★T15.29 新建租户级联①：选产品线(tenant_type) → 级联版本档位(version_type) → 级联行业模板 -->
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="行业" prop="industry">
-              <el-select v-model="form.industry" placeholder="请选择行业" style="width: 100%">
-                <el-option v-for="item in industryOptions" :key="item.value" :label="item.label" :value="item.value" />
-              </el-select>
+            <el-form-item label="产品线" prop="tenantType">
+              <el-radio-group v-model="form.tenantType" :disabled="form.id != null" @change="handleTenantTypeChange">
+                <el-radio label="micro">小微版</el-radio>
+                <el-radio label="enterprise">企业版</el-radio>
+              </el-radio-group>
+              <div v-if="form.id != null" class="form-tip">产品线为身份字段，编辑不可改（后端 updateTenant 不写 tenant_type）。</div>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="规模" prop="scale">
-              <el-select v-model="form.scale" placeholder="请选择规模" style="width: 100%">
-                <el-option label="小型" value="SMALL" />
-                <el-option label="中型" value="MEDIUM" />
-                <el-option label="大型" value="LARGE" />
+            <el-form-item label="版本档位" prop="versionType">
+              <el-select
+                v-model="form.versionType"
+                placeholder="请选择版本档位"
+                :disabled="form.id != null"
+                style="width: 100%"
+                @change="handleVersionTypeChange"
+              >
+                <el-option v-for="item in formVersionOptions" :key="item.value" :label="item.label" :value="item.value" />
               </el-select>
+              <div v-if="form.id != null" class="form-tip">档位升降级请点列表「分配版本」，走零迁移接口 assignVersionType。</div>
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="分配版本" prop="edition">
-              <el-select v-model="form.edition" placeholder="请选择版本" style="width: 100%">
-                <el-option label="基础版" value="BASIC" />
-                <el-option label="高级版" value="ADVANCED" />
-                <el-option label="专业版" value="PROFESSIONAL" />
+            <el-form-item :label="form.tenantType === 'micro' ? '行业模板' : '行业'" prop="industry">
+              <el-select
+                v-model="form.industry"
+                :placeholder="form.tenantType === 'micro' ? '请选择行业模板' : '请选择行业'"
+                style="width: 100%"
+              >
+                <el-option v-for="item in formIndustryOptions" :key="item.value" :label="item.label" :value="item.value" />
               </el-select>
+              <div v-if="form.tenantType === 'micro'" class="form-tip">
+                取自 industry_template 启用项（当前 {{ formIndustryOptions.length }} 个）；企业版无行业模板维度。
+              </div>
             </el-form-item>
           </el-col>
+        </el-row>
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="授权类型" prop="licenseType">
               <el-select v-model="form.licenseType" placeholder="请选择授权类型" style="width: 100%">
@@ -266,12 +279,21 @@
         </el-descriptions-item>
       </el-descriptions>
       <el-form label-width="80px">
-        <el-form-item label="目标版本">
-          <el-radio-group v-model="targetEdition">
-            <el-radio label="BASIC">基础版</el-radio>
-            <el-radio label="ADVANCED">高级版</el-radio>
-            <el-radio label="PROFESSIONAL">专业版</el-radio>
+        <el-form-item label="产品线">
+          <el-tag :type="currentTenant.tenantType === 'micro' ? 'success' : 'info'" size="small">
+            {{ tenantTypeLabel(currentTenant.tenantType) }}
+          </el-tag>
+        </el-form-item>
+        <!-- ★T15.26 零迁移档位升降级：仅 UPDATE version_type + 刷新缓存，角色 code / 用户 / 业务数据零迁移 -->
+        <!-- edition 由后端从 version_type 自动推导同步，前端无需选择 -->
+        <el-form-item label="版本档位">
+          <el-radio-group v-model="targetVersionType">
+            <el-radio v-for="item in dialogVersionOptions" :key="item.value" :label="item.value">{{ item.label }}</el-radio>
           </el-radio-group>
+          <div class="form-tip">
+            当前档位：{{ currentTenant.versionType || '—' }}。候选已按本租户产品线过滤，后端拒绝跨线升降级；
+            小微版 lite→pro 升级 = 换 role_template 配方（菜单扩围）。
+          </div>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -294,6 +316,12 @@
               {{ editionLabel(detailData.edition) }}
             </el-tag>
           </el-descriptions-item>
+          <el-descriptions-item label="产品线">
+            <el-tag :type="detailData.tenantType === 'micro' ? 'success' : 'info'" size="small">
+              {{ tenantTypeLabel(detailData.tenantType) }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="版本档位">{{ versionTypeLabel(detailData.versionType) }}</el-descriptions-item>
           <el-descriptions-item label="授权类型">{{ detailData.licenseType === 'FORMAL' ? '正式' : '试用' }}</el-descriptions-item>
           <el-descriptions-item label="最大用户数">{{ detailData.maxUsers }}</el-descriptions-item>
           <el-descriptions-item label="到期时间">{{ detailData.expireDate ? parseTime(detailData.expireDate, '{y}-{m}-{d}') : '永久' }}</el-descriptions-item>
@@ -359,8 +387,10 @@
 <script>
 import {
   listTenant, getTenant, addTenant, updateTenant,
-  changeTenantStatus, assignTenantVersion, getTenantUsage, listVersionLog
+  changeTenantStatus, assignTenantVersionType, getTenantUsage, listVersionLog
 } from '@/api/system/tenant'
+// ★T15.29 新建租户级联数据源（perms 复用 system:tenant:list）
+import { listVersionOptions, listIndustryOptions } from '@/api/system/edition'
 
 export default {
   name: 'Tenant',
@@ -377,8 +407,7 @@ export default {
         pageSize: 10,
         companyName: undefined,
         tenantCode: undefined,
-        status: undefined,
-        edition: undefined
+        status: undefined
       },
       form: {},
       rules: {
@@ -398,11 +427,15 @@ export default {
         { label: '农林牧渔', value: 'AGRICULTURE' },
         { label: '其他', value: 'OTHER' }
       ],
-      // 分配版本
+      // ★T15.29 新建租户级联：产品线 → 版本档位 → 行业模板
+      versionOptionsMap: { micro: [], enterprise: [] },
+      microIndustryOptions: [],
+      // 分配版本（含 T15.26 档位零迁移升降级）
       versionDialogVisible: false,
       versionLoading: false,
       currentTenant: {},
-      targetEdition: 'BASIC',
+      targetVersionType: '',
+      dialogVersionOptions: [],
       // 用量统计
       usageDialogVisible: false,
       usageLoading: false,
@@ -412,6 +445,19 @@ export default {
       detailLoading: false,
       detailData: {},
       versionLogs: []
+    }
+  },
+  computed: {
+    /** 表单当前产品线的可选档位（micro→micro_lite/micro_pro；enterprise→basic/advanced/pro） */
+    formVersionOptions() {
+      return this.versionOptionsMap[this.form.tenantType] || []
+    },
+    /** 级联②：小微版行业下拉取自 industry_template；企业版沿用内置行业枚举（无行业模板维度） */
+    formIndustryOptions() {
+      if (this.form.tenantType !== 'micro') {
+        return this.industryOptions
+      }
+      return this.microIndustryOptions
     }
   },
   created() {
@@ -436,8 +482,9 @@ export default {
         contactName: undefined,
         contactPhone: undefined,
         industry: undefined,
-        scale: undefined,
-        edition: 'BASIC',
+        // ★T15.29 产品线默认 enterprise，档位与后端 deriveVersionType 缺省保持一致
+        tenantType: 'enterprise',
+        versionType: 'basic',
         licenseType: 'TRIAL',
         expireDate: undefined,
         maxUsers: 50,
@@ -460,6 +507,8 @@ export default {
     /** 新增按钮 */
     handleAdd() {
       this.reset()
+      // ★T15.29 预载默认产品线的档位候选
+      this.loadVersionOptions(this.form.tenantType)
       this.open = true
       this.title = '新增租户'
     },
@@ -468,6 +517,14 @@ export default {
       this.reset()
       getTenant(row.id).then(response => {
         this.form = response.data
+        // 存量租户可能未回填 tenant_type（M15_10 已批量回填，此处兜底避免下拉空白）
+        if (!this.form.tenantType) {
+          this.form.tenantType = 'enterprise'
+        }
+        this.loadVersionOptions(this.form.tenantType)
+        if (this.form.tenantType === 'micro') {
+          this.loadMicroIndustryOptions()
+        }
         this.open = true
         this.title = '修改租户'
       })
@@ -509,23 +566,64 @@ export default {
     /** 分配版本按钮 */
     handleAssignVersion(row) {
       this.currentTenant = row
-      this.targetEdition = row.edition || 'BASIC'
+      this.targetVersionType = row.versionType || ''
+      this.dialogVersionOptions = []
       this.versionDialogVisible = true
+      // ★档位候选按本租户产品线加载：后端 assignVersionType 会拒绝跨线档位
+      const tenantType = row.tenantType || 'enterprise'
+      listVersionOptions(tenantType).then(response => {
+        this.dialogVersionOptions = response.data || []
+        if (!this.targetVersionType && this.dialogVersionOptions.length) {
+          this.targetVersionType = this.dialogVersionOptions[0].value
+        }
+      }).catch(() => { this.dialogVersionOptions = [] })
     },
-    /** 执行分配版本 */
+    /** 执行分配版本（version_type 为主入口，edition 由后端自动同步） */
     doAssignVersion() {
-      if (this.targetEdition === this.currentTenant.edition) {
-        this.$modal.msgWarning('版本未变更')
+      const versionChanged = !!this.targetVersionType && this.targetVersionType !== this.currentTenant.versionType
+      if (!versionChanged) {
+        this.$modal.msgWarning('档位未变更')
         return
       }
       this.versionLoading = true
-      assignTenantVersion(this.currentTenant.id, this.targetEdition).then(() => {
+      assignTenantVersionType(this.currentTenant.id, this.targetVersionType).then(() => {
         this.$modal.msgSuccess('版本分配成功')
         this.versionDialogVisible = false
         this.getList()
-      }).finally(() => {
+      }).catch(() => {}).finally(() => {
         this.versionLoading = false
       })
+    },
+    // ---- ★T15.29 新建租户级联 ----
+    /** 级联①：切换产品线 → 重载档位候选与行业候选，并清空已选值 */
+    handleTenantTypeChange(tenantType) {
+      this.form.versionType = undefined
+      this.form.industry = undefined
+      this.loadVersionOptions(tenantType)
+      if (tenantType === 'micro') {
+        this.loadMicroIndustryOptions()
+      }
+    },
+    loadVersionOptions(tenantType) {
+      if (!tenantType || (this.versionOptionsMap[tenantType] || []).length) {
+        return
+      }
+      listVersionOptions(tenantType).then(response => {
+        this.$set(this.versionOptionsMap, tenantType, response.data || [])
+      }).catch(() => { this.$set(this.versionOptionsMap, tenantType, []) })
+    },
+    /** 级联②：小微版行业模板（企业版无此维度，直接返回空列表） */
+    loadMicroIndustryOptions() {
+      if (this.microIndustryOptions.length) {
+        return
+      }
+      listIndustryOptions('micro').then(response => {
+        this.microIndustryOptions = response.data || []
+      }).catch(() => { this.microIndustryOptions = [] })
+    },
+    /** 级联②：选定档位（无角色模板预览，角色由租户管理员自行定义） */
+    handleVersionTypeChange(versionType) {
+      // edition 由后端从 version_type 自动推导，前端不再手动同步
     },
     /** 详情按钮 */
     handleDetail(row) {
@@ -579,7 +677,29 @@ export default {
     changeTypeTagType(type) {
       const map = { INIT: 'success', UPGRADE: 'warning', DOWNGRADE: 'danger' }
       return map[type] || 'info'
+    },
+    tenantTypeLabel(tenantType) {
+      const map = { micro: '小微版', enterprise: '企业版' }
+      return map[tenantType] || '企业版'
+    },
+    versionTypeLabel(versionType) {
+      const map = {
+        micro_lite: '小微版·推广档(免费)',
+        micro_pro: '小微版·经营档(收费)',
+        basic: '企业版·基础版',
+        advanced: '企业版·高级版',
+        pro: '企业版·专业版'
+      }
+      return map[versionType] || versionType || '-'
     }
   }
 }
 </script>
+
+<style scoped>
+.form-tip {
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.6;
+}
+</style>

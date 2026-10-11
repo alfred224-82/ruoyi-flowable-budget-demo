@@ -25,6 +25,17 @@ export function replaceLicense(data) {
   })
 }
 
+// Admin 侧签发 License（T15.33+）：为指定租户生成可直接导入的 License JSON
+// data 为签发参数对象：{ tenantId, edition, versionType, tenantType, licenseType, durationDays, customer, industries, bizCode, plan }
+// 响应 data 为标准 License JSON 字符串，前端复制后交给租户管理员在「版本升级」页面粘贴导入
+export function generateLicense(data) {
+  return request({
+    url: '/system/license/generate',
+    method: 'post',
+    data: data
+  })
+}
+
 // 获取试用剩余时长
 export function getTrialStatus() {
   return request({

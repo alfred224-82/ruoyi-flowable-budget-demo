@@ -18,11 +18,13 @@ SET @user_name = 'mmadmin';
 --    优先级：sys_tenant.admin_user_id 关联的租户 > 手动指定租户
 -- ----------------------------
 -- 1.1 通过租户表 admin_user_id 关联回填
+SET SQL_SAFE_UPDATES = 0;
 UPDATE `sys_user` u
     INNER JOIN `sys_tenant` t ON t.admin_user_id = u.user_id
 SET u.tenant_id = t.id
 WHERE u.user_name = @user_name
   AND u.tenant_id IS NULL;
+SET SQL_SAFE_UPDATES = 1;
 
 -- 1.2 若 1.1 未命中（租户表无关联），请手动指定目标租户后执行：
 -- UPDATE `sys_user` SET `tenant_id` = ? WHERE `user_name` = 'mmadmin' AND `tenant_id` IS NULL;

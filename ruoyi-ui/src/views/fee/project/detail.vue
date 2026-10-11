@@ -90,7 +90,7 @@ export default {
       }).catch(() => { this.loading = false })
     },
     statusText(status) {
-      const map = { PENDING: '待审批', ACTIVE: '进行中', CLOSED: '已关闭', REJECTED: '已驳回', LOST: '烂账' }
+      const map = { DRAFT: '草稿', PENDING_APPROVAL: '待审批', ACTIVE: '进行中', COMPLETED: '已完成', CLOSED: '已关闭', LOST: '烂账' }
       return map[status] || status
     },
     back() {

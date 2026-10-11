@@ -104,6 +104,17 @@ public class SysTenantController extends BaseController {
     }
 
     /**
+     * ★T15.26 分配/变更版本档位（lite→pro 升级零迁移：UPDATE version_type + 刷新菜单缓存）
+     */
+    @SaCheckRole("admin")
+    @SaCheckPermission("system:tenant:edit")
+    @Log(title = "租户管理", businessType = BusinessType.UPDATE)
+    @PostMapping("/assignVersionType/{id}")
+    public R<Void> assignVersionType(@PathVariable Long id, @RequestParam String versionType) {
+        return toAjax(tenantService.assignVersionType(id, versionType));
+    }
+
+    /**
      * 版本变更日志
      */
     @SaCheckRole("admin")

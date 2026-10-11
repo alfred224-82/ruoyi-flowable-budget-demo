@@ -28,7 +28,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/fee/ruleVersion")
-@RequireFeature("FEAT_RULE_GRAYSCALE")
+@RequireFeature("FEAT_RULE_ENGINE_BASE")
 public class FeeRuleVersionController extends BaseController {
 
     private final IFeeRuleVersionService ruleVersionService;

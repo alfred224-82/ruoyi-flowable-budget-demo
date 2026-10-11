@@ -11,7 +11,7 @@ import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.system.domain.bo.ProjectSignupBo;
 import com.ruoyi.system.domain.vo.ProjectSignupVo;
 import com.ruoyi.system.service.IProjectSignupService;
-import com.ruoyi.system.service.strategy.TeamResult;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -46,7 +46,7 @@ public class ProjectSignupController extends BaseController {
     @SaCheckPermission("biz:signup:add")
     @Log(title = "活动报名", businessType = BusinessType.INSERT)
     @PostMapping
-    public R<TeamResult> signup(@Validated(AddGroup.class) @RequestBody ProjectSignupBo bo) {
+    public R<Map<String, Object>> signup(@Validated(AddGroup.class) @RequestBody ProjectSignupBo bo) {
         return R.ok(signupService.signup(bo));
     }
 
@@ -75,7 +75,7 @@ public class ProjectSignupController extends BaseController {
      */
     @SaCheckPermission("biz:signup:query")
     @GetMapping("/teamStatus/{projectId}")
-    public R<TeamResult> teamStatus(@PathVariable Long projectId) {
+    public R<Map<String, Object>> teamStatus(@PathVariable Long projectId) {
         return R.ok(signupService.teamStatus(projectId));
     }
 }

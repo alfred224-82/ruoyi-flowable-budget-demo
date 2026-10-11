@@ -9,16 +9,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruoyi.common.core.domain.PageQuery;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.exception.ServiceException;
-import com.ruoyi.system.domain.Project;
 import com.ruoyi.system.domain.ProjectSignup;
+import com.ruoyi.system.domain.PromotionActivity;
+import com.ruoyi.system.domain.ServiceItem;
 import com.ruoyi.system.domain.bo.ProjectSignupBo;
 import com.ruoyi.system.domain.vo.ProjectSignupVo;
-import com.ruoyi.system.mapper.ProjectMapper;
 import com.ruoyi.system.mapper.ProjectSignupMapper;
+import com.ruoyi.system.mapper.PromotionActivityMapper;
+import com.ruoyi.system.mapper.ServiceItemMapper;
 import com.ruoyi.system.service.IProjectSignupService;
-import com.ruoyi.system.service.strategy.TeamContext;
-import com.ruoyi.system.service.strategy.TeamResult;
-import com.ruoyi.system.service.strategy.TeamStrategyDispatcher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,13 +25,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * 项目活动报名服务实现（T11.3 / T11.4）
- * <p>报名采集 + 满员候补 + 成团判定；成团规则委派 {@link TeamStrategyDispatcher} 按业态策略 Bean 分发，
- * 本类不出现 if(bizCode==...) 业态分支（策略模式，设计文档 §1.8.5）。
+ * 项目活动报名服务实现（T11.3）
+ * <p>报名采集 + 满员候补；成团判定已移除（M22 简化），前端根据 quota/remaining 控制按钮灰显。
+ * <p>取消报名：活动开始时间前 1 小时可取消，之后不可取消。
  *
  * @author ruoyi
  * @date 2026-09-05
@@ -43,8 +43,8 @@ import java.util.Map;
 public class ProjectSignupServiceImpl implements IProjectSignupService {
 
     private final ProjectSignupMapper signupMapper;
-    private final ProjectMapper projectMapper;
-    private final TeamStrategyDispatcher teamStrategyDispatcher;
+    private final ServiceItemMapper serviceItemMapper;
+    private final PromotionActivityMapper activityMapper;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -59,16 +59,18 @@ public class ProjectSignupServiceImpl implements IProjectSignupService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public TeamResult signup(ProjectSignupBo bo) {
-        Project project = projectMapper.selectById(bo.getProjectId());
-        if (project == null) {
-            throw new ServiceException("项目容器不存在");
+    public Map<String, Object> signup(ProjectSignupBo bo) {
+        // ★M22 锁定校验：关联活动已锁定则不可报名
+        assertActivityNotLocked(bo.getProjectId());
+        // ★M22 修复：selected_project_id 实际指向 service_item.id（Boss 活动管理页从 service_item 选择）
+        ServiceItem item = serviceItemMapper.selectById(bo.getProjectId());
+        if (item == null) {
+            throw new ServiceException("服务项目不存在");
         }
-        if ("CLOSED".equals(project.getStatus()) || "CANCELLED".equals(project.getStatus())
-            || "FINISHED".equals(project.getStatus())) {
-            throw new ServiceException("容器已结束/关闭，不可报名");
+        if ("1".equals(item.getStatus())) {
+            throw new ServiceException("服务项目已下架，不可报名");
         }
-        Map<String, Object> extra = parseExtra(project.getExtraConfig());
+        Map<String, Object> extra = parseExtra(item.getExtraConfig());
         Integer quota = toInteger(extra.get("quota"));
         int people = bo.getPeopleCount() == null || bo.getPeopleCount() < 1 ? 1 : bo.getPeopleCount();
 
@@ -88,13 +90,13 @@ public class ProjectSignupServiceImpl implements IProjectSignupService {
         signup.setSignupTime(new Date());
         signupMapper.insert(signup);
 
-        // 成团判定（候补不计入成团进度）
-        TeamContext ctx = buildContext(project, extra, quota, waitlist ? accepted : accepted + people);
-        TeamResult result = teamStrategyDispatcher.evaluate(project.getBizCode(), ctx);
-        if (waitlist) {
-            result.setMessage("名额已满，已进入候补；" + result.getMessage());
-        }
-        log.info("[Signup] 容器 {} 报名 {} 人，成团判定：{}", bo.getProjectId(), people, result.getMessage());
+        // 返回报名结果（前端据此切换按钮态：已报名/候补中）
+        Map<String, Object> result = new LinkedHashMap<>(4);
+        result.put("signupId", signup.getId());
+        result.put("waitlist", waitlist);
+        result.put("quota", quota);
+        result.put("message", waitlist ? "名额已满，已进入候补" : "报名成功");
+        log.info("[Signup] 服务项目 {} 报名 {} 人，候补={}", bo.getProjectId(), people, waitlist);
         return result;
     }
 
@@ -105,6 +107,43 @@ public class ProjectSignupServiceImpl implements IProjectSignupService {
             throw new ServiceException("报名记录不存在");
         }
         return signupMapper.deleteById(id);
+    }
+
+    /**
+     * 顾客端取消报名（活动开始前 1 小时可取消）
+     *
+     * @param signupId   报名记录ID
+     * @param activityId 活动ID（用于获取活动开始时间）
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelByActivityId(Long signupId, Long activityId) {
+        ProjectSignup signup = signupMapper.selectById(signupId);
+        if (signup == null) {
+            throw new ServiceException("报名记录不存在");
+        }
+        // 校验报名归属（防止取消他人报名）
+        Long currentUserId = com.ruoyi.common.helper.LoginHelper.getUserId();
+        if (currentUserId != null && !currentUserId.equals(signup.getUserId())) {
+            throw new ServiceException("只能取消自己的报名");
+        }
+        // 活动开始前 1 小时才可取消
+        PromotionActivity activity = activityMapper.selectById(activityId);
+        if (activity == null) {
+            throw new ServiceException("活动不存在");
+        }
+        // ★M22 锁定校验：活动已锁定不可取消
+        if (Boolean.TRUE.equals(activity.getIsLocked())) {
+            throw new ServiceException("活动已锁定，不可取消报名");
+        }
+        if (activity.getStartTime() != null) {
+            long oneHourBefore = activity.getStartTime().getTime() - 3600_000L;
+            if (System.currentTimeMillis() >= oneHourBefore) {
+                throw new ServiceException("活动开始前1小时内不可取消报名");
+            }
+        }
+        signupMapper.deleteById(signupId);
+        log.info("[Cancel] 报名 {} 已取消（活动 {}）", signupId, activityId);
     }
 
     @Override
@@ -124,15 +163,21 @@ public class ProjectSignupServiceImpl implements IProjectSignupService {
     }
 
     @Override
-    public TeamResult teamStatus(Long projectId) {
-        Project project = projectMapper.selectById(projectId);
-        if (project == null) {
-            throw new ServiceException("项目容器不存在");
+    public Map<String, Object> teamStatus(Long projectId) {
+        ServiceItem item = serviceItemMapper.selectById(projectId);
+        if (item == null) {
+            throw new ServiceException("服务项目不存在");
         }
-        Map<String, Object> extra = parseExtra(project.getExtraConfig());
+        Map<String, Object> extra = parseExtra(item.getExtraConfig());
         Integer quota = toInteger(extra.get("quota"));
-        TeamContext ctx = buildContext(project, extra, quota, sumAcceptedPeople(projectId));
-        return teamStrategyDispatcher.evaluate(project.getBizCode(), ctx);
+        int accepted = sumAcceptedPeople(projectId);
+        boolean formed = quota == null || quota <= 0 || accepted >= quota;
+        Map<String, Object> result = new LinkedHashMap<>(4);
+        result.put("formed", formed);
+        result.put("current", accepted);
+        result.put("target", quota != null ? quota : -1);
+        result.put("message", formed ? "已成团" : "未成团，还差 " + (quota - accepted) + " 人");
+        return result;
     }
 
     /** 累计已接受（非候补）报名人数 */
@@ -146,16 +191,6 @@ public class ProjectSignupServiceImpl implements IProjectSignupService {
             sum += s.getPeopleCount() == null ? 1 : s.getPeopleCount();
         }
         return sum;
-    }
-
-    private TeamContext buildContext(Project project, Map<String, Object> extra, Integer quota, int totalPeople) {
-        TeamContext ctx = new TeamContext();
-        ctx.setProjectId(project.getId());
-        ctx.setBizCode(project.getBizCode());
-        ctx.setTotalPeople(totalPeople);
-        ctx.setQuota(quota);
-        ctx.setExtra(extra);
-        return ctx;
     }
 
     private Map<String, Object> parseExtra(String json) {
@@ -187,5 +222,23 @@ public class ProjectSignupServiceImpl implements IProjectSignupService {
 
     private String genSignupNo(Long projectId) {
         return "SU" + projectId + System.currentTimeMillis();
+    }
+
+    /**
+     * ★M22 关联活动锁定校验：查找引用该 projectId 的活动，若已锁定则拒绝报名。
+     * <p>未找到关联活动时不阻断（可能为非活动类报名）。
+     */
+    private void assertActivityNotLocked(Long projectId) {
+        if (projectId == null) {
+            return;
+        }
+        List<PromotionActivity> activities = activityMapper.selectList(
+            Wrappers.<PromotionActivity>lambdaQuery()
+                .eq(PromotionActivity::getSelectedProjectId, projectId)
+                .eq(PromotionActivity::getIsLocked, true)
+                .last("LIMIT 1"));
+        if (!activities.isEmpty()) {
+            throw new ServiceException("活动已锁定，不可报名");
+        }
     }
 }

@@ -31,6 +31,9 @@ public class EditionFeatureConfig {
     /** 基础版功能列表 */
     public static final Set<String> BASIC_FEATURES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
         // 基础版无额外高级功能，仅包含核心编审闭环（单级审批、固定5条风控、结果通知）
+        // === M18 平台合规底线（全版本默认启用，T18.8） ===
+        "FEAT_IMAGE_COMPLIANCE",     // 图片合规（OCR 文字路 + 视觉审核路两路并行）
+        "FEAT_SENSITIVE_WORD"        // 全局敏感词引擎（text/voice_ocr/image_ocr 三路共用）
     )));
 
     /** 高级版功能列表（包含基础版全部 + 以下） */
@@ -81,7 +84,10 @@ public class EditionFeatureConfig {
         // === 组 C：多业态底座新增（高级版+ 3 项，T13.2/T8.11/T13.4） ===
         "FEAT_FLOW_MULTI_LEVEL",     // 完整多级审批流(按金额/部门/职级条件)
         "FEAT_OWN_MINIAPP",          // 独立小程序(客户自有 AppID)
-        "FEAT_WECOM"                 // 企业微信自建应用+OAuth 免登
+        "FEAT_WECOM",                // 企业微信自建应用+OAuth 免登
+        // === M18 平台合规底线（全版本默认启用，T18.8） ===
+        "FEAT_IMAGE_COMPLIANCE",     // 图片合规（OCR 文字路 + 视觉审核路两路并行）
+        "FEAT_SENSITIVE_WORD"        // 全局敏感词引擎（text/voice_ocr/image_ocr 三路共用）
     )));
 
     /** 专业版功能列表（包含高级版全部 + 以下；原 ENTERPRISE_FEATURES，T4.1 统一编码） */
@@ -155,7 +161,10 @@ public class EditionFeatureConfig {
         "FEAT_EXPORT_2D",            // 二维导出（科目×项目矩阵：3295）
         "FEAT_RULE_GRAYSCALE",       // 规则灰度发布（专业版发布模式）
         "FEAT_MEMBER_LOAD",          // 团队人力分布（看板跨项目负载卡片：3294）
-        "FEAT_ISOLATED_SCHEMA"       // 隔离模式（预留：独立Schema级数据隔离）
+        "FEAT_ISOLATED_SCHEMA",      // 隔离模式（预留：独立Schema级数据隔离）
+        // === M18 平台合规底线（全版本默认启用，T18.8） ===
+        "FEAT_IMAGE_COMPLIANCE",     // 图片合规（OCR 文字路 + 视觉审核路两路并行）
+        "FEAT_SENSITIVE_WORD"        // 全局敏感词引擎（text/voice_ocr/image_ocr 三路共用）
     )));
 
     /**
@@ -165,17 +174,50 @@ public class EditionFeatureConfig {
     public static final Set<String> ENTERPRISE_FEATURES = PROFESSIONAL_FEATURES;
 
     /**
-     * 版本编码归一化唯一入口（T10.7）
+     * 小微版功能列表（T3.18 v1.29 新增）
+     * <p>micro_lite（免费推广档）与 micro_pro（收费经营档）两档共用本集合；
+     * 具体档位区分由 {@code sys_tenant.version_type} 控制（前端菜单/接口通过 @RequireFeature + versionTypes 二次过滤）。
+     * 与企业版分属两条产品线，不互相升级/降级；企业版能力（组 A~D）不注入小微版。
+     */
+    public static final Set<String> MICRO_FEATURES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+        // === 小微版专属模块（micro_lite + micro_pro 均可用） ===
+        "MICRO_PROMOTION_PUBLISH",       // 推广发布（活动+海报）
+        "MICRO_SHOP_MANAGE",             // 店铺管理（营业时间/收款方式）
+        "MICRO_ACTIVITY_BROWSE",         // 活动浏览页（lite 档唯一菜单）
+        // === micro_pro 专属（后端由 @TenantJob versionTypes={"micro_pro"} + Controller @RequireFeature 二次过滤） ===
+        "MICRO_BOOKING_ORDER",           // 预约订单
+        "MICRO_STAFF_SETTLE",            // 人员结算（只记账不打款）
+        "MICRO_DAILY_REVENUE",           // 收支记账+每日营收快照
+        "MICRO_REPORT_CENTER",           // 报表中心（周报/月报/利润）
+        "MICRO_SERVICE_PRICING",         // 服务定价（五种计价+改价留痕）
+        "MICRO_NO_SHOW_BLACKLIST",       // 防爽约/黑名单
+        "MICRO_CUSTOMER_CREDIT",         // 顾客管理（信誉/爽约/黑名单）
+        // === 小微版专属开关（feature_flag 组 E，与企业版组 A~D 独立） ===
+        "FEAT_PROMOTION_DISTRIBUTION",   // 推广分销与激励（推广码/归因/拉新奖励/首单）
+        "FEAT_RATING",                   // 通用评价与点赞（scene=SERVICE）
+        "FEAT_SELF_BOOKING",             // 自助预约（项目/房间/助教三类预约入口）
+        "FEAT_STAFF_SCHEDULE",           // 员工排班管理（周/月+早晚班+Boss 自定时间+发布后可修正，M22/T22.6）
+        // === M18 平台合规底线（全版本默认启用，T18.8） ===
+        "FEAT_IMAGE_COMPLIANCE",         // 图片合规（OCR 文字路 + 视觉审核路两路并行）
+        "FEAT_SENSITIVE_WORD"            // 全局敏感词引擎（text/voice_ocr/image_ocr 三路共用）
+    )));
+
+    /** 小微版版本等级常量（T3.18 v1.29 新增，独立产品线不参与企业版等级排序） */
+    public static final String EDITION_MICRO = "MICRO";
+
+    /**
+     * 版本编码归一化唯一入口（T10.7 + T3.18 v1.29 扩展 MICRO）
      * <p>将存量大写全名与需求文档小写短码统一为标准编码，大小写不敏感：
      * <ul>
      *   <li>{@code pro} / {@code professional} / {@code ENTERPRISE} → {@code PROFESSIONAL}</li>
      *   <li>{@code adv} / {@code advanced} → {@code ADVANCED}</li>
+     *   <li>{@code micro} / {@code micro_lite} / {@code micro_pro} → {@code MICRO}（T3.18 v1.29 新增）</li>
      *   <li>{@code base} / {@code basic} / null / 未知值 → {@code BASIC}</li>
      * </ul>
      * 双向兼容，不写迁移脚本、不改存量数据。新代码禁止直接写死版本编码字符串做比较，必须走本入口。
      *
      * @param edition 任意版本编码（大小写/长短码均可）
-     * @return 归一化后的标准编码 BASIC/ADVANCED/PROFESSIONAL
+     * @return 归一化后的标准编码 BASIC/ADVANCED/PROFESSIONAL/MICRO
      */
     public static String normalizeEdition(String edition) {
         if (edition == null) {
@@ -190,6 +232,10 @@ public class EditionFeatureConfig {
             case "ADV":
             case "ADVANCED":
                 return EDITION_ADVANCED;
+            case "MICRO":
+            case "MICRO_LITE":
+            case "MICRO_PRO":
+                return EDITION_MICRO;
             case "BASE":
             case "BASIC":
             default:
@@ -206,6 +252,8 @@ public class EditionFeatureConfig {
                 return PROFESSIONAL_FEATURES;
             case EDITION_ADVANCED:
                 return ADVANCED_FEATURES;
+            case EDITION_MICRO:
+                return MICRO_FEATURES;
             case EDITION_BASIC:
             default:
                 return BASIC_FEATURES;
@@ -213,9 +261,9 @@ public class EditionFeatureConfig {
     }
 
     /**
-     * 版本等级比较（归一化后）：PROFESSIONAL &gt; ADVANCED &gt; BASIC
+     * 版本等级比较（归一化后）：PROFESSIONAL &gt; ADVANCED &gt; BASIC；MICRO 独立产品线不参与排序，返回 -1
      *
-     * @return 等级序号（0=BASIC,1=ADVANCED,2=PROFESSIONAL）
+     * @return 等级序号（0=BASIC,1=ADVANCED,2=PROFESSIONAL,-1=MICRO）
      */
     public static int editionLevel(String edition) {
         switch (normalizeEdition(edition)) {
@@ -223,6 +271,8 @@ public class EditionFeatureConfig {
                 return 2;
             case EDITION_ADVANCED:
                 return 1;
+            case EDITION_MICRO:
+                return -1;
             case EDITION_BASIC:
             default:
                 return 0;

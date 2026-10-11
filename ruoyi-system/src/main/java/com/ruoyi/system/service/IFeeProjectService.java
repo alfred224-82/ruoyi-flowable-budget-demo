@@ -8,6 +8,7 @@ import com.ruoyi.system.domain.vo.FeeProjectMemberVo;
 import com.ruoyi.system.domain.vo.FeeProjectProfitVo;
 import com.ruoyi.system.domain.vo.FeeProjectSubjectVo;
 import com.ruoyi.system.domain.vo.FeeProjectVo;
+import com.ruoyi.system.domain.vo.FeeUserOptionVo;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -45,6 +46,11 @@ public interface IFeeProjectService {
      * 老板审批通过 → ACTIVE + 生成项目科目并汇入大类
      */
     int approveProject(Long id);
+
+    /**
+     * 草稿（含驳回回退）提交审批 → PENDING_APPROVAL
+     */
+    int submitProject(Long id);
 
     /**
      * 审批驳回
@@ -85,6 +91,16 @@ public interface IFeeProjectService {
      * 批量保存项目成员
      */
     int saveMembers(Long projectId, List<FeeProjectBo.FeeProjectMemberBo> members);
+
+    /**
+     * 报销人(employee)角色成员下拉（项目成员选择用，仅当前租户启用状态用户）
+     */
+    List<FeeUserOptionVo> listReimbursers();
+
+    /**
+     * 项目经理(manager)角色成员下拉（立项选择用，仅当前租户启用状态用户）
+     */
+    List<FeeUserOptionVo> listManagers();
 
     /**
      * 查询大类下可用项目预算余额（科目合计剩余）

@@ -48,14 +48,19 @@ public class SysTenantBo {
     private String industry;
 
     /**
-     * 规模（SMALL/MEDIUM/LARGE）
-     */
-    private String scale;
-
-    /**
      * 分配版本：BASIC/ADVANCED/PROFESSIONAL（兼容存量 ENTERPRISE，T4.1）
      */
     private String edition;
+
+    /**
+     * 产品线（T15.25 硬隔离 + T15.29 新建租户级联）：micro(小微版)/enterprise(企业版)，默认 enterprise
+     */
+    private String tenantType;
+
+    /**
+     * 版本档位（T15.26 小微版分档 + T15.29 级联）：micro_lite/micro_pro/basic/advanced/pro
+     */
+    private String versionType;
 
     /**
      * 业态包编码：fund_control/boardgame/fresh_food，默认 fund_control（T10.1）

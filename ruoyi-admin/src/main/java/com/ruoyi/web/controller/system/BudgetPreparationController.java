@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;
 import com.ruoyi.common.annotation.RepeatSubmit;
 import com.ruoyi.common.annotation.Log;
+import com.ruoyi.common.annotation.RequireFeature;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.PageQuery;
 import com.ruoyi.common.core.domain.R;
@@ -47,6 +48,7 @@ import com.ruoyi.common.core.page.TableDataInfo;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/system/preparation")
+@RequireFeature("FEAT_BUDGET_PREPARE")
 public class BudgetPreparationController extends BaseController {
 
     private final IBudgetPreparationService budgetPreparationService;

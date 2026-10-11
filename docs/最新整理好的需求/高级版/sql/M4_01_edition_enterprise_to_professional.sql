@@ -24,6 +24,7 @@ SELECT t.`id`, 'ENTERPRISE', 'PROFESSIONAL', 'UPGRADE', 'system-migration',
                     WHERE l.`tenant_id` = t.`id`
                       AND l.`remark` LIKE 'T4.1版本编码统一映射%');
 
+SET SQL_SAFE_UPDATES = 0;
 -- 1.2 执行编码映射
 UPDATE `sys_tenant`
    SET `edition` = 'PROFESSIONAL',
@@ -37,6 +38,7 @@ UPDATE `sys_tenant`
 UPDATE `fee_edition_init_data`
    SET `edition` = 'PROFESSIONAL'
  WHERE `edition` = 'ENTERPRISE';
+SET SQL_SAFE_UPDATES = 1;
 
 -- ----------------------------
 -- 3. sys_license 说明（重要：不直接 UPDATE）

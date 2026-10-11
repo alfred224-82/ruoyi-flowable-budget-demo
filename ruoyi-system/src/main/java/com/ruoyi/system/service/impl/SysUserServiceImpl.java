@@ -209,7 +209,10 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
     public boolean checkUserNameUnique(SysUser user) {
         boolean exist = baseMapper.exists(new LambdaQueryWrapper<SysUser>()
             .eq(SysUser::getUserName, user.getUserName())
-            .ne(ObjectUtil.isNotNull(user.getUserId()), SysUser::getUserId, user.getUserId()));
+            .ne(ObjectUtil.isNotNull(user.getUserId()), SysUser::getUserId, user.getUserId())
+            // 租户隔离：非超管时唯一性校验限定在当前租户范围内（sys_user 属于 IGNORE_TENANT_TABLES，需手动过滤）
+            .eq(!LoginHelper.isAdmin() && ObjectUtil.isNotNull(LoginHelper.getTenantId()),
+                SysUser::getTenantId, LoginHelper.getTenantId()));
         return !exist;
     }
 
@@ -222,7 +225,10 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
     public boolean checkPhoneUnique(SysUser user) {
         boolean exist = baseMapper.exists(new LambdaQueryWrapper<SysUser>()
             .eq(SysUser::getPhonenumber, user.getPhonenumber())
-            .ne(ObjectUtil.isNotNull(user.getUserId()), SysUser::getUserId, user.getUserId()));
+            .ne(ObjectUtil.isNotNull(user.getUserId()), SysUser::getUserId, user.getUserId())
+            // 租户隔离：非超管时唯一性校验限定在当前租户范围内（sys_user 属于 IGNORE_TENANT_TABLES，需手动过滤）
+            .eq(!LoginHelper.isAdmin() && ObjectUtil.isNotNull(LoginHelper.getTenantId()),
+                SysUser::getTenantId, LoginHelper.getTenantId()));
         return !exist;
     }
 
@@ -235,7 +241,10 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
     public boolean checkEmailUnique(SysUser user) {
         boolean exist = baseMapper.exists(new LambdaQueryWrapper<SysUser>()
             .eq(SysUser::getEmail, user.getEmail())
-            .ne(ObjectUtil.isNotNull(user.getUserId()), SysUser::getUserId, user.getUserId()));
+            .ne(ObjectUtil.isNotNull(user.getUserId()), SysUser::getUserId, user.getUserId())
+            // 租户隔离：非超管时唯一性校验限定在当前租户范围内（sys_user 属于 IGNORE_TENANT_TABLES，需手动过滤）
+            .eq(!LoginHelper.isAdmin() && ObjectUtil.isNotNull(LoginHelper.getTenantId()),
+                SysUser::getTenantId, LoginHelper.getTenantId()));
         return !exist;
     }
 

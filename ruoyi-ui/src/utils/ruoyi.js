@@ -211,7 +211,14 @@ export function tansParams(params) {
     const value = params[propName];
     var part = encodeURIComponent(propName) + "=";
     if (value !== null && value !== "" && typeof (value) !== "undefined") {
-      if (typeof value === 'object') {
+      if (Array.isArray(value)) {
+        // ★数组使用重复参数名格式（key=v1&key=v2），Spring MVC @RequestParam List 标准绑定
+        value.forEach((item, index) => {
+          if (item !== null && item !== "" && typeof (item) !== "undefined") {
+            result += encodeURIComponent(propName) + "=" + encodeURIComponent(item) + "&"
+          }
+        })
+      } else if (typeof value === 'object') {
         for (const key of Object.keys(value)) {
           if (value[key] !== null && value[key] !== "" && typeof (value[key]) !== 'undefined') {
             let params = propName + '[' + key + ']';

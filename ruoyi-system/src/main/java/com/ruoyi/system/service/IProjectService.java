@@ -3,6 +3,7 @@ package com.ruoyi.system.service;
 import com.ruoyi.common.core.domain.PageQuery;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.system.domain.bo.ProjectBo;
+import com.ruoyi.system.domain.vo.FeeUserOptionVo;
 import com.ruoyi.system.domain.vo.ProjectMemberVo;
 import com.ruoyi.system.domain.vo.ProjectVo;
 
@@ -72,4 +73,9 @@ public interface IProjectService {
      * 移除成员
      */
     int removeMember(Long projectId, Long userId);
+
+    /**
+     * 本租户启用状态用户下拉（容器成员/任务指派选择用）
+     */
+    List<FeeUserOptionVo> listUserOptions();
 }

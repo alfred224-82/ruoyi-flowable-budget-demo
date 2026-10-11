@@ -2,6 +2,7 @@ package com.ruoyi.web.controller.system;
 
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
 import cn.hutool.core.util.ObjectUtil;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
@@ -51,10 +52,17 @@ public class SysOssController extends BaseController {
 
     /**
      * 查询OSS对象基于id串
+     * <p>★权限放宽为 system:oss:list OR system:oss:query（SaMode.OR）：
+     *   listByIds 是「按 ossId 批量解析 URL」的只读操作，ImageUpload/FileUpload 组件回显图片、
+     *   以及 micro/promo 活动管理列表 resolveOssIds() 均会调用。
+     *   小微版 boss 仅持有 F 类型按钮 1130(system:oss:query)、1131(system:oss:upload)，
+     *   不持有 C 类型菜单 118(system:oss:list)——因为 118 会在侧边栏渲染出「系统管理 > 文件管理」，
+     *   违反 micro_lite「仅经营概览+活动管理」的菜单隔离要求。故此处接受 query 权限放行，
+     *   既兼容 admin/企业版原有 system:oss:list，又让小微版 boss 能回显活动封面/海报/logo。
      *
      * @param ossIds OSS对象ID串
      */
-    @SaCheckPermission("system:oss:list")
+    @SaCheckPermission(value = {"system:oss:list", "system:oss:query"}, mode = SaMode.OR)
     @GetMapping("/listByIds/{ossIds}")
     public R<List<SysOssVo>> listByIds(@NotEmpty(message = "主键不能为空")
                                        @PathVariable Long[] ossIds) {

@@ -23,9 +23,11 @@
 -- ----------------------------
 -- 1. 修复 3323 菜单名称（乱码 → 费用大类管理）
 -- ----------------------------
+SET SQL_SAFE_UPDATES = 0;
 UPDATE `sys_menu`
 SET `menu_name` = '费用大类管理'
 WHERE `menu_id` = 3323;
+SET SQL_SAFE_UPDATES = 1;
 
 -- ----------------------------
 -- 2. 从 PLATFORM_ADMIN_* 模板中移除 3310/3311

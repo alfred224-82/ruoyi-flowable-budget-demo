@@ -77,6 +77,17 @@ public interface SysUserMapper extends BaseMapperPlus<SysUserMapper, SysUser, Sy
     SysUser selectUserByPhonenumber(String phonenumber);
 
     /**
+     * 通过手机号 + 租户查询用户
+     * <p>sys_user 位于多租户插件忽略表清单，租户插件不会自动注入 tenant_id。同一手机号可能跨租户存在多条，
+     * 登录时已携 tenant_id，必须按 tenant_id 精确匹配，避免 selectOne 命中多条抛 TooManyResultsException。
+     *
+     * @param phonenumber 手机号
+     * @param tenantId    租户ID
+     * @return 用户对象信息
+     */
+    SysUser selectUserByPhonenumberAndTenant(@Param("phonenumber") String phonenumber, @Param("tenantId") Long tenantId);
+
+    /**
      * 通过邮箱查询用户
      *
      * @param email 邮箱
