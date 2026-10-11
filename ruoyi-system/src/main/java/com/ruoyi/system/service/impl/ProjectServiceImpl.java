@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.PageQuery;
+import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.helper.LoginHelper;
@@ -17,10 +18,12 @@ import com.ruoyi.system.domain.SysTenant;
 import com.ruoyi.system.domain.bo.ProjectBo;
 import com.ruoyi.system.domain.enums.ProjectMemberRole;
 import com.ruoyi.system.domain.vo.ProjectMemberVo;
+import com.ruoyi.system.domain.vo.FeeUserOptionVo;
 import com.ruoyi.system.domain.vo.ProjectVo;
 import com.ruoyi.system.mapper.ProjectMapper;
 import com.ruoyi.system.mapper.ProjectMemberMapper;
 import com.ruoyi.system.mapper.SysTenantMapper;
+import com.ruoyi.system.mapper.SysUserMapper;
 import com.ruoyi.system.service.IProjectService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +35,7 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 项目统一容器服务实现（T11.1 / T11.2 / T11.5）
@@ -49,6 +53,7 @@ public class ProjectServiceImpl implements IProjectService {
     private final ProjectMapper projectMapper;
     private final ProjectMemberMapper memberMapper;
     private final SysTenantMapper tenantMapper;
+    private final SysUserMapper userMapper;
 
     /** 默认业态包编码（存量租户回填值，见 M1_06） */
     private static final String DEFAULT_BIZ_CODE = "fund_control";
@@ -92,6 +97,10 @@ public class ProjectServiceImpl implements IProjectService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long insertProject(ProjectBo bo) {
+        // type 由 ActivityController 自动填充或 ProjectController 前端传入，在此统一做业务层非空校验
+        if (StrUtil.isBlank(bo.getType())) {
+            throw new ServiceException("容器类型不能为空");
+        }
         Project project = BeanCopyUtils.copy(bo, Project.class);
         project.setId(null);
         project.setBizCode(resolveBizCode(bo.getBizCode()));
@@ -184,6 +193,27 @@ public class ProjectServiceImpl implements IProjectService {
             Wrappers.<ProjectMember>lambdaQuery()
                 .eq(ProjectMember::getProjectId, projectId)
                 .eq(ProjectMember::getUserId, userId));
+    }
+
+    @Override
+    public List<FeeUserOptionVo> listUserOptions() {
+        LambdaQueryWrapper<SysUser> wrapper = Wrappers.<SysUser>lambdaQuery()
+            .eq(SysUser::getStatus, "0")
+            .orderByAsc(SysUser::getUserId);
+        // 租户隔离：sys_user 在 IGNORE_TENANT_TABLES 中，非超管需手工按当前租户过滤（T2.4）
+        if (!LoginHelper.isAdmin()) {
+            Long tenantId = LoginHelper.getTenantId();
+            if (tenantId != null) {
+                wrapper.eq(SysUser::getTenantId, tenantId);
+            }
+        }
+        return userMapper.selectList(wrapper).stream().map(u -> {
+            FeeUserOptionVo vo = new FeeUserOptionVo();
+            vo.setUserId(u.getUserId());
+            vo.setUserName(u.getUserName());
+            vo.setNickName(u.getNickName());
+            return vo;
+        }).collect(Collectors.toList());
     }
 
     /**

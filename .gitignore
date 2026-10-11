@@ -47,3 +47,4 @@ docs/run/server/app.jar
 !*/build/*.java
 !*/build/*.html
 !*/build/*.xml
+node_modules

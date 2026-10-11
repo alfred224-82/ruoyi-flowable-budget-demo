@@ -139,6 +139,15 @@ redisson:
     # 发布和订阅连接池大小
     subscriptionConnectionPoolSize: 50
 
+--- # 线程池相关配置（供 @Async("threadPoolTaskExecutor") 与图片合规并行检测使用；enabled 必须为 true，否则 threadPoolTaskExecutor bean 不会创建，触发 NoSuchBeanDefinitionException）
+thread-pool:
+  # 是否开启线程池
+  enabled: true
+  # 队列最大长度
+  queue-capacity: 128
+  # 线程池维护线程所允许的空闲时间
+  keep-alive-seconds: 300
+
 --- # mail 邮件发送
 mail:
   enabled: false
@@ -188,3 +197,22 @@ wx:
   miniapp:
     appid:
     secret:
+  # 微信公众号（T13.3 模板消息/客服消息；未配置时消息发送返回 FAILED，不阻塞主流程）
+  official:
+    appid:
+    secret:
+
+--- # H5推广码配置（顾客手机浏览器扫码进入的登录页地址，带 ref_t/ref_u 参数用于登录后归因）
+promo:
+  h5-base-url: http://118.89.133.114/h5/#/pages/login/index
+
+--- # 企业微信自建应用（T13.3 企微应用消息；未配置时消息发送返回 FAILED，不阻塞主流程）
+wecom:
+  app:
+    corpId:
+    secret:
+    agentId:
+
+--- # 内容安全审核（M18 T18.6：文本审核已收口至统一敏感词引擎 ISensitiveWordEngine，
+# 图片审核收口至 IImageComplianceService；原 content.security.blacklist 关键词黑名单配置已废弃移除。
+# 微信 imgSecCheck 相关开关 content.security.img-check-enabled / img-check-fail-open 走 @Value 默认值，无需在此配置。）

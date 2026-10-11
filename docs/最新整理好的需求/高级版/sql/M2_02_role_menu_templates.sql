@@ -1,6 +1,17 @@
 -- =====================================================================
 -- M2_02 角色×版本菜单授权模板脚本（T2.2，防串第④层）
--- 版本：v2.0  日期：2026-08-29
+-- 版本：v2.2  日期：2026-09-06
+-- v2.2 变更（对齐 v1.12《基础版操作手册》v2.0 验收口径）：
+--      1. BOSS_BASIC 按「2 角色、boss 兼任财务/经理」重排：补收入确认(3202)/收入核验(3210)/
+--         收款单管理(3207)/报销管理(3004 精简)六大菜单，付款单补 3267 新增，
+--         boss 在 PC 端跑通项目资金流 + 轻量记账全闭环；
+--      2. BOSS_BASIC 移除预算管理目录 2000 / 预算审核 2002 / 老板看板 3215（已下移高级版；
+--         目录 2000 由 M2_10 v1.1 纳入下移集合统一回收，避免侧边栏空壳目录）；
+--      3. BOSS_ADVANCED 显式承接 2000/2002/2017/2018/3215/3288（定总额 + 老板看板，
+--         高级版首页恢复看板）
+-- v2.1 变更：重建改为幂等非破坏——CREATE IF NOT EXISTS + 仅清空「角色×版本」模板键，
+--      保留 BASIC/ADVANCED/PROFESSIONAL 版本全量键（M5_xx/M6_xx/M11_xx/M13_xx 登记），
+--      与 M2_05 v1.1 互不摧毁，重复执行/乱序执行不再清空对方模板族
 -- 依据：《各角色菜单权限文档》（v2.4）第三节（累计制：高级=基础全部+高级增量；
 --       专业=高级全部+专业增量）；《资金管控系统开发任务文档》T2.2
 -- v2.0 变更（重要）：
@@ -18,44 +29,57 @@
 --   3. 菜单与版本解耦：即使误分配，API 层 @RequireFeature 仍拦截（②③层底线）
 -- =====================================================================
 
-DROP TABLE IF EXISTS `sys_edition_menu_template`;
-CREATE TABLE `sys_edition_menu_template` (
+-- v2.1：幂等非破坏重建（仅清空角色×版本键，保留版本全量键）
+CREATE TABLE IF NOT EXISTS `sys_edition_menu_template` (
   `edition` VARCHAR(30) NOT NULL COMMENT '模板Key：角色前缀_版本（如 BOSS_BASIC / PLATFORM_ADMIN_ADVANCED）',
   `menu_id` BIGINT NOT NULL COMMENT '菜单ID',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`edition`, `menu_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色×版本菜单授权模板(开通/升级租户的唯一授权依据)';
 
+DELETE FROM `sys_edition_menu_template`
+ WHERE `edition` LIKE 'BOSS\_%'
+    OR `edition` LIKE 'FINANCE\_%'
+    OR `edition` LIKE 'MANAGER\_%'
+    OR `edition` LIKE 'EMPLOYEE\_%'
+    OR `edition` LIKE 'PLATFORM\_ADMIN\_%';
+
 -- =====================================================================
 -- 1. 老板（BOSS）
--- 基础版职责：定总额（预算审核审批/驳回）、建项目、审批项目/付款/变更、看板
--- 报销单审批仅保留按钮权限（3041 查询 + 3045 审批），不挂 3004 菜单（审批走小程序）
+-- 基础版职责（v1.12）：建项目、审批项目/付款/变更/收款、收入确认与核验、
+--                  报销单 PC 端单级极简确认审批（兼任财务/经理）；无预算域、无老板看板
 -- =====================================================================
 
--- 基础版（裁剪集）
+-- 基础版（v1.12：2 角色，boss 兼任财务/经理，PC 端全量资金流 + 轻量记账）
 INSERT INTO `sys_edition_menu_template` (`edition`, `menu_id`) VALUES
--- 目录
-('BOSS_BASIC', 2000), ('BOSS_BASIC', 3000),
--- 定总额：预算审核（审批/驳回）
-('BOSS_BASIC', 2002), ('BOSS_BASIC', 2017), ('BOSS_BASIC', 2018),
+-- 目录（预算管理 2000 已下移高级版，基础版不挂）
+('BOSS_BASIC', 3000),
 -- 建项目 + 审批项目：项目管理（查询/新增/审批）+ 隐藏页（详情/新建）
 ('BOSS_BASIC', 3201), ('BOSS_BASIC', 3251), ('BOSS_BASIC', 3252), ('BOSS_BASIC', 3254),
 ('BOSS_BASIC', 3231), ('BOSS_BASIC', 3232),
--- 审批付款：付款单管理（查询/审批/驳回）
-('BOSS_BASIC', 3206), ('BOSS_BASIC', 3266), ('BOSS_BASIC', 3268), ('BOSS_BASIC', 3269),
+-- 收入确认（查询/新增）+ 收入核验（通过/驳回）：boss 兼任经理/财务核验
+('BOSS_BASIC', 3202), ('BOSS_BASIC', 3256), ('BOSS_BASIC', 3257),
+('BOSS_BASIC', 3210), ('BOSS_BASIC', 3278), ('BOSS_BASIC', 3279),
 -- 审批变更：合同变更（查询/审批）
 ('BOSS_BASIC', 3203), ('BOSS_BASIC', 3258), ('BOSS_BASIC', 3260),
--- 看板：老板看板（查询）
-('BOSS_BASIC', 3215), ('BOSS_BASIC', 3288),
--- 报销单审批：仅按钮权限，不挂菜单（基础版报销走小程序老板审批）
-('BOSS_BASIC', 3041), ('BOSS_BASIC', 3045),
+-- 登记+审批付款：付款单管理（查询/新增/审批/驳回）
+('BOSS_BASIC', 3206), ('BOSS_BASIC', 3266), ('BOSS_BASIC', 3267), ('BOSS_BASIC', 3268), ('BOSS_BASIC', 3269),
+-- 登记+审核收款：收款单管理（查询/新增/审核）
+('BOSS_BASIC', 3207), ('BOSS_BASIC', 3270), ('BOSS_BASIC', 3271), ('BOSS_BASIC', 3272),
+-- 报销管理（精简）：查询/新增/提交/修改/删除/审批 + 隐藏页详情/表单
+('BOSS_BASIC', 3004), ('BOSS_BASIC', 3041), ('BOSS_BASIC', 3042), ('BOSS_BASIC', 3043),
+('BOSS_BASIC', 3044), ('BOSS_BASIC', 3045), ('BOSS_BASIC', 3046),
+('BOSS_BASIC', 3124), ('BOSS_BASIC', 3125),
 -- 消息中心（全角色公共）
 ('BOSS_BASIC', 3114);
 
--- 高级版 = 基础版 + 项目利润报表（只读）+ 打卡记录（只读）
+-- 高级版 = 基础版 + 承接下移（预算管理目录/预算审核/老板看板）+ 项目利润报表（只读）+ 打卡记录（只读）
 INSERT INTO `sys_edition_menu_template` (`edition`, `menu_id`)
 SELECT 'BOSS_ADVANCED', `menu_id` FROM `sys_edition_menu_template` WHERE `edition` = 'BOSS_BASIC';
 INSERT INTO `sys_edition_menu_template` (`edition`, `menu_id`) VALUES
+-- 承接下移：预算管理目录 + 定总额（预算审核审批/驳回）+ 老板看板（高级版首页）
+('BOSS_ADVANCED', 2000), ('BOSS_ADVANCED', 2002), ('BOSS_ADVANCED', 2017), ('BOSS_ADVANCED', 2018),
+('BOSS_ADVANCED', 3215), ('BOSS_ADVANCED', 3288),
 ('BOSS_ADVANCED', 3218), ('BOSS_ADVANCED', 3293),
 ('BOSS_ADVANCED', 3220), ('BOSS_ADVANCED', 3242);
 

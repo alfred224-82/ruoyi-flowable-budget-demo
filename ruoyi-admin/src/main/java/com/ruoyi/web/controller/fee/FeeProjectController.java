@@ -1,6 +1,7 @@
 package com.ruoyi.web.controller.fee;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.annotation.RequireFeature;
 import com.ruoyi.common.core.controller.BaseController;
@@ -15,6 +16,7 @@ import com.ruoyi.system.domain.vo.FeeProjectMemberVo;
 import com.ruoyi.system.domain.vo.FeeProjectProfitVo;
 import com.ruoyi.system.domain.vo.FeeProjectSubjectVo;
 import com.ruoyi.system.domain.vo.FeeProjectVo;
+import com.ruoyi.system.domain.vo.FeeUserOptionVo;
 import com.ruoyi.system.service.IFeeProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -96,6 +98,16 @@ public class FeeProjectController extends BaseController {
     }
 
     /**
+     * 草稿（含驳回回退）提交审批
+     */
+    @SaCheckPermission("fee:project:edit")
+    @Log(title = "项目管理", businessType = BusinessType.UPDATE)
+    @PutMapping("/submit/{id}")
+    public R<Void> submit(@PathVariable Long id) {
+        return toAjax(projectService.submitProject(id));
+    }
+
+    /**
      * 关闭项目
      */
     @SaCheckPermission("fee:project:close")
@@ -159,6 +171,24 @@ public class FeeProjectController extends BaseController {
     @PutMapping("/members/{id}")
     public R<Void> saveMembers(@PathVariable Long id, @RequestBody List<FeeProjectBo.FeeProjectMemberBo> members) {
         return toAjax(projectService.saveMembers(id, members));
+    }
+
+    /**
+     * 报销人(employee)角色成员下拉（项目成员选择用）
+     */
+    @SaCheckPermission(value = {"fee:project:add", "fee:project:edit"}, mode = SaMode.OR)
+    @GetMapping("/reimbursers")
+    public R<List<FeeUserOptionVo>> reimbursers() {
+        return R.ok(projectService.listReimbursers());
+    }
+
+    /**
+     * 项目经理(manager)角色成员下拉（立项选择用）
+     */
+    @SaCheckPermission(value = {"fee:project:add", "fee:project:edit"}, mode = SaMode.OR)
+    @GetMapping("/managers")
+    public R<List<FeeUserOptionVo>> managers() {
+        return R.ok(projectService.listManagers());
     }
 
     /**

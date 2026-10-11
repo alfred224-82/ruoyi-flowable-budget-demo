@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.ruoyi.system.domain.ExpenseBill;
 import com.ruoyi.system.domain.FeeAssetDepreciation;
 import com.ruoyi.system.domain.FeeBadDebt;
+import com.ruoyi.system.domain.FeeIncomeConfirmation;
 import com.ruoyi.system.domain.FeeLoanInterest;
 import com.ruoyi.system.domain.FeePayment;
 import com.ruoyi.system.domain.FeeProject;
@@ -15,12 +16,14 @@ import com.ruoyi.system.domain.FeeProjectSharing;
 import com.ruoyi.system.domain.FeeSalaryRecord;
 import com.ruoyi.system.domain.vo.FeeBadDebtVo;
 import com.ruoyi.system.domain.vo.FeeDashboardVo;
+import com.ruoyi.system.domain.vo.FeeLightOverviewVo;
 import com.ruoyi.system.domain.vo.FeeMemberLoadVo;
 import com.ruoyi.system.domain.vo.FeeProjectChangeVo;
 import com.ruoyi.system.domain.vo.FeeProjectVo;
 import com.ruoyi.system.mapper.ExpenseBillMapper;
 import com.ruoyi.system.mapper.FeeAssetDepreciationMapper;
 import com.ruoyi.system.mapper.FeeBadDebtMapper;
+import com.ruoyi.system.mapper.FeeIncomeConfirmationMapper;
 import com.ruoyi.system.mapper.FeeLoanInterestMapper;
 import com.ruoyi.system.mapper.FeePaymentMapper;
 import com.ruoyi.system.mapper.FeeProjectChangeMapper;
@@ -65,6 +68,7 @@ public class FeeBossDashboardServiceImpl implements IFeeBossDashboardService {
     private final FeeLoanInterestMapper loanInterestMapper;
     private final ExpenseBillMapper billMapper;
     private final FeeProjectMemberMapper memberMapper;
+    private final FeeIncomeConfirmationMapper incomeMapper;
 
     @Override
     public FeeDashboardVo getDashboard() {
@@ -281,6 +285,41 @@ public class FeeBossDashboardServiceImpl implements IFeeBossDashboardService {
         result.sort(Comparator.comparing(FeeMemberLoadVo::getOverLoad).reversed()
             .thenComparing(Comparator.comparing(FeeMemberLoadVo::getTotalRatio).reversed()));
         return result;
+    }
+
+    @Override
+    public FeeLightOverviewVo getLightOverview() {
+        FeeLightOverviewVo vo = new FeeLightOverviewVo();
+        Date monthStart = DateUtil.beginOfMonth(new Date());
+        Date monthEnd = DateUtil.endOfMonth(new Date());
+        vo.setMonth(DateUtil.format(new Date(), "yyyy-MM"));
+
+        // 本月收入：当月已核验收入确认合计（T5.4 三态，待核验不计入）
+        BigDecimal income = sum(incomeMapper.selectList(
+            Wrappers.<FeeIncomeConfirmation>lambdaQuery()
+                .eq(FeeIncomeConfirmation::getVerifyStatus, "VERIFIED")
+                .ge(FeeIncomeConfirmation::getVerifyAt, monthStart)
+                .le(FeeIncomeConfirmation::getVerifyAt, monthEnd)),
+            FeeIncomeConfirmation::getConfirmedAmount);
+
+        // 本月支出：当月已审批报销单 + 付款单合计
+        BigDecimal billExpense = sum(billMapper.selectList(
+            Wrappers.<ExpenseBill>lambdaQuery()
+                .eq(ExpenseBill::getStatus, "APPROVED")
+                .ge(ExpenseBill::getApproveTime, monthStart)
+                .le(ExpenseBill::getApproveTime, monthEnd)),
+            ExpenseBill::getAmount);
+        BigDecimal paymentExpense = sum(paymentMapper.selectList(
+            Wrappers.<FeePayment>lambdaQuery()
+                .eq(FeePayment::getStatus, "APPROVED")
+                .ge(FeePayment::getApprovedAt, monthStart)
+                .le(FeePayment::getApprovedAt, monthEnd)),
+            FeePayment::getAmount);
+
+        vo.setIncome(income);
+        vo.setExpense(billExpense.add(paymentExpense));
+        vo.setBalance(income.subtract(vo.getExpense()));
+        return vo;
     }
 
     /**

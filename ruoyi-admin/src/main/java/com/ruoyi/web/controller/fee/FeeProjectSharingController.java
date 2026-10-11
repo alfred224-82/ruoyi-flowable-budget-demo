@@ -2,6 +2,7 @@ package com.ruoyi.web.controller.fee;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.ruoyi.common.annotation.Log;
+import com.ruoyi.common.annotation.RequireFeature;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.PageQuery;
 import com.ruoyi.common.core.domain.R;
@@ -27,6 +28,7 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/fee/sharing")
+@RequireFeature("FEAT_HIDDEN_COST")
 public class FeeProjectSharingController extends BaseController {
 
     private final IFeeProjectSharingService sharingService;

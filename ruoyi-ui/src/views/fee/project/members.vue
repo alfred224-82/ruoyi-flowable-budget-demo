@@ -17,14 +17,16 @@
         :closable="false"
         style="margin-bottom: 10px;" />
       <el-table :data="members" border size="small">
-        <el-table-column label="用户ID" width="160">
+        <el-table-column label="用户ID" width="160" align="center">
           <template slot-scope="scope">
-            <el-input-number v-model="scope.row.userId" :min="1" :precision="0" size="small" style="width: 100%;" />
+            <span>{{ scope.row.userId || '-' }}</span>
           </template>
         </el-table-column>
         <el-table-column label="姓名" min-width="160">
           <template slot-scope="scope">
-            <el-input v-model="scope.row.userName" placeholder="姓名" size="small" />
+            <el-select v-model="scope.row.userId" placeholder="请选择报销人" size="small" filterable clearable style="width: 100%;" @change="val => onMemberChange(scope.row, val)">
+              <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
+            </el-select>
           </template>
         </el-table-column>
         <el-table-column label="成员角色" width="160">
@@ -36,7 +38,7 @@
             </el-select>
           </template>
         </el-table-column>
-        <el-table-column label="投入比例%" width="140">
+        <el-table-column label="分成比例%" width="140">
           <template slot-scope="scope">
             <el-input-number v-model="scope.row.investRatio" :min="0" :max="100" size="small" style="width: 100%;" />
           </template>
@@ -52,7 +54,7 @@
 </template>
 
 <script>
-import { getProject, listMembers, saveMembers } from '@/api/system/fee/fundProject'
+import { getProject, listMembers, saveMembers, listReimbursers } from '@/api/system/fee/fundProject'
 import { dashboardMemberLoad } from '@/api/system/fee/fundPro'
 import { loadFeatures, featureVisible } from '@/utils/feature'
 
@@ -64,12 +66,25 @@ export default {
       projectId: null,
       projectName: '',
       members: [],
+      // 报销人(employee)角色用户下拉
+      reimburserOptions: [],
       loadWarnings: []
+    }
+  },
+  computed: {
+    // 成员下拉：报销人角色人员 + 存量非报销人成员（仅保证回显，如项目经理）
+    userOptions() {
+      const extras = this.members
+        .filter(m => m.userId && !this.reimburserOptions.some(u => u.userId === m.userId))
+        .map(m => ({ userId: m.userId, nickName: m.userName }))
+      return this.reimburserOptions.concat(extras)
     }
   },
   created() {
     this.projectId = this.$route.query.id
     this.loadData()
+    // 成员仅限报销人角色人员
+    listReimbursers().then(res => { this.reimburserOptions = res.data || [] }).catch(() => {})
     // 专业版开关：成员跨项目负载提示（展示成员已在哪些项目）
     loadFeatures().then(() => {
       if (featureVisible('FEAT_MEMBER_LOAD')) {
@@ -89,6 +104,11 @@ export default {
     },
     addMember() {
       this.members.push({ userId: null, userName: null, role: 'MEMBER', investRatio: 100 })
+    },
+    // 选中报销人后回填姓名
+    onMemberChange(row, userId) {
+      const user = this.userOptions.find(u => u.userId === userId)
+      row.userName = user ? user.nickName : null
     },
     handleSave() {
       saveMembers(this.projectId, this.members).then(() => {

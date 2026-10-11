@@ -42,6 +42,33 @@ public interface IBizBundleService {
     Map<String, String> getCopy(String bizCode);
 
     /**
+     * 业态包声明的菜单 ID 集合（T2.2 业态过滤层：叠加在版本授权模板 sys_role_menu 之上）
+     * <p>为空表示该业态包未声明 menus（不做业态过滤，仅按版本 + client_type 过滤）。
+     *
+     * @param bizCode 业态编码
+     * @return menu_id 集合；业态包缺失或未声明时返回空集
+     */
+    Set<Long> getMenuIds(String bizCode);
+
+    /**
+     * 业态包 Schema 页面区块声明（T10.2：JSON 数组，声明式表单/列表渲染，PC 与小程序共用）
+     * <p>为空表示该业态包未声明 schema_blocks（走代码内置渲染）。
+     *
+     * @param bizCode 业态编码
+     * @return Schema 区块列表；缺失返回空列表
+     */
+    List<Map<String, Object>> getSchemaBlocks(String bizCode);
+
+    /**
+     * 业态包组队/成团引擎策略 Bean 名（T10.2：FullHouseStrategy/GroupBuyStrategy）
+     * <p>策略模式分发，引擎源码禁止 if(bizCode==...) 硬编码。
+     *
+     * @param bizCode 业态编码
+     * @return 策略 Bean 名；缺失返回空串
+     */
+    String getEngineStrategy(String bizCode);
+
+    /**
      * 全部业态包列表（管理页面用）
      */
     List<BizBundleVo> listBundles();

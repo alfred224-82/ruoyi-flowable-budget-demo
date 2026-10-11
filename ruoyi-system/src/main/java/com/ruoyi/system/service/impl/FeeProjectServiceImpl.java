@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.PageQuery;
+import com.ruoyi.common.core.domain.entity.SysRole;
+import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.core.domain.model.LoginUser;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.exception.ServiceException;
@@ -16,17 +18,22 @@ import com.ruoyi.system.domain.FeeProject;
 import com.ruoyi.system.domain.FeeProjectMember;
 import com.ruoyi.system.domain.FeeProjectSharing;
 import com.ruoyi.system.domain.FeeProjectSubject;
+import com.ruoyi.system.domain.SysUserRole;
 import com.ruoyi.system.domain.bo.FeeProjectBo;
 import com.ruoyi.system.domain.vo.FeeMemberLoadVo;
 import com.ruoyi.system.domain.vo.FeeProjectMemberVo;
 import com.ruoyi.system.domain.vo.FeeProjectProfitVo;
 import com.ruoyi.system.domain.vo.FeeProjectSubjectVo;
 import com.ruoyi.system.domain.vo.FeeProjectVo;
+import com.ruoyi.system.domain.vo.FeeUserOptionVo;
 import com.ruoyi.system.mapper.FeeAssetDepreciationMapper;
 import com.ruoyi.system.mapper.FeeProjectMapper;
 import com.ruoyi.system.mapper.FeeProjectMemberMapper;
 import com.ruoyi.system.mapper.FeeProjectSharingMapper;
 import com.ruoyi.system.mapper.FeeProjectSubjectMapper;
+import com.ruoyi.system.mapper.SysRoleMapper;
+import com.ruoyi.system.mapper.SysUserMapper;
+import com.ruoyi.system.mapper.SysUserRoleMapper;
 import com.ruoyi.system.service.IFeeProjectService;
 import com.ruoyi.system.service.ISysMessageService;
 import lombok.RequiredArgsConstructor;
@@ -61,6 +68,14 @@ public class FeeProjectServiceImpl implements IFeeProjectService {
     private final FeeAssetDepreciationMapper depreciationMapper;
     private final FeeProjectSharingMapper sharingMapper;
     private final ISysMessageService sysMessageService;
+    private final SysRoleMapper roleMapper;
+    private final SysUserRoleMapper userRoleMapper;
+    private final SysUserMapper userMapper;
+
+    /** 报销人角色标识（M2_01 五角色体系） */
+    private static final String ROLE_KEY_EMPLOYEE = "employee";
+    /** 项目经理角色标识（M2_01 五角色体系） */
+    private static final String ROLE_KEY_MANAGER = "manager";
 
     @Override
     public TableDataInfo<FeeProjectVo> queryPageList(FeeProjectBo bo, PageQuery pageQuery) {
@@ -68,6 +83,7 @@ public class FeeProjectServiceImpl implements IFeeProjectService {
             .like(StrUtil.isNotBlank(bo.getProjectName()), FeeProject::getProjectName, bo.getProjectName())
             .like(StrUtil.isNotBlank(bo.getClientName()), FeeProject::getClientName, bo.getClientName())
             .eq(StrUtil.isNotBlank(bo.getProjectManagerName()), FeeProject::getProjectManagerName, bo.getProjectManagerName())
+            .eq(StrUtil.isNotBlank(bo.getStatus()), FeeProject::getStatus, bo.getStatus())
             .orderByDesc(FeeProject::getCreateTime);
         // 数据范围：非老板/财务/管理员仅可见本人参与的项目（T2.3）
         List<Long> scopedProjectIds = scopedProjectIds();
@@ -200,6 +216,21 @@ public class FeeProjectServiceImpl implements IFeeProjectService {
                 "REJECT", "PROJECT", id);
         }
         return rows;
+    }
+
+    @Override
+    public int submitProject(Long id) {
+        FeeProject project = projectMapper.selectById(id);
+        if (project == null) {
+            throw new ServiceException("项目不存在");
+        }
+        if (!"DRAFT".equals(project.getStatus())) {
+            throw new ServiceException("仅草稿状态的项目可提交审批");
+        }
+        FeeProject update = new FeeProject();
+        update.setId(id);
+        update.setStatus("PENDING_APPROVAL");
+        return projectMapper.updateById(update);
     }
 
     @Override
@@ -344,6 +375,54 @@ public class FeeProjectServiceImpl implements IFeeProjectService {
             count++;
         }
         return count;
+    }
+
+    @Override
+    public List<FeeUserOptionVo> listReimbursers() {
+        return listUsersByRoleKey(ROLE_KEY_EMPLOYEE);
+    }
+
+    @Override
+    public List<FeeUserOptionVo> listManagers() {
+        return listUsersByRoleKey(ROLE_KEY_MANAGER);
+    }
+
+    /**
+     * 指定角色标识的启用状态用户下拉（含共享预设角色与租户克隆角色；租户隔离由用户过滤保证）
+     */
+    private List<FeeUserOptionVo> listUsersByRoleKey(String roleKey) {
+        // 角色（含共享预设角色与租户克隆角色）；sys_role 不做租户隔离，隔离由后续用户过滤保证
+        List<SysRole> roles = roleMapper.selectList(Wrappers.<SysRole>lambdaQuery()
+            .eq(SysRole::getRoleKey, roleKey)
+            .eq(SysRole::getStatus, "0"));
+        if (CollUtil.isEmpty(roles)) {
+            return new ArrayList<>();
+        }
+        Set<Long> roleIds = roles.stream().map(SysRole::getRoleId).collect(Collectors.toSet());
+        Set<Long> userIds = userRoleMapper.selectList(Wrappers.<SysUserRole>lambdaQuery()
+                .in(SysUserRole::getRoleId, roleIds)).stream()
+            .map(SysUserRole::getUserId).collect(Collectors.toSet());
+        if (userIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        LambdaQueryWrapper<SysUser> wrapper = Wrappers.<SysUser>lambdaQuery()
+            .in(SysUser::getUserId, userIds)
+            .eq(SysUser::getStatus, "0")
+            .orderByAsc(SysUser::getUserId);
+        // 租户隔离：sys_user 在 IGNORE_TENANT_TABLES 中，非超管需手工按当前租户过滤（T2.4）
+        if (!LoginHelper.isAdmin()) {
+            Long tenantId = LoginHelper.getTenantId();
+            if (tenantId != null) {
+                wrapper.eq(SysUser::getTenantId, tenantId);
+            }
+        }
+        return userMapper.selectList(wrapper).stream().map(u -> {
+            FeeUserOptionVo vo = new FeeUserOptionVo();
+            vo.setUserId(u.getUserId());
+            vo.setUserName(u.getUserName());
+            vo.setNickName(u.getNickName());
+            return vo;
+        }).collect(Collectors.toList());
     }
 
     @Override

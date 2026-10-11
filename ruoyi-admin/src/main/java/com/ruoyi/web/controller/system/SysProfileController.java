@@ -13,8 +13,10 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.utils.file.MimeTypeUtils;
 import com.ruoyi.system.domain.SysOss;
 import com.ruoyi.system.domain.vo.SysOssVo;
+import com.ruoyi.system.domain.vo.UserTenantRoleVo;
 import com.ruoyi.system.service.ISysOssService;
 import com.ruoyi.system.service.ISysUserService;
+import com.ruoyi.system.service.IUserTenantRoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
@@ -23,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -38,6 +41,7 @@ public class SysProfileController extends BaseController {
 
     private final ISysUserService userService;
     private final ISysOssService iSysOssService;
+    private final IUserTenantRoleService userTenantRoleService;
 
     /**
      * 个人信息
@@ -47,9 +51,39 @@ public class SysProfileController extends BaseController {
         SysUser user = userService.selectUserById(getUserId());
         Map<String, Object> ajax = new HashMap<>();
         ajax.put("user", user);
-        ajax.put("roleGroup", userService.selectUserRoleGroup(user.getUserName()));
+        // ★优先从 user_tenant_role（业务角色表）读取主角色显示名，
+        //   解决人员管理分配 boss 等角色后个人中心仍显示 sys_user_role 中 platform_admin 的问题
+        ajax.put("roleGroup", resolveProfileRoleGroup(user.getUserId(), user.getUserName()));
         ajax.put("postGroup", userService.selectUserPostGroup(user.getUserName()));
         return R.ok(ajax);
+    }
+
+    /**
+     * 解析个人中心展示的角色组：
+     * 优先取 user_tenant_role 中当前租户的主角色（isPrimary=1）显示名；
+     * 无业务角色时回落 sys_user_role（兼容非小微版场景）。
+     */
+    private String resolveProfileRoleGroup(Long userId, String userName) {
+        try {
+            List<UserTenantRoleVo> bizRoles = userTenantRoleService.listByUser(userId);
+            if (bizRoles != null && !bizRoles.isEmpty()) {
+                // 优先主角色
+                for (UserTenantRoleVo r : bizRoles) {
+                    if (Integer.valueOf(1).equals(r.getIsPrimary()) && !"1".equals(r.getStatus())) {
+                        return r.getRoleName();
+                    }
+                }
+                // 无主角色则取第一个启用的
+                for (UserTenantRoleVo r : bizRoles) {
+                    if (!"1".equals(r.getStatus())) {
+                        return r.getRoleName();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // 业务角色查询失败不阻断，回落系统角色
+        }
+        return userService.selectUserRoleGroup(userName);
     }
 
     /**

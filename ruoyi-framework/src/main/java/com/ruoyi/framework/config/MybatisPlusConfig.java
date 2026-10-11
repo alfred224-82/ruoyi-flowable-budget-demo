@@ -134,14 +134,22 @@ public class MybatisPlusConfig {
         "fee_expense_category",
         // 多业态平台底座：业态包/功能开关（系统级共享表，不含 tenant_id，T1.7/T10.2/T10.3）
         "biz_bundle", "feature_flag",
+        // 多业态平台底座：业态文案映射 i18n（系统级共享表，不含 tenant_id，T10.5 v1.29）
+        "biz_copy",
         // M12 主题预设（系统级共享 Design Token，不含 tenant_id，T12.2）
         "biz_theme_preset",
         // M14 计费套餐/协议版本（系统级共享，不含 tenant_id，T14.1/T14.4）
         "sys_billing_plan", "sys_agreement_version",
         // M8 引导态门户访问审计（系统级共享，跨租户无登录态，不含 tenant_id，T8.8）
         "portal_access_log",
+        // M15 小微版：角色模板（系统级共享，version_type×role_code 配方，不含 tenant_id，T15.1/T15.7）
+        "role_template",
+        // M15 小微版：行业模板 / 行业角色映射（系统级共享，admin 维护，不含 tenant_id，T15.2/T15.10）
+        "industry_template", "industry_role_map",
         // AI报表
-        "ai_report_record"
+        "ai_report_record",
+        // M18 图片合规与全局敏感词：全局底库 tenant_id=0 需跨租户读取，服务层手工隔离（T18.1）
+        "sensitive_word", "image_compliance_config"
     );
 
     /**

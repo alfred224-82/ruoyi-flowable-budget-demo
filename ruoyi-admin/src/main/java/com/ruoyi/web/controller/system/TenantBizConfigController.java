@@ -5,7 +5,9 @@ import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.R;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.helper.LoginHelper;
 import com.ruoyi.system.domain.vo.TenantBizConfigVo;
+import com.ruoyi.system.service.ILicenseService;
 import com.ruoyi.system.service.ITenantBizConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -28,6 +30,7 @@ import java.util.Map;
 public class TenantBizConfigController extends BaseController {
 
     private final ITenantBizConfigService tenantBizConfigService;
+    private final ILicenseService licenseService;
 
     /**
      * 查询租户单店覆盖配置
@@ -56,5 +59,26 @@ public class TenantBizConfigController extends BaseController {
     @PostMapping
     public R<Void> save(@RequestBody TenantBizConfigVo vo) {
         return toAjax(tenantBizConfigService.saveConfig(vo));
+    }
+
+    /**
+     * ★T10.4 v1.29：获取 module_overrides 的 JSON Schema 描述（供前端管理页展示约束）
+     */
+    @SaCheckPermission("system:tenantBizConfig:query")
+    @GetMapping("/schema")
+    public R<Map<String, Object>> schema() {
+        return R.ok(tenantBizConfigService.describeSchema());
+    }
+
+    /**
+     * ★T10.6 v1.29：获取当前登录租户的运行时渲染 Schema（Schema 页面引擎数据源）
+     * <p>任意登录用户可访问（无特殊权限），后端自动解析当前租户上下文 + 业态包，
+     * 前端 SchemaRenderer 组件消费 blocks 声明式渲染。
+     */
+    @GetMapping("/render")
+    public R<Map<String, Object>> render() {
+        Long tenantId = LoginHelper.isAdmin() ? null : LoginHelper.getTenantId();
+        String bizCode = licenseService.getCurrentBizCode();
+        return R.ok(tenantBizConfigService.getRenderSchema(tenantId, bizCode));
     }
 }

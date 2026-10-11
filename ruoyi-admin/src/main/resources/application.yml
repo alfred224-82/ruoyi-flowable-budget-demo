@@ -142,6 +142,8 @@ security:
     - /portal/**
     # M7 T7.8 开放平台外部调用网关（AppKey+HMAC-SHA256 签名鉴权，无登录态）
     - /openapi/gateway/**
+    # M15 T15.28 小微版 lite 档活动浏览页（匿名只读，tenantId 参数 + TenantHelper.supply 显式限定门店，仅返回 PUBLISHED 活动）
+    - /micro/activity/browse
 
 # MyBatisPlus配置
 # https://baomidou.com/config/

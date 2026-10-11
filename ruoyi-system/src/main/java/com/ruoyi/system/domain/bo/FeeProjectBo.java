@@ -53,6 +53,9 @@ public class FeeProjectBo implements Serializable {
     /** 项目经理姓名 */
     private String projectManagerName;
 
+    /** 状态(DRAFT/PENDING_APPROVAL/ACTIVE/COMPLETED/CLOSED/LOST，仅查询用) */
+    private String status;
+
     /** 项目总预算（按大类分配合计） */
     private BigDecimal totalBudget;
 
@@ -100,7 +103,7 @@ public class FeeProjectBo implements Serializable {
         private String userName;
         /** 成员角色(MANAGER/MEMBER/VIEWER) */
         private String role;
-        /** 投入比例% */
+        /** 分成比例%（项目利润分成/跨项目负载合计） */
         private Integer investRatio;
     }
 }

@@ -1,12 +1,16 @@
 import request from '@/utils/request'
 
 // 登录方法
-export function login(username, password, code, uuid) {
+export function login(username, password, code, uuid, tenantId) {
   const data = {
     username,
     password,
     code,
     uuid
+  }
+  // 多租户隔离：tenantId 非空时传给后端精确匹配所属租户
+  if (tenantId) {
+    data.tenantId = tenantId
   }
   return request({
     url: '/login',

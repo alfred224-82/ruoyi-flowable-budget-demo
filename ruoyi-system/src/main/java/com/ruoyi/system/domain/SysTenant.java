@@ -84,14 +84,28 @@ public class SysTenant extends BaseEntity {
     private String industry;
 
     /**
-     * 规模（SMALL/MEDIUM/LARGE）
-     */
-    private String scale;
-
-    /**
      * 分配版本：BASIC/ADVANCED/PROFESSIONAL（兼容存量 ENTERPRISE，T4.1）
      */
     private String edition;
+
+    /**
+     * 产品线（T15.25 硬隔离 + T15.29 新建租户级联）：micro(小微版)/enterprise(企业版)。
+     * <p>决定「可选角色列表」按 sys_role.tenant_type_scope 过滤的产品线归属。
+     */
+    private String tenantType;
+
+    /**
+     * 版本档位（T15.26 小微版分档）：micro_lite/micro_pro/basic/advanced/pro。
+     * <p>★分档差异只体现在 role_template 勾选的菜单范围；lite→pro 升级 = UPDATE 本字段 + 刷新菜单缓存，零迁移。
+     * micro_lite 永久免费(仅推广)；micro_pro 收费(全经营)；basic/advanced/pro 为企业线档位。
+     */
+    private String versionType;
+
+    /**
+     * 小程序全局主题key（T15.36 platform_admin 选定后全局换肤）：
+     * theme_default/theme_warm/theme_fresh/theme_elegant
+     */
+    private String appThemeKey;
 
     /**
      * 业态包编码（biz_bundle.biz_code）：fund_control/boardgame/fresh_food（T1.8/T10.1）
@@ -149,9 +163,15 @@ public class SysTenant extends BaseEntity {
     private String features;
 
     /**
-     * 状态：PENDING/NORMAL/DISABLED/EXPIRED
+     * 状态：PENDING/NORMAL/GRACE/DISABLED/EXPIRED
+     * <p>GRACE = 到期后 3 天只读宽限期（T14.2）
      */
     private String status;
+
+    /**
+     * 只读宽限期截止日（T14.2：到期后 3 天内允许只读访问，NULL=未进入宽限期）
+     */
+    private Date gracePeriodUntil;
 
     /**
      * 租户管理员用户ID

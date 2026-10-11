@@ -77,12 +77,14 @@ public class SysRoleServiceImpl implements ISysRoleService {
             .between(params.get("beginTime") != null && params.get("endTime") != null,
                 "r.create_time", params.get("beginTime"), params.get("endTime"))
             .orderByAsc("r.role_sort").orderByAsc("r.create_time");
-        // 租户隔离：非 admin 超管时按 tenant_id 过滤角色（T2.4）
-        // 共享业务角色（9201~9205）tenant_id 为 NULL，不受此影响
+        // 排除全局共享预设克隆源（9201~9205，tenant_id=NULL）：仅作租户级角色的克隆源、不可直接授权（T2.5），
+        // 一旦返回会与各租户克隆角色 role_name 相同，导致角色下拉框/列表出现重复项，故统一排除
+        wrapper.isNotNull("r.tenant_id");
+        // 租户隔离：非 admin 超管时仅返回本租户角色（T2.4/T2.5）
         if (!LoginHelper.isAdmin()) {
             Long tenantId = LoginHelper.getTenantId();
             if (tenantId != null) {
-                wrapper.and(w -> w.eq("r.tenant_id", tenantId).or().isNull("r.tenant_id"));
+                wrapper.eq("r.tenant_id", tenantId);
             }
         }
         return wrapper;

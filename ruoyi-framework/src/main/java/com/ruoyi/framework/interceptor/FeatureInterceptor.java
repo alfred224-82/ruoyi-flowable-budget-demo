@@ -54,6 +54,11 @@ public class FeatureInterceptor implements HandlerInterceptor {
 
     private void checkFeature(String featureCode) {
         if (!featureChecker.isFeatureEnabled(featureCode)) {
+            // ★小微版（MICRO）是独立版本体系，不调用"升级License"话术
+            String edition = featureChecker.getCurrentEdition();
+            if ("MICRO".equals(edition)) {
+                throw new ServiceException("小微版无此功能权限");
+            }
             throw new ServiceException("当前版本不支持此功能，请升级License");
         }
     }

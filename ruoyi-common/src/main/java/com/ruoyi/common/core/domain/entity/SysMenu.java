@@ -101,4 +101,10 @@ public class SysMenu extends TreeEntity<SysMenu> {
      */
     private String remark;
 
+    /**
+     * 客户端类型（pc/mini/both）：菜单端过滤唯一依据（T15.6/T15.8）。
+     * <p>由前端壳明确传入并据此过滤，禁止靠 appid 反查；both 表示 PC 与小程序通用。
+     */
+    private String clientType;
+
 }

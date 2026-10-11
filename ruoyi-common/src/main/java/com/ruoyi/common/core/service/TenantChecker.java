@@ -16,4 +16,11 @@ public interface TenantChecker {
      * 不可用时抛出业务异常（admin 超管与未绑定租户的平台账号豁免）
      */
     void checkCurrentTenant();
+
+    /**
+     * 判断当前租户是否处于只读宽限期（T14.2：到期后 3 天内允许只读访问）
+     *
+     * @return true=宽限期内（应拦截写操作），false=非宽限期
+     */
+    boolean isCurrentTenantInGracePeriod();
 }

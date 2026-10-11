@@ -56,6 +56,17 @@ public interface ISysMenuService {
     List<SysMenu> selectMenuTreeByUserId(Long userId);
 
     /**
+     * 根据用户ID + 客户端类型查询菜单树信息（T15.8）
+     * <p>按 sys_menu.client_type 过滤：保留与 clientType 一致及 both 通用的菜单；clientType 为空则不过滤。
+     * clientType 由前端壳传入（pc/mini），禁止靠 appid 反查。
+     *
+     * @param userId     用户ID
+     * @param clientType 客户端类型（pc/mini/both，可空）
+     * @return 菜单列表
+     */
+    List<SysMenu> selectMenuTreeByUserId(Long userId, String clientType);
+
+    /**
      * 根据角色ID查询菜单树信息
      *
      * @param roleId 角色ID
@@ -134,4 +145,13 @@ public interface ISysMenuService {
      * @return 结果
      */
     boolean checkMenuNameUnique(SysMenu menu);
+
+    /**
+     * 过期租户管理员权限过滤：租户 EXPIRED 且当前用户为租户管理员时，
+     * 仅保留版本升级相关权限（micro:platform:upgrade*）。
+     *
+     * @param perms 原始权限集合
+     * @return 过滤后的权限集合
+     */
+    Set<String> filterPermissionsForExpiredTenant(Set<String> perms);
 }

@@ -3,6 +3,7 @@ package com.ruoyi.web.controller.fee;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.annotation.RepeatSubmit;
+import com.ruoyi.common.annotation.RequireFeature;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.PageQuery;
 import com.ruoyi.common.core.domain.R;
@@ -31,6 +32,7 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/fee/budgetAdjustment")
+@RequireFeature("FEAT_BUDGET_PREPARE")
 public class BudgetAdjustmentAppController extends BaseController {
 
     private final IBudgetAdjustmentAppService budgetAdjustmentAppService;

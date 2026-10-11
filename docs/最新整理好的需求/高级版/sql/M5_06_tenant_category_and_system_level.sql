@@ -15,7 +15,9 @@
 --    内置大类 tenant_id 统一为 0（系统级）
 -- ----------------------------
 -- 将存量内置大类的 tenant_id 从 1 改为 0（系统级）
+SET SQL_SAFE_UPDATES = 0;
 UPDATE `fee_expense_category` SET `tenant_id` = 0 WHERE `is_builtin` = 1 AND `tenant_id` = 1;
+SET SQL_SAFE_UPDATES = 1;
 
 -- 唯一键改为全局唯一（不再按 tenant_id 分组）
 -- 先删后建唯一键（幂等）

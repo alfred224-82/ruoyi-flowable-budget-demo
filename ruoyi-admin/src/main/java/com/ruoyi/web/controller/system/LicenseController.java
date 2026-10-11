@@ -54,6 +54,32 @@ public class LicenseController extends BaseController {
     }
 
     /**
+     * Admin 侧签发 License（T15.33+）：为指定租户生成可直接导入的 License JSON。
+     * <p>请求体为签发参数 JSON，支持字段：
+     * edition / versionType / tenantType / licenseType / durationDays / customer /
+     * industries / bizCode / plan / tenantId。
+     * <p>响应 data 为标准 License JSON 字符串，前端复制后交给租户管理员
+     * 在「版本升级」页面粘贴导入即可激活。
+     */
+    @SaCheckPermission("system:license:manage")
+    @PostMapping("/generate")
+    public R<String> generate(@RequestBody String payloadJson) {
+        // 从 payload 中解析 tenantId（可选，为空表示系统级 License）
+        Long tenantId = null;
+        try {
+            com.fasterxml.jackson.databind.JsonNode node =
+                new com.fasterxml.jackson.databind.ObjectMapper().readTree(payloadJson);
+            if (node.has("tenantId") && !node.get("tenantId").isNull()) {
+                tenantId = node.get("tenantId").asLong();
+            }
+        } catch (Exception ignored) {
+            // payload 解析失败由 service 层统一报错
+        }
+        String licenseJson = licenseService.generateLicenseForTenant(tenantId, payloadJson);
+        return R.ok("操作成功", licenseJson);
+    }
+
+    /**
      * 试用剩余时长
      */
     @GetMapping("/trial-status")

@@ -283,6 +283,46 @@ export const dynamicRoutes = [
       }
     ]
   },
+  {
+    path: '/fee/project',
+    component: Layout,
+    hidden: true,
+    permissions: ['fee:project:list'],
+    children: [
+      {
+        path: 'create',
+        component: () => import('@/views/fee/project/create'),
+        name: 'FundProjectCreate',
+        meta: { title: '立项', activeMenu: '/fee/fee/project' }
+      },
+      {
+        path: 'detail',
+        component: () => import('@/views/fee/project/detail'),
+        name: 'FundProjectDetail',
+        meta: { title: '项目详情', activeMenu: '/fee/fee/project' }
+      },
+      {
+        path: 'members',
+        component: () => import('@/views/fee/project/members'),
+        name: 'FundProjectMembers',
+        meta: { title: '项目成员', activeMenu: '/fee/fee/project' }
+      }
+    ]
+  },
+  {
+    path: '/micro/booking',
+    component: Layout,
+    hidden: true,
+    permissions: ['micro:booking:list'],
+    children: [
+      {
+        path: 'detail',
+        component: () => import('@/views/micro/order/detail'),
+        name: 'MicroOrderDetail',
+        meta: { title: '预约订单详情', activeMenu: '/microOps/bookingList' }
+      }
+    ]
+  },
 ]
 
 // 防止连续点击多次路由报错

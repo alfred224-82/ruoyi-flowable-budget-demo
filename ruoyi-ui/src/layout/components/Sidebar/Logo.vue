@@ -31,11 +31,14 @@ export default {
     },
     sideTheme() {
       return this.$store.state.settings.sideTheme
+    },
+    // 控制台标题：租户名称+「管理系统」（store getters.systemTitle，缺失兜底「管理系统」）
+    title() {
+      return this.$store.getters.systemTitle
     }
   },
   data() {
     return {
-      title: '预算智控系统',
       logo: logoImg
     }
   }

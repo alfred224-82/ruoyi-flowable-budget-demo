@@ -2,7 +2,7 @@
 -- M5_01 基础版业务表补充审计字段（M1_02 增量修正）
 -- 版本：v1.0  日期：2026-08-29
 -- 说明：
---   1. M1_02 中部分轻量表未包含 create_by / update_by 审计列，
+--   1. M1_02 中部分轻量表未包含 create_by / update_by / update_time 审计列，
 --      与框架 BaseEntity 自动填充（CreateAndUpdateMetaObjectHandler）冲突，
 --      本脚本幂等补齐（列已存在则跳过，可重复执行）；
 --   2. 对齐《开发与落地规范》第6条"留痕"要求。
@@ -20,6 +20,11 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
                    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = tbl_name AND COLUMN_NAME = 'update_by') THEN
         SET @ddl = CONCAT('ALTER TABLE `', tbl_name, '` ADD COLUMN `update_by` VARCHAR(64) COMMENT ''更新者''');
+        PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = tbl_name AND COLUMN_NAME = 'update_time') THEN
+        SET @ddl = CONCAT('ALTER TABLE `', tbl_name, '` ADD COLUMN `update_time` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT ''更新时间''');
         PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
     END IF;
 END$$

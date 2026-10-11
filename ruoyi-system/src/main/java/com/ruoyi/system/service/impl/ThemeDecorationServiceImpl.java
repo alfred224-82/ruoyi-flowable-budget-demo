@@ -11,6 +11,7 @@ import com.ruoyi.system.service.ITenantThemeService;
 import com.ruoyi.system.service.IThemeDecorationService;
 import com.ruoyi.system.service.IThemePresetService;
 import com.ruoyi.system.service.image.IImagePipeline;
+import com.ruoyi.system.service.image.ImageUploadValidator;
 import com.ruoyi.system.service.security.ContentCheckResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,7 @@ public class ThemeDecorationServiceImpl implements IThemeDecorationService {
     private final IThemePresetService themePresetService;
     private final IContentSecurityService contentSecurityService;
     private final IImagePipeline imagePipeline;
+    private final ImageUploadValidator imageUploadValidator;
     private final ImageTaskMapper imageTaskMapper;
 
     /** 内容安全场景：Logo */
@@ -44,7 +46,9 @@ public class ThemeDecorationServiceImpl implements IThemeDecorationService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long decorate(TenantThemeVo vo) {
-        // 1. 内容安全审核（imgSecCheck 桩，REJECT/ERROR 一律拒绝）
+        // 1. 图片四重校验（T15.35 §6.1）：前三重 MIME/尺寸比例/大小（ImageUploadValidator）→ 第四重微信 imgSecCheck；任一不过即拒绝落库
+        imageUploadValidator.validate(SCENE_LOGO, vo.getLogoUrl());
+        imageUploadValidator.validate(SCENE_POSTER, vo.getPosterUrl());
         checkImage(SCENE_LOGO, vo.getLogoUrl());
         checkImage(SCENE_POSTER, vo.getPosterUrl());
 

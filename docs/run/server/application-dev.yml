@@ -136,6 +136,15 @@ redisson:
     # 发布和订阅连接池大小
     subscriptionConnectionPoolSize: 50
 
+--- # 线程池相关配置（供 @Async("threadPoolTaskExecutor") 与图片合规并行检测使用；enabled 必须为 true，否则 threadPoolTaskExecutor bean 不会创建，触发 NoSuchBeanDefinitionException）
+thread-pool:
+  # 是否开启线程池
+  enabled: true
+  # 队列最大长度
+  queue-capacity: 128
+  # 线程池维护线程所允许的空闲时间
+  keep-alive-seconds: 300
+
 --- # mail 邮件发送
 mail:
   enabled: false

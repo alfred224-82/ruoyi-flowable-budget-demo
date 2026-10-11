@@ -1,6 +1,9 @@
 -- =====================================================================
 -- M2_10 三版本授权模板下移重排脚本（T1.3 / T2.2，防串第④层，v1.12）
--- 版本：v1.0  日期：2026-09-05
+-- 版本：v1.1  日期：2026-09-06
+-- v1.1 变更：下移集合纳入预算管理目录 2000——其子菜单 2001~2003 全部下移后，
+--      目录在基础版无任何可见子菜单，侧边栏会渲染为空壳叶子项（《基础版操作手册》
+--      v2.0 1.2 验收「不应看到预算编制」口径）；高级/专业版经晋升步骤保留该目录
 -- 依据：《资金管控系统开发任务文档》v1.12 T1.3 / T2.2 / T6.8②、第五章用例 18/19/20、第六章附录速查表
 --       《资金管控系统设计文档》v1.3 §1.7（版本功能矩阵重排）/ §2.2（基础版模块版本归属划分）/ §5.1 组 A
 -- 前置依赖：M2_02_role_menu_templates.sql（角色×版本模板 BOSS_/FINANCE_/MANAGER_/EMPLOYEE_/PLATFORM_ADMIN_）
@@ -23,6 +26,8 @@
 DROP TEMPORARY TABLE IF EXISTS `tmp_downshift_menu`;
 CREATE TEMPORARY TABLE `tmp_downshift_menu` (`menu_id` BIGINT PRIMARY KEY);
 INSERT INTO `tmp_downshift_menu` (`menu_id`) VALUES
+-- 预算管理目录（子菜单全下移后基础版关闭目录，避免空壳目录；高级/专业版经晋升保留）
+(2000),
 -- 预算编制 / 审核 / 科目（2001~2003 + 隐藏页 2019/2020 + 按钮 2011~2018、2031~2035）——FEAT_BUDGET_PREPARE / FEAT_SUBJECT_3LAYER
 (2001),(2002),(2003),
 (2011),(2012),(2013),(2014),(2015),(2016),(2017),(2018),(2019),(2020),
@@ -102,7 +107,7 @@ DROP TEMPORARY TABLE IF EXISTS `tmp_downshift_menu`;
 -- 7.1 基础版模板残留下移菜单数（预期 0）
 -- SELECT COUNT(*) FROM sys_edition_menu_template
 --  WHERE (edition = 'BASIC' OR edition LIKE '%\_BASIC')
---    AND menu_id IN (2001,2002,2003,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,
+--    AND menu_id IN (2000,2001,2002,2003,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,
 --        2031,2032,2033,2034,2035,3310,3311,3312,3313,3314,3315,3316,3317,3318,3319,3320,3321,
 --        3322,3323,3324,3204,3205,3262,3263,3264,3265,3211,3212,3213,3214,3280,3281,3282,3283,
 --        3284,3285,3286,3287,3208,3273,3274,3275,3209,3276,3277,3215,3288,3216,3289,3290);
@@ -116,4 +121,4 @@ DROP TEMPORARY TABLE IF EXISTS `tmp_downshift_menu`;
 -- SELECT COUNT(*) FROM sys_role_menu rm
 --   JOIN sys_role r ON r.role_id = rm.role_id
 --   JOIN sys_tenant t ON t.id = r.tenant_id
---  WHERE UPPER(t.edition) = 'BASIC' AND rm.menu_id IN (2001,2003,3208,3209,3215,3216);
+--  WHERE UPPER(t.edition) = 'BASIC' AND rm.menu_id IN (2000,2001,2003,3208,3209,3215,3216);

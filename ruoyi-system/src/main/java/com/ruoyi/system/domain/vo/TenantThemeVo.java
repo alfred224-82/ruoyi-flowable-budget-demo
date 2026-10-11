@@ -40,6 +40,12 @@ public class TenantThemeVo implements Serializable {
     /** 海报成品URL */
     private String renderedPosterUrl;
 
+    /** 海报主色 hex（k-means k=3 提取，T15.35§6.3） */
+    private String posterDominantColor;
+
+    /** 海报辅色 hex（k-means k=3 提取，T15.35§6.3） */
+    private String posterAccentColor;
+
     private Date createTime;
 
     private Date updateTime;

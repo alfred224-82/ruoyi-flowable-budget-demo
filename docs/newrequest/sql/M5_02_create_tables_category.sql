@@ -112,11 +112,16 @@ CALL m5_add_subject_category();
 DROP PROCEDURE IF EXISTS `m5_add_subject_category`;
 
 -- 映射B内置初始化（按科目名称关键字回填，仅填空值不覆盖已有映射；可重复执行）
-UPDATE `budget_subject` SET `category_code` = 'TRAVEL'      WHERE `category_code` IS NULL AND (`subject_name` LIKE '%差旅%' OR `subject_name` LIKE '%招待%');
-UPDATE `budget_subject` SET `category_code` = 'PROCUREMENT' WHERE `category_code` IS NULL AND (`subject_name` LIKE '%材料%' OR `subject_name` LIKE '%采购%' OR `subject_name` LIKE '%设备%');
-UPDATE `budget_subject` SET `category_code` = 'PERSONNEL'   WHERE `category_code` IS NULL AND (`subject_name` LIKE '%薪%'   OR `subject_name` LIKE '%人工%' OR `subject_name` LIKE '%社保%');
-UPDATE `budget_subject` SET `category_code` = 'OFFICE'      WHERE `category_code` IS NULL AND (`subject_name` LIKE '%办公%' OR `subject_name` LIKE '%水电%' OR `subject_name` LIKE '%房租%');
-UPDATE `budget_subject` SET `category_code` = 'MARKETING'   WHERE `category_code` IS NULL AND (`subject_name` LIKE '%广告%' OR `subject_name` LIKE '%推广%');
+--   映射范围限定支出侧科目（EXPENSE 费用类 / COST 成本类）：种子 10xx 树误标 INCOME 且与
+--   20xx/30xx 支出树重名，不限类型时同名科目（差旅费/业务招待费等）会被双重命中，
+--   立项/编制下拉出现重复选项；故先清非支出侧误映射，再按关键字回填。
+UPDATE `budget_subject` SET `category_code` = NULL
+ WHERE `category_code` IS NOT NULL AND `subject_type` NOT IN ('EXPENSE', 'COST');
+UPDATE `budget_subject` SET `category_code` = 'TRAVEL'      WHERE `category_code` IS NULL AND `subject_type` IN ('EXPENSE', 'COST') AND (`subject_name` LIKE '%差旅%' OR `subject_name` LIKE '%招待%');
+UPDATE `budget_subject` SET `category_code` = 'PROCUREMENT' WHERE `category_code` IS NULL AND `subject_type` IN ('EXPENSE', 'COST') AND (`subject_name` LIKE '%材料%' OR `subject_name` LIKE '%采购%' OR `subject_name` LIKE '%设备%');
+UPDATE `budget_subject` SET `category_code` = 'PERSONNEL'   WHERE `category_code` IS NULL AND `subject_type` IN ('EXPENSE', 'COST') AND (`subject_name` LIKE '%薪%'   OR `subject_name` LIKE '%人工%' OR `subject_name` LIKE '%社保%');
+UPDATE `budget_subject` SET `category_code` = 'OFFICE'      WHERE `category_code` IS NULL AND `subject_type` IN ('EXPENSE', 'COST') AND (`subject_name` LIKE '%办公%' OR `subject_name` LIKE '%水电%' OR `subject_name` LIKE '%房租%');
+UPDATE `budget_subject` SET `category_code` = 'MARKETING'   WHERE `category_code` IS NULL AND `subject_type` IN ('EXPENSE', 'COST') AND (`subject_name` LIKE '%广告%' OR `subject_name` LIKE '%推广%');
 UPDATE `budget_subject` SET `category_code` = 'OTHER'       WHERE `category_code` IS NULL AND `subject_type` = 'EXPENSE'
     AND `subject_name` NOT LIKE '%差旅%' AND `subject_name` NOT LIKE '%招待%' AND `subject_name` NOT LIKE '%薪%'
     AND `subject_name` NOT LIKE '%办公%' AND `subject_name` NOT LIKE '%广告%' AND `subject_name` NOT LIKE '%推广%';

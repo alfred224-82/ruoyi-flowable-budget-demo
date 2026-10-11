@@ -215,7 +215,9 @@ public class ExpenseBillServiceImpl implements IExpenseBillService {
         }
 
         // ========== T5.18 发票验真：查重 → 查验 → 发票金额与报销金额比对，不一致拦截标记 ==========
-        invoiceVerifyService.verify(bill);
+        if (featureChecker.isFeatureEnabled("FEAT_INVOICE_VERIFY")) {
+            invoiceVerifyService.verify(bill);
+        }
 
         // ========== 3. 预算校验（含超预算分流） ==========
         int budgetYear;

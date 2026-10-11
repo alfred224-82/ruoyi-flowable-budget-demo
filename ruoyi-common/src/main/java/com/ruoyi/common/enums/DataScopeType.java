@@ -44,7 +44,22 @@ public enum DataScopeType {
     /**
      * 仅本人数据权限
      */
-    SELF("5", " #{#userName} = #{#user.userId} ", " 1 = 0 ");
+    SELF("5", " #{#userName} = #{#user.userId} ", " 1 = 0 "),
+
+    /**
+     * 项目参与数据权限（T2.3）：仅可见自己参与的项目数据
+     * <p>按 project_member.role 五枚举过滤，participant/signup 仅可见自己报名数据
+     */
+    PROJECT_PARTICIPANT("6",
+        " #{#projectId} IN ( #{@sdss.getProjectIds( #user.userId )} ) ",
+        " 1 = 0 "),
+
+    /**
+     * 项目管理数据权限（T2.3）：仅可见自己管理的项目数据（owner/manager）
+     */
+    PROJECT_MANAGER("7",
+        " #{#projectId} IN ( #{@sdss.getManagedProjectIds( #user.userId )} ) ",
+        " 1 = 0 ");
 
     private final String code;
 

@@ -38,6 +38,9 @@ public class FeatureFlagVo implements Serializable {
     /** 专业版默认是否开启（0否 1是） */
     private Integer proEnabled;
 
+    /** 小微版默认是否开启（0否 1是；micro_lite/micro_pro 共用本列） */
+    private Integer microEnabled;
+
     /** 状态（0启用 1停用） */
     private String status;
 

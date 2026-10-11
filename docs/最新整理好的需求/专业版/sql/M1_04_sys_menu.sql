@@ -1,13 +1,32 @@
 -- =====================================================================
 -- M1_04 sys_menu 全量菜单脚本（T1.3）
--- 版本：v1.0  日期：2026-08-29
+-- 版本：v1.1  日期：2026-09-12
 -- 依据：《各角色菜单权限文档》（v2.1）第二节 2.2~2.5
 -- 规范：
 --   1. 先删后插（按 menu_id 精确删除），脚本可重复执行
 --   2. 新增页面菜单全部挂既有目录 费用管控(menu_id=3000)（实施说明第1条）
 --   3. 权限标识(perms)与文档完全一致；菜单与版本解耦，授权见 M2_02 模板
 --   4. 既有 2000/3000 系列菜单沿用不动；3114/3124/3125 为文档 2.1/2.3 定义的隐藏页
+--   5. v1.1: 幂等补 sys_menu.client_type 列（M10_01/M15_12 依赖此列）
 -- =====================================================================
+
+-- ----------------------------
+-- 0. 幂等补 client_type 列（M10_01/M15_12 INSERT 引用此列，须在建表后、插入前执行）
+-- ----------------------------
+DROP PROCEDURE IF EXISTS `m1_04_add_client_type`;
+DELIMITER $$
+CREATE PROCEDURE `m1_04_add_client_type`()
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_menu' AND COLUMN_NAME = 'client_type') THEN
+        ALTER TABLE `sys_menu`
+            ADD COLUMN `client_type` VARCHAR(10) NOT NULL DEFAULT 'pc'
+                COMMENT '菜单端类型：pc(PC后台)/mini(微信小程序)/both(两端共用)' AFTER `perms`;
+    END IF;
+END$$
+DELIMITER ;
+CALL m1_04_add_client_type();
+DROP PROCEDURE IF EXISTS `m1_04_add_client_type`;
 
 DELETE FROM `sys_menu` WHERE `menu_id` IN (
     3114, 3124, 3125,

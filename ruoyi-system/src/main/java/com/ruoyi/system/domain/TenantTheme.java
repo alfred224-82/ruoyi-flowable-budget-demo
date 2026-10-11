@@ -57,4 +57,14 @@ public class TenantTheme extends TenantEntity {
      * 海报成品URL（750×400 列表卡 / 750×1000 详情，叠加渐变遮罩）
      */
     private String renderedPosterUrl;
+
+    /**
+     * 海报主色 hex（k-means k=3 提取，如 #2B6CFF，供前端卡片配色推导，T15.35§6.3）
+     */
+    private String posterDominantColor;
+
+    /**
+     * 海报辅色 hex（k-means k=3 提取，内容卡片强调色，T15.35§6.3）
+     */
+    private String posterAccentColor;
 }

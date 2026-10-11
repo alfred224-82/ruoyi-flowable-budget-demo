@@ -52,6 +52,14 @@ export function rejectProject(id, reason) {
   })
 }
 
+// 草稿（含驳回回退）提交审批
+export function submitProject(id) {
+  return request({
+    url: '/fee/project/submit/' + id,
+    method: 'put'
+  })
+}
+
 // 关闭项目
 export function closeProject(id) {
   return request({
@@ -107,5 +115,21 @@ export function saveMembers(id, members) {
     url: '/fee/project/members/' + id,
     method: 'put',
     data: members
+  })
+}
+
+// 报销人角色成员下拉（项目成员选择用）
+export function listReimbursers() {
+  return request({
+    url: '/fee/project/reimbursers',
+    method: 'get'
+  })
+}
+
+// 项目经理角色成员下拉（立项选择用）
+export function listManagers() {
+  return request({
+    url: '/fee/project/managers',
+    method: 'get'
   })
 }

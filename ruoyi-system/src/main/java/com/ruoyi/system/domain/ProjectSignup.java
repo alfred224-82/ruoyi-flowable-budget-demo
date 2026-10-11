@@ -93,4 +93,11 @@ public class ProjectSignup implements Serializable {
      */
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private Date updateTime;
+
+    // ===== M22 支付状态（v1.79） =====
+
+    /**
+     * 支付状态：PENDING_PAY(待到店付)/PAID(已支付)/REMIND_SENT(已提醒)
+     */
+    private String payStatus;
 }

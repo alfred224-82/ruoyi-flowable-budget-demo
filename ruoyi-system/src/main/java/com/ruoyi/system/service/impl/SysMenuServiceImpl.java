@@ -15,12 +15,17 @@ import com.ruoyi.common.utils.StreamUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.utils.TreeBuildUtils;
 import com.ruoyi.system.domain.SysRoleMenu;
+import com.ruoyi.system.domain.SysTenant;
 import com.ruoyi.system.domain.vo.MetaVo;
 import com.ruoyi.system.domain.vo.RouterVo;
+import com.ruoyi.system.domain.vo.SysTenantVo;
 import com.ruoyi.system.mapper.SysMenuMapper;
 import com.ruoyi.system.mapper.SysRoleMapper;
 import com.ruoyi.system.mapper.SysRoleMenuMapper;
+import com.ruoyi.system.mapper.SysTenantMapper;
+import com.ruoyi.system.service.IBizBundleService;
 import com.ruoyi.system.service.ISysMenuService;
+import com.ruoyi.system.service.ISysTenantService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -38,6 +43,14 @@ public class SysMenuServiceImpl implements ISysMenuService {
     private final SysMenuMapper baseMapper;
     private final SysRoleMapper roleMapper;
     private final SysRoleMenuMapper roleMenuMapper;
+    /** T2.2 业态菜单过滤：biz_bundle.menus 叠加在 sys_role_menu 之上 */
+    private final IBizBundleService bizBundleService;
+    private final ISysTenantService tenantService;
+    /** 租户到期菜单过滤：EXPIRED 租户管理员仅保留版本升级菜单 */
+    private final SysTenantMapper tenantMapper;
+
+    /** 过期租户管理员可见菜单（版本升级目录 + 升级页面） */
+    private static final Set<Long> EXPIRED_ADMIN_MENU_IDS = new HashSet<>(Arrays.asList(7500L, 7501L));
 
     /**
      * 根据用户查询系统菜单列表
@@ -130,7 +143,112 @@ public class SysMenuServiceImpl implements ISysMenuService {
         } else {
             menus = baseMapper.selectMenuTreeByUserId(userId);
         }
+        // 过期租户管理员仅保留版本升级菜单
+        menus = applyExpiredTenantFilter(menus, userId);
         return getChildPerms(menus, 0);
+    }
+
+    /**
+     * 根据用户ID + 客户端类型查询菜单树（T15.8）
+     * <p>在角色可见菜单基础上再按 client_type 端过滤：保留与 clientType 一致及 both 通用的菜单；
+     * clientType 为空则不过滤（兼容存量 PC /getRouters）。client_type 为空的菜单视为 both 通用。
+     * <p><b>T2.2 业态过滤层</b>：在 client_type 过滤后再叠加 biz_bundle.menus 业态声明过滤，
+     * 仅保留当前租户业态包声明的菜单及其祖先节点；未声明 menus（空集）时跳过业态过滤（兼容存量包）；
+     * admin 超管不受业态过滤限制。
+     *
+     * @param userId     用户ID
+     * @param clientType 客户端类型（pc/mini/both，可空）
+     * @return 菜单列表
+     */
+    @Override
+    public List<SysMenu> selectMenuTreeByUserId(Long userId, String clientType) {
+        List<SysMenu> menus;
+        if (LoginHelper.isAdmin(userId)) {
+            menus = baseMapper.selectMenuTreeAll();
+        } else {
+            menus = baseMapper.selectMenuTreeByUserId(userId);
+        }
+        if (StringUtils.isNotBlank(clientType)) {
+            menus = StreamUtils.filter(menus, m -> StringUtils.isBlank(m.getClientType())
+                || clientType.equalsIgnoreCase(m.getClientType())
+                || "both".equalsIgnoreCase(m.getClientType()));
+        }
+        // T2.2 业态过滤层：admin 免检；非 admin 且业态包声明了 menus 时叠加过滤
+        if (!LoginHelper.isAdmin(userId)) {
+            menus = applyBizFilter(menus);
+        }
+        // 过期租户管理员仅保留版本升级菜单
+        menus = applyExpiredTenantFilter(menus, userId);
+        return getChildPerms(menus, 0);
+    }
+
+    /**
+     * T2.2 业态菜单过滤：取当前租户 biz_code 对应 biz_bundle.menus 交集
+     * <p>规则：
+     * <ol>
+     *   <li>tenantId 为空 / 业态包未声明 menus（空集） → 跳过过滤，原样返回；</li>
+     *   <li>保留 menuId ∈ 声明集的菜单，并递归保留其祖先目录节点（parentId 链），
+     *       避免树结构断裂导致子菜单无父容器；</li>
+     *   <li>祖先节点自身不满足业态声明时也保留，因前端 buildMenus 依赖 parent→child 层级。</li>
+     * </ol>
+     */
+    private List<SysMenu> applyBizFilter(List<SysMenu> menus) {
+        if (CollUtil.isEmpty(menus)) {
+            return menus;
+        }
+        Long tenantId = LoginHelper.getTenantId();
+        if (tenantId == null) {
+            return menus;
+        }
+        SysTenantVo tenant;
+        try {
+            tenant = tenantService.queryById(tenantId);
+        } catch (Exception e) {
+            // 租户服务异常时保守放行，由 ②③ 层 API 拦截兼底
+            return menus;
+        }
+        if (tenant == null) {
+            return menus;
+        }
+        String bizCode = StringUtils.isNotBlank(tenant.getBizCode())
+            ? tenant.getBizCode() : BizBundleServiceImpl.DEFAULT_BIZ_CODE;
+        Set<Long> allowed = bizBundleService.getMenuIds(bizCode);
+        if (CollUtil.isEmpty(allowed)) {
+            // 未声明 menus → 不做业态过滤（兼容存量默认包 fund_control）
+            return menus;
+        }
+        // 建 menuId → SysMenu 索引，用于回溯祖先链
+        Map<Long, SysMenu> index = new HashMap<>(menus.size());
+        for (SysMenu m : menus) {
+            if (m != null && m.getMenuId() != null) {
+                index.put(m.getMenuId(), m);
+            }
+        }
+        Set<Long> keep = new HashSet<>();
+        for (SysMenu m : menus) {
+            if (m == null || m.getMenuId() == null) {
+                continue;
+            }
+            if (allowed.contains(m.getMenuId())) {
+                // 保留自身 + 全部祖先
+                Long cursor = m.getMenuId();
+                int guard = 0;
+                while (cursor != null && cursor != 0L && guard++ < 32) {
+                    keep.add(cursor);
+                    SysMenu node = index.get(cursor);
+                    if (node == null) {
+                        break;
+                    }
+                    cursor = node.getParentId();
+                }
+            }
+        }
+        if (keep.isEmpty()) {
+            // 声明集与可见菜单无交集（可能业态包声明错误）：不返回空菜单以免锁死页面，
+            // 记录告警后回退到未过滤状态，由 API 拦截层兼底。
+            return menus;
+        }
+        return StreamUtils.filter(menus, m -> m != null && m.getMenuId() != null && keep.contains(m.getMenuId()));
     }
 
     /**
@@ -381,6 +499,67 @@ public class SysMenuServiceImpl implements ISysMenuService {
      */
     public boolean isParentView(SysMenu menu) {
         return menu.getParentId().intValue() != 0 && UserConstants.TYPE_DIR.equals(menu.getMenuType());
+    }
+
+    /**
+     * 过期租户管理员菜单过滤：租户 EXPIRED 且当前用户为租户管理员时，
+     * 仅保留版本升级菜单（7500 目录 + 7501 升级页面），引导管理员完成续费升级。
+     */
+    private List<SysMenu> applyExpiredTenantFilter(List<SysMenu> menus, Long userId) {
+        if (CollUtil.isEmpty(menus) || userId == null) {
+            return menus;
+        }
+        Long tenantId = LoginHelper.getTenantId();
+        if (tenantId == null) {
+            return menus;
+        }
+        if (!isExpiredTenantAdmin(tenantId, userId)) {
+            return menus;
+        }
+        return StreamUtils.filter(menus, m -> m != null && m.getMenuId() != null
+            && EXPIRED_ADMIN_MENU_IDS.contains(m.getMenuId()));
+    }
+
+    /**
+     * 判断指定用户是否为已到期租户的管理员（sys_tenant.adminUserId 匹配）
+     */
+    private boolean isExpiredTenantAdmin(Long tenantId, Long userId) {
+        try {
+            SysTenant tenant = tenantMapper.selectById(tenantId);
+            return tenant != null && "EXPIRED".equals(tenant.getStatus())
+                && userId.equals(tenant.getAdminUserId());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * 过期租户管理员权限过滤：租户 EXPIRED 且当前用户为租户管理员时，
+     * 仅保留版本升级相关权限（micro:platform:upgrade*），前端据此只渲染升级按钮。
+     *
+     * @param perms 原始权限集合
+     * @return 过滤后的权限集合
+     */
+    @Override
+    public Set<String> filterPermissionsForExpiredTenant(Set<String> perms) {
+        if (perms == null || perms.isEmpty()) {
+            return perms;
+        }
+        Long userId = LoginHelper.getUserId();
+        Long tenantId = LoginHelper.getTenantId();
+        if (userId == null || tenantId == null) {
+            return perms;
+        }
+        if (!isExpiredTenantAdmin(tenantId, userId)) {
+            return perms;
+        }
+        Set<String> filtered = new HashSet<>();
+        for (String perm : perms) {
+            if (perm != null && perm.startsWith("micro:platform:upgrade")) {
+                filtered.add(perm);
+            }
+        }
+        return filtered;
     }
 
     /**

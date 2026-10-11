@@ -1,5 +1,6 @@
 package com.ruoyi.job.service;
 
+import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.ruoyi.common.core.domain.model.LoginUser;
 import com.ruoyi.common.helper.LoginHelper;
@@ -23,9 +24,10 @@ import java.util.List;
  * - tenantExpireCheckJob: cron = "0 30 0 * * ?"（每日 00:30）
  * <p>
  * 执行逻辑：
- * 1. 扫描 status=NORMAL 且 expire_date 已过的租户 → 状态转 EXPIRED；
- * 2. 清除租户状态缓存（拦截即时生效）；
- * 3. 踢出该租户全部在线会话（验收用例 7：在线会话到期后被拦截）。
+ * 1. 扫描 status=NORMAL 且 expire_date 已过的租户 → 进入 GRACE 宽限期（3 天只读）；
+ * 2. 扫描 status=GRACE 且 grace_period_until 已过的租户 → 状态转 EXPIRED；
+ * 3. 清除租户状态缓存（拦截即时生效）；
+ * 4. 踢出 EXPIRED 租户的全部在线会话（GRACE 租户保留会话，只读模式）。
  * <p>
  * 注：即使本任务未按时运行，{@link TenantStatusChecker} 的被动检测兜底
  * 仍会在登录/接口访问时纠正过期状态并拦截（防"过期续用"）。
@@ -43,38 +45,60 @@ public class TenantExpireCheckJob {
 
     @XxlJob("tenantExpireCheckJob")
     public void execute() {
-        XxlJobHelper.log("开始执行租户到期每日检测任务");
+        XxlJobHelper.log("开始执行租户到期每日检测任务（含 3 天只读宽限期 T14.2）");
         Date now = new Date();
 
-        // 1. 扫描已到期但仍为 NORMAL 的租户（含 PENDING 到期未启用的场景不处理，仅针对正常租户）
+        // 1. 扫描已到期但仍为 NORMAL 的租户 → 进入 GRACE 宽限期
         List<SysTenant> expiredTenants = tenantMapper.selectList(
             Wrappers.<SysTenant>lambdaQuery()
                 .eq(SysTenant::getStatus, "NORMAL")
                 .isNotNull(SysTenant::getExpireDate)
                 .lt(SysTenant::getExpireDate, now));
 
+        int graceCount = 0;
+        for (SysTenant tenant : expiredTenants) {
+            // 进入 3 天只读宽限期
+            Date graceUntil = DateUtil.offsetDay(tenant.getExpireDate(), 3);
+            SysTenant update = new SysTenant();
+            update.setId(tenant.getId());
+            update.setStatus("GRACE");
+            update.setGracePeriodUntil(graceUntil);
+            update.setUpdateBy("tenantExpireCheckJob");
+            tenantMapper.updateById(update);
+            tenantStatusChecker.evictStatusCache(tenant.getId());
+            graceCount++;
+            XxlJobHelper.log("租户 {} ({}) 已进入只读宽限期，截止 {}",
+                tenant.getTenantCode(), tenant.getCompanyName(), DateUtil.formatDateTime(graceUntil));
+            log.info("[Tenant] 到期检测：租户 {} ({}) 进入 GRACE 宽限期，截止 {}",
+                tenant.getTenantCode(), tenant.getCompanyName(), graceUntil);
+        }
+
+        // 2. 扫描 GRACE 状态但宽限期已过的租户 → 转 EXPIRED + 踢出会话
+        List<SysTenant> graceExpired = tenantMapper.selectList(
+            Wrappers.<SysTenant>lambdaQuery()
+                .eq(SysTenant::getStatus, "GRACE")
+                .isNotNull(SysTenant::getGracePeriodUntil)
+                .lt(SysTenant::getGracePeriodUntil, now));
+
         int expiredCount = 0;
         int kickedCount = 0;
-        for (SysTenant tenant : expiredTenants) {
-            // 2. 状态转 EXPIRED（幂等：按主键更新）
+        for (SysTenant tenant : graceExpired) {
             SysTenant update = new SysTenant();
             update.setId(tenant.getId());
             update.setStatus("EXPIRED");
             update.setUpdateBy("tenantExpireCheckJob");
             tenantMapper.updateById(update);
-
-            // 3. 清除状态缓存 + 通知其他节点
             tenantStatusChecker.evictStatusCache(tenant.getId());
-
-            // 4. 踢出该租户全部在线会话
             kickedCount += kickoutTenantSessions(tenant.getId());
-
             expiredCount++;
-            XxlJobHelper.log("租户 {} ({}) 已到期，状态转 EXPIRED", tenant.getTenantCode(), tenant.getCompanyName());
-            log.info("[Tenant] 到期检测：租户 {} ({}) 状态转 EXPIRED", tenant.getTenantCode(), tenant.getCompanyName());
+            XxlJobHelper.log("租户 {} ({}) 宽限期已过，状态转 EXPIRED",
+                tenant.getTenantCode(), tenant.getCompanyName());
+            log.info("[Tenant] 宽限期检测：租户 {} ({}) 状态转 EXPIRED",
+                tenant.getTenantCode(), tenant.getCompanyName());
         }
 
-        XxlJobHelper.log("租户到期检测完成，到期租户: {} 个，踢出会话: {} 个", expiredCount, kickedCount);
+        XxlJobHelper.log("租户到期检测完成，新进入宽限期: {} 个，宽限期到期转EXPIRED: {} 个，踢出会话: {} 个",
+            graceCount, expiredCount, kickedCount);
     }
 
     /**

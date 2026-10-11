@@ -2,6 +2,7 @@ package com.ruoyi.web.controller.fee;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.ruoyi.common.annotation.Log;
+import com.ruoyi.common.annotation.RequireFeature;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.R;
 import com.ruoyi.common.enums.BusinessType;
@@ -16,8 +17,9 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * 费用大类主数据Controller（T5.13 / 设计文档 2.2 #3）
+ * 费用大类主数据Controller（T5.13 / T1.5 / 设计文档 2.2 #3）
  * admin 维护大类主数据与默认拆分比例；映射B（预算科目→大类）系统内置不可在此变更
+ * <p>★T1.5：整体受 FEAT_SUBJECT_3LAYER 管控，基础版不启用（高级版+ 可用）
  *
  * @author ruoyi
  * @date 2026-08-29
@@ -26,6 +28,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/fee/category")
+@RequireFeature("FEAT_SUBJECT_3LAYER")
 public class FeeExpenseCategoryController extends BaseController {
 
     private final IFeeExpenseCategoryService categoryService;

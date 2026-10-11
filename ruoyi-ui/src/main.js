@@ -33,6 +33,8 @@ import ImageUpload from "@/components/ImageUpload"
 import ImagePreview from "@/components/ImagePreview"
 // 字典标签组件
 import DictTag from '@/components/DictTag'
+// Schema 页面引擎渲染组件（T10.6）
+import SchemaRenderer from '@/components/SchemaRenderer'
 // 头部标签组件
 import VueMeta from 'vue-meta'
 // 字典数据组件
@@ -50,6 +52,17 @@ Vue.prototype.selectDictLabels = selectDictLabels
 Vue.prototype.download = download
 Vue.prototype.handleTree = handleTree
 
+// T10.5：业态文案映射 i18n helper
+// 优先级：biz_copy(bizCode,lang) → key 本身兼底（避免未配置文案时页面空白）
+// 用法：{{ $bizT('menu.fund.title') }} 或 this.$bizT('xxx')
+Vue.prototype.$bizT = function (key, fallback) {
+  if (!key) return fallback || ''
+  const map = store.getters.bizCopyMap || {}
+  return map[key] !== undefined && map[key] !== null && map[key] !== ''
+    ? map[key]
+    : (fallback !== undefined ? fallback : key)
+}
+
 // 全局组件挂载
 Vue.component('DictTag', DictTag)
 Vue.component('Pagination', Pagination)
@@ -58,6 +71,7 @@ Vue.component('Editor', Editor)
 Vue.component('FileUpload', FileUpload)
 Vue.component('ImageUpload', ImageUpload)
 Vue.component('ImagePreview', ImagePreview)
+Vue.component('SchemaRenderer', SchemaRenderer)
 
 Vue.use(directive)
 Vue.use(plugins)

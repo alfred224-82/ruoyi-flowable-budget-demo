@@ -43,6 +43,8 @@ public class TenantStatusChecker implements TenantChecker {
     private static final String STATUS_NOT_EXISTS = "-1";
     /** 租户状态：正常 */
     private static final String STATUS_NORMAL = "NORMAL";
+    /** 租户状态：只读宽限期（到期后 3 天内，T14.2） */
+    private static final String STATUS_GRACE = "GRACE";
     /** 租户状态：到期 */
     private static final String STATUS_EXPIRED = "EXPIRED";
     /** 租户状态：停用 */
@@ -59,6 +61,7 @@ public class TenantStatusChecker implements TenantChecker {
      * 校验当前登录用户所属租户是否可访问（全局接口拦截入口）
      * <p>
      * admin 超管与未绑定租户的平台账号豁免（任务文档 0.2 admin 豁免策略）。
+     * 租户管理员（sys_tenant.adminUserId）豁免 EXPIRED 拦截。
      */
     @Override
     public void checkCurrentTenant() {
@@ -71,20 +74,44 @@ public class TenantStatusChecker implements TenantChecker {
         if (ObjectUtil.isNull(tenantId)) {
             return;
         }
+        // 租户管理员豁免 EXPIRED 拦截
+        Long userId = LoginHelper.getUserId();
+        if (userId != null && isTenantAdmin(tenantId, userId)) {
+            return;
+        }
         checkTenant(tenantId);
     }
 
     /**
      * 校验指定租户是否处于可用状态，不可用时抛出业务异常
+     * <p>GRACE 状态允许只读访问（写操作由 TenantWriteBlockInterceptor 拦截）。
+     * <p>租户管理员（sys_tenant.adminUserId）豁免 EXPIRED 拦截，允许到期后仍可登录。
      *
      * @param tenantId 租户ID
      */
     public void checkTenant(Long tenantId) {
+        checkTenant(tenantId, null);
+    }
+
+    /**
+     * 校验指定租户是否处于可用状态，不可用时抛出业务异常
+     * <p>GRACE 状态允许只读访问（写操作由 TenantWriteBlockInterceptor 拦截）。
+     * <p>租户管理员（sys_tenant.adminUserId）豁免 EXPIRED 拦截，允许到期后仍可登录。
+     *
+     * @param tenantId 租户ID
+     * @param userId   当前登录用户ID（可空，非空时判断是否租户管理员）
+     */
+    public void checkTenant(Long tenantId, Long userId) {
         String status = getStatus(tenantId);
         if (STATUS_NOT_EXISTS.equals(status)) {
             throw new ServiceException("租户不存在，禁止访问");
         }
         if (STATUS_EXPIRED.equals(status)) {
+            // 租户管理员豁免：到期后仍可登录
+            if (userId != null && isTenantAdmin(tenantId, userId)) {
+                log.info("[Tenant] 租户管理员 userId={} 登录已到期租户 {}，豁免拦截", userId, tenantId);
+                return;
+            }
             throw new ServiceException("租户授权已到期，请联系平台管理员续费");
         }
         if (STATUS_DISABLED.equals(status)) {
@@ -93,6 +120,15 @@ public class TenantStatusChecker implements TenantChecker {
         if (STATUS_PENDING.equals(status)) {
             throw new ServiceException("租户尚未启用，请联系平台管理员");
         }
+        // GRACE 状态不拦截访问（只读），写操作由 TenantWriteBlockInterceptor 负责
+    }
+
+    /**
+     * 判断用户是否为该租户的管理员（sys_tenant.adminUserId 匹配）
+     */
+    private boolean isTenantAdmin(Long tenantId, Long userId) {
+        SysTenant tenant = tenantMapper.selectById(tenantId);
+        return tenant != null && userId.equals(tenant.getAdminUserId());
     }
 
     /**
@@ -114,14 +150,26 @@ public class TenantStatusChecker implements TenantChecker {
         }
         String status = tenant.getStatus();
         Date now = new Date();
-        // 被动检测兜底：状态正常但到期日已过（每日检测任务尚未执行时的防线）
+        // 被动检测兜底：状态正常但到期日已过 → 进入宽限期或标记到期
         if (STATUS_NORMAL.equals(status) && tenant.getExpireDate() != null
             && tenant.getExpireDate().before(now)) {
+            // 检查是否仍在 3 天宽限期内
+            if (tenant.getGracePeriodUntil() != null && tenant.getGracePeriodUntil().after(now)) {
+                markGrace(tenantId, tenant.getGracePeriodUntil());
+                status = STATUS_GRACE;
+            } else {
+                markExpired(tenantId);
+                status = STATUS_EXPIRED;
+            }
+        }
+        // 宽限期检测：GRACE 状态但宽限期已过 → 转 EXPIRED
+        if (STATUS_GRACE.equals(status)
+            && (tenant.getGracePeriodUntil() == null || tenant.getGracePeriodUntil().before(now))) {
             markExpired(tenantId);
             status = STATUS_EXPIRED;
         }
-        // 反向纠正：管理员已延长到期日（或设为永久），但状态仍为 EXPIRED → 恢复为 NORMAL
-        if (STATUS_EXPIRED.equals(status)
+        // 反向纠正：管理员已延长到期日（或设为永久），但状态仍为 EXPIRED/GRACE → 恢复为 NORMAL
+        if ((STATUS_EXPIRED.equals(status) || STATUS_GRACE.equals(status))
             && (tenant.getExpireDate() == null || tenant.getExpireDate().after(now))) {
             markNormal(tenantId);
             status = STATUS_NORMAL;
@@ -133,7 +181,21 @@ public class TenantStatusChecker implements TenantChecker {
     }
 
     /**
-     * 将租户标记为到期（幂等：仅 NORMAL 状态生效）
+     * 将租户标记为只读宽限期（T14.2：到期后 3 天内允许只读访问）
+     */
+    private void markGrace(Long tenantId, Date gracePeriodUntil) {
+        SysTenant update = new SysTenant();
+        update.setId(tenantId);
+        update.setStatus(STATUS_GRACE);
+        update.setGracePeriodUntil(gracePeriodUntil);
+        update.setUpdateBy("tenant-expire-check");
+        tenantMapper.updateById(update);
+        evictStatusCache(tenantId);
+        log.warn("[Tenant] 租户 {} 已进入只读宽限期，截止 {}", tenantId, gracePeriodUntil);
+    }
+
+    /**
+     * 将租户标记为到期（幂等：仅 NORMAL/GRACE 状态生效）
      */
     private void markExpired(Long tenantId) {
         SysTenant update = new SysTenant();
@@ -156,6 +218,29 @@ public class TenantStatusChecker implements TenantChecker {
         tenantMapper.updateById(update);
         evictStatusCache(tenantId);
         log.info("[Tenant] 租户 {} 到期日已延长，状态被动恢复为 NORMAL", tenantId);
+    }
+
+    /**
+     * 判断当前登录租户是否处于只读宽限期（供 TenantWriteBlockInterceptor 调用）
+     */
+    @Override
+    public boolean isCurrentTenantInGracePeriod() {
+        if (LoginHelper.isAdmin()) {
+            return false;
+        }
+        Long tenantId = LoginHelper.getTenantId();
+        if (ObjectUtil.isNull(tenantId)) {
+            return false;
+        }
+        return isInGracePeriod(tenantId);
+    }
+
+    /**
+     * 判断租户是否处于只读宽限期（供 TenantWriteBlockInterceptor 调用）
+     */
+    public boolean isInGracePeriod(Long tenantId) {
+        String status = getStatus(tenantId);
+        return STATUS_GRACE.equals(status);
     }
 
     /**

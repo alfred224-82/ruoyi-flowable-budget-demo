@@ -65,6 +65,11 @@ public class FeatureFlag extends BaseEntity {
     private Integer proEnabled;
 
     /**
+     * 小微版默认是否开启（0否 1是；micro_lite/micro_pro 共用本列，档位区分由 sys_tenant.version_type 控制）
+     */
+    private Integer microEnabled;
+
+    /**
      * 状态（0启用 1停用）
      */
     private String status;

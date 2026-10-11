@@ -2,6 +2,7 @@ package com.ruoyi.web.controller.fee;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.ruoyi.common.annotation.Log;
+import com.ruoyi.common.annotation.RequireFeature;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.R;
 import com.ruoyi.common.enums.BusinessType;
@@ -24,6 +25,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/fee/tenantCategory")
+@RequireFeature("FEAT_SUBJECT_3LAYER")
 public class FeeTenantCategoryController extends BaseController {
 
     private final IFeeTenantCategoryService tenantCategoryService;

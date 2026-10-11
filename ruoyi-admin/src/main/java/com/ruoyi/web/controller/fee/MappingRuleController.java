@@ -33,6 +33,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/fee/mappingRule")
+@RequireFeature("FEAT_SUBJECT_3LAYER")
 public class MappingRuleController extends BaseController {
 
     private final IMappingRuleService mappingRuleService;

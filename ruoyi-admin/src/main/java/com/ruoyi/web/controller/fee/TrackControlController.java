@@ -31,6 +31,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/fee/track")
+@RequireFeature("FEAT_EXPENSE_CONTROL")
 public class TrackControlController extends BaseController {
 
     private final ITrackControlService trackControlService;

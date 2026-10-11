@@ -1,6 +1,11 @@
 -- =====================================================================
 -- M2_05 platform_admin 组织管理能力升级脚本（T2.4）
--- 版本：v1.0  日期：2026-08-29
+-- 版本：v1.1  日期：2026-09-06
+-- v1.1 变更：模板重建改为幂等非破坏——CREATE IF NOT EXISTS + 仅清空版本全量/PLATFORM_ADMIN 键，
+--   保留 BOSS_/FINANCE_/MANAGER_/EMPLOYEE_ 角色×版本键（M2_02 v2.1 重建）。
+--   修复缺陷：旧版 DROP TABLE 在 M2_02 之后执行时清空角色×版本模板键，
+--   导致 M2_08 §2 与开通租户 copyMenuTemplate('BOSS_BASIC') 查不到模板，
+--   boss/finance/manager/employee 克隆角色菜单授权为 0（侧边栏空白）
 -- 依据：《各角色菜单权限文档》（v2.3）§2.5.2 / §3.5
 -- 前置依赖：M2_01_roles.sql / M2_02_role_menu_templates.sql / M2_03_sys_role_menu_basic.sql / M2_04_tenant_isolation.sql
 -- 说明：
@@ -13,14 +18,18 @@
 
 -- ----------------------------
 -- 1. 重建版本菜单授权模板（含 PLATFORM_ADMIN 按版本拆分）
+--    v1.1：幂等非破坏重建（仅清空版本全量/PLATFORM_ADMIN 键，保留角色×版本键）
 -- ----------------------------
-DROP TABLE IF EXISTS `sys_edition_menu_template`;
-CREATE TABLE `sys_edition_menu_template` (
+CREATE TABLE IF NOT EXISTS `sys_edition_menu_template` (
   `edition` VARCHAR(30) NOT NULL COMMENT '版本：BASIC/ADVANCED/PROFESSIONAL/PLATFORM_ADMIN_BASIC/PLATFORM_ADMIN_ADVANCED/PLATFORM_ADMIN_PROFESSIONAL',
   `menu_id` BIGINT NOT NULL COMMENT '菜单ID',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`edition`, `menu_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='三版本菜单授权模板(开通/升级租户的唯一授权依据)';
+
+DELETE FROM `sys_edition_menu_template`
+ WHERE `edition` IN ('BASIC', 'ADVANCED', 'PROFESSIONAL',
+                     'PLATFORM_ADMIN_BASIC', 'PLATFORM_ADMIN_ADVANCED', 'PLATFORM_ADMIN_PROFESSIONAL');
 
 -- 基础版业务菜单模板
 INSERT INTO `sys_edition_menu_template` (`edition`, `menu_id`) VALUES
