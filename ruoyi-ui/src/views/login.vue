@@ -1,8 +1,26 @@
 <template>
   <div class="login">
+    <!-- 左侧品牌文字叠加层 -->
+    <div class="brand-overlay">
+      <div class="brand-content">
+        <h1 class="brand-title">阿杰小账本</h1>
+        <p class="brand-subtitle">多行业门店，一套系统管好日常经营</p>
+        <div class="brand-features">
+          <span>📋 预约活动</span>
+          <span>👥 人员管理</span>
+          <span> 客户推广</span>
+          <span>📊 报表统计</span>
+        </div>
+      </div>
+    </div>
     <div class="login-container">
       <!-- 登录卡片（背景图右侧留白区） -->
       <div class="login-card">
+        <!-- 品牌固定展示 + 租户号输入分层，与小程序/H5 三端一致 -->
+        <div class="brand">
+          <span class="brand-name">阿杰小账本</span>
+          <span class="brand-sub">门店经营 · 活动预约 · 费用管控</span>
+        </div>
         <h3 class="card-title">账号登录</h3>
         <el-form ref="loginForm" :model="loginForm" :rules="loginRules" class="login-form">
           <el-form-item prop="username">
@@ -30,7 +48,7 @@
               v-model="loginForm.tenantId"
               type="text"
               auto-complete="off"
-              placeholder="租户ID（向平台管理员获取）"
+              placeholder="租户ID（admin 可留空，其他用户必填，向平台管理员获取）"
               @keyup.enter.native="handleLogin"
             >
               <svg-icon slot="prefix" icon-class="component" class="el-input__icon input-icon" />
@@ -66,11 +84,21 @@
         </el-form>
       </div>
     </div>
+    <!-- ★ 备案信息（ICP + 公安备案徽章，网站底部居中展示） -->
+    <div class="icp-footer">
+      <a v-if="icpNumber" :href="icpLink" target="_blank" rel="noopener noreferrer">{{ icpNumber }}</a>
+      <template v-if="icpNumber && policeNumber"> | </template>
+      <a v-if="policeNumber" class="police-link" :href="policeLink" target="_blank" rel="noopener noreferrer">
+        <img v-if="policeIcon" class="police-badge" :src="policeIcon" alt="公安备案徽章">
+        <span>{{ policeNumber }}</span>
+      </a>
+    </div>
   </div>
 </template>
 
 <script>
 import { getCodeImg } from "@/api/login";
+import { getBeianInfo } from "@/utils/beian";
 import Cookies from "js-cookie";
 
 export default {
@@ -78,6 +106,8 @@ export default {
   data() {
     return {
       codeUrl: "",
+      // ★ 备案信息（ICP + 公安备案，统一读 .env 配置，见 @/utils/beian）
+      ...getBeianInfo(),
       loginForm: {
         username: "",
         password: "",
@@ -174,11 +204,65 @@ export default {
   justify-content: center;
   align-items: center;
   height: 100%;
-  background: linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 40%, #ffffff 100%);
   background-image: url("../assets/images/login-bg.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  position: relative;
+}
+
+/* 左侧品牌文字叠加层 */
+.brand-overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 8% 12% 8%;
+  z-index: 1;
+  pointer-events: none;
+
+  .brand-content {
+    max-width: 480px;
+
+    .brand-title {
+      font-size: 42px;
+      font-weight: 800;
+      color: #5a3e2b;
+      margin: 0 0 12px 0;
+      letter-spacing: 4px;
+      text-shadow: 0 2px 8px rgba(255, 255, 255, 0.6);
+      line-height: 1.2;
+    }
+
+    .brand-subtitle {
+      font-size: 18px;
+      color: #6b5344;
+      margin: 0 0 24px 0;
+      letter-spacing: 1px;
+      text-shadow: 0 1px 4px rgba(255, 255, 255, 0.5);
+      line-height: 1.5;
+    }
+
+    .brand-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 20px;
+
+      span {
+        font-size: 14px;
+        color: #7a6355;
+        background: rgba(255, 255, 255, 0.55);
+        backdrop-filter: blur(6px);
+        padding: 6px 16px;
+        border-radius: 20px;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+      }
+    }
+  }
 }
 
 .login-container {
@@ -187,6 +271,8 @@ export default {
   justify-content: flex-end;
   width: 100%;
   padding: 0 10%;
+  position: relative;
+  z-index: 2;
 }
 
 /* 右侧登录卡片 */
@@ -198,12 +284,33 @@ export default {
   box-shadow: 0 8px 40px rgba(30, 105, 242, 0.10), 0 2px 12px rgba(0, 0, 0, 0.04);
   padding: 48px 44px 36px 44px;
 
-  .card-title {
-    margin: 0 0 36px 0;
+  .brand {
     text-align: center;
-    font-size: 22px;
-    font-weight: 700;
-    color: #1a1a1a;
+    margin: 0 0 10px 0;
+
+    .brand-name {
+      display: block;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      color: #8B6914;
+    }
+
+    .brand-sub {
+      display: block;
+      margin-top: 6px;
+      font-size: 12px;
+      letter-spacing: 1px;
+      color: #a0896e;
+    }
+  }
+
+  .card-title {
+    margin: 0 0 30px 0;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+    color: #6b5344;
   }
 
   .login-form {
@@ -228,7 +335,7 @@ export default {
         }
 
         &:focus {
-          border-bottom-color: #2A7BFF;
+          border-bottom-color: #a0714f;
         }
       }
       ::v-deep .el-input__prefix {
@@ -262,13 +369,13 @@ export default {
       letter-spacing: 4px;
       border: none;
       border-radius: 22px;
-      background: linear-gradient(90deg, #3d8bfd 0%, #1E69F2 100%);
-      box-shadow: 0 4px 16px rgba(30, 105, 242, 0.35);
+      background: linear-gradient(90deg, #c9956b 0%, #a0714f 100%);
+      box-shadow: 0 4px 16px rgba(160, 113, 79, 0.35);
       transition: all 0.3s;
 
       &:hover, &:focus {
-        background: linear-gradient(90deg, #5a9cfe 0%, #3d7bf5 100%);
-        box-shadow: 0 6px 20px rgba(30, 105, 242, 0.45);
+        background: linear-gradient(90deg, #d4a57b 0%, #b08160 100%);
+        box-shadow: 0 6px 20px rgba(160, 113, 79, 0.45);
       }
     }
   }
@@ -295,6 +402,9 @@ export default {
 
 /* 响应式适配 */
 @media (max-width: 1080px) {
+  .brand-overlay {
+    display: none;
+  }
   .login-container {
     justify-content: center;
     padding: 40px 24px;
@@ -303,5 +413,38 @@ export default {
     width: 100%;
     max-width: 400px;
   }
+}
+
+/* ★ 备案信息底部展示 */
+.icp-footer {
+  position: absolute;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+  z-index: 10;
+  pointer-events: auto;
+}
+.icp-footer a {
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.icp-footer a:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+/* 公安备案：官方徽章 + 备案号同行居中 */
+.icp-footer .police-link {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+.icp-footer .police-badge {
+  width: 16px;
+  height: 17px;
+  margin-right: 4px;
 }
 </style>

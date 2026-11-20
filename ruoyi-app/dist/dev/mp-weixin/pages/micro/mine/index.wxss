@@ -1,0 +1,35 @@
+
+.page.data-v-350930af { padding: 24rpx;
+}
+.card.data-v-350930af { background: #fff; border-radius: 16rpx; padding: 32rpx; margin-bottom: 24rpx;
+}
+.user-card.data-v-350930af { display: flex; align-items: center;
+}
+.avatar-img.data-v-350930af { width: 96rpx; height: 96rpx; border-radius: 50%;
+}
+.avatar.data-v-350930af { width: 96rpx; height: 96rpx; border-radius: 50%; background: #409eff; color: #fff; font-size: 40rpx; display: flex; align-items: center; justify-content: center;
+}
+.user-info.data-v-350930af { margin-left: 24rpx;
+}
+.name.data-v-350930af { font-size: 32rpx; font-weight: bold; display: block;
+}
+.role.data-v-350930af { font-size: 24rpx; color: #409eff; margin-top: 8rpx; display: block;
+}
+.card-title.data-v-350930af { font-size: 30rpx; font-weight: bold; display: block; margin-bottom: 16rpx;
+}
+.msg-item.data-v-350930af { padding: 16rpx 0; border-bottom: 1rpx solid #f0f2f5;
+}
+.msg-item.unread.data-v-350930af { border-left: 6rpx solid #409eff; padding-left: 12rpx;
+}
+.msg-title.data-v-350930af { font-size: 28rpx; color: #303133; display: block;
+}
+.msg-time.data-v-350930af { font-size: 22rpx; color: #c0c4cc; margin-top: 8rpx; display: block;
+}
+.msg-badge.data-v-350930af { font-size: 24rpx; color: #409eff; margin-top: 16rpx;
+}
+.link-text.data-v-350930af { font-size: 28rpx; color: #409eff;
+}
+.btn-logout.data-v-350930af { background: #fff; color: #f56c6c; border: 2rpx solid #f56c6c; border-radius: 12rpx; margin-top: 40rpx; font-size: 30rpx;
+}
+.empty.data-v-350930af { font-size: 26rpx; color: #909399; padding: 20rpx 0;
+}

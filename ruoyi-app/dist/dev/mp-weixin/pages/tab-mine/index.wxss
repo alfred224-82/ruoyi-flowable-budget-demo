@@ -1,0 +1,13 @@
+
+.page.data-v-4077dd9b { padding: 24rpx;
+}
+.card.data-v-4077dd9b { background: #fff; border-radius: 16rpx; padding: 32rpx; margin-bottom: 24rpx;
+}
+.title.data-v-4077dd9b { font-size: 32rpx; font-weight: bold; display: block;
+}
+.desc.data-v-4077dd9b { font-size: 24rpx; color: #909399; margin-top: 12rpx; display: block;
+}
+.credit-num.data-v-4077dd9b { font-size: 64rpx; font-weight: bold; color: #409eff; display: block; margin-top: 12rpx;
+}
+.btn.data-v-4077dd9b { margin-top: 60rpx; background: #fff; color: #f56c6c; border-radius: 12rpx;
+}

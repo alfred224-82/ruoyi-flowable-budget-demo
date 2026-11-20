@@ -1,0 +1,57 @@
+===== A) 桩类是否存在 =====
+  ✓ ImagePipelineStub            -> ruoyi-system/src/main/java/com/ruoyi/system/service/image/impl/ImagePipelineStub.java
+  ✗ ContentSecurityStub          不存在
+  ✓ WecomIntegrationStub         -> ruoyi-system/src/main/java/com/ruoyi/system/service/wecom/impl/WecomIntegrationStub.java
+  ✗ WechatTemplateMessageStub    不存在
+  ✗ WechatKfMessageStub          不存在
+  ✗ WecomAppMessageStub          不存在
+
+===== B) 桩实现定性（是否真返回假数据 / 全放行）=====
+--- ImagePipelineStub  (ruoyi-system/src/main/java/com/ruoyi/system/service/image/impl/ImagePipelineStub.java)  行数 67
+      ✓ 模拟/假 URL 拼接                            = 2
+      ✗ 真实裁剪 resize/scale                      = 0
+      ✗ 尺寸容差校验                                 = 0
+      ✗ 200KB 体积校验                             = 0
+      return 语句 3 条:
+        L53| return task.getId();
+        L61| return null;
+        L64| return sourceUrl + sep + "x-render-spec=" + (spec == null ? "" : spec) + "&rendered=stub";
+--- ContentSecurityStub : 不存在
+--- WecomIntegrationStub  (ruoyi-system/src/main/java/com/ruoyi/system/service/wecom/impl/WecomIntegrationStub.java)  行数 57
+      ✓ 真实企微 API 调用                            = 1
+      ✓ 桩返回                                    = 4
+      return 语句 3 条:
+        L36| return url;
+        L47| return info;
+        L54| return info;
+--- WechatTemplateMessageStub : 不存在
+
+===== C) T13.3 通知是否统一走 IMessageProvider =====
+  IMessageProvider = ruoyi-system/src/main/java/com/ruoyi/system/service/message/IMessageProvider.java
+  MessageProviderDispatcher = ruoyi-system/src/main/java/com/ruoyi/system/service/message/MessageProviderDispatcher.java
+  引用 Provider/Dispatcher 的类（排除接口与桩自身）= 7
+      ruoyi-admin/src/main/java/com/ruoyi/web/controller/biz/MessageController.java
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/MessageLog.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/MessageServiceImpl.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/message/impl/WechatKfMessageProvider.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/message/impl/WechatTemplateMessageProvider.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/message/impl/WecomAppMessageProvider.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/message/MessageContext.java
+  ★判定要点：T5.12（三层通知）/ T3.4（到期提醒）/ T5.17（三级预警）是否在其中
+      含 "Notify" 的消费方 = 0
+      含 "Notice" 的消费方 = 0
+      含 "Message" 的消费方 = 7: MessageController, MessageLog, MessageServiceImpl, WechatKfMessageProvider, WechatTemplateMessageProvider, WecomAppMessageProvider, MessageContext
+      含 "Expire" 的消费方 = 0
+      含 "Warn" 的消费方 = 0
+      含 "Alert" 的消费方 = 0
+      含 "Budget" 的消费方 = 0
+      含 "Expense" 的消费方 = 0
+
+===== D) T14.2 到期提醒 7/3/1 天 + 3 天只读宽限期 =====
+  到期相关类 = 1
+      ruoyi-job/src/main/java/com/ruoyi/job/service/TenantExpireCheckJob.java  行数 130
+        ✗ 7/3/1 天提醒                = 0
+        ✓ 宽限期 grace                = 26
+        ✗ 走 Provider 发送            = 0
+        ✗ 直接发站内信/短信                = 0
+  含「续费/renew」的类 = 9: BillingOrderController, TenantWriteBlockInterceptor, UserActionListener, BillingRemindJob, BillingOrderCreateBo, IBillingOrderService, BillingOrderServiceImpl, SysTenantServiceImpl, TenantStatusChecker

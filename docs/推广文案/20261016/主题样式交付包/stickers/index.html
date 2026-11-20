@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>手绘贴纸 & 图标 SVG · 单文件预览</title>
+<style>
+  body{margin:0;padding:24px;background:#FFF9F0;
+       font-family:-apple-system,"PingFang SC",sans-serif;color:#3A3A3A}
+  h1{font-size:18px;margin:0 0 4px}
+  .sub{font-size:12px;color:#9E9E9E;margin-bottom:20px}
+  h2{font-size:14px;margin:24px 0 10px;padding-top:14px;border-top:1px dashed #E5D9C3}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px}
+  .cell{background:#fff;border-radius:14px;padding:12px 6px;text-align:center;
+        box-shadow:0 2px 8px rgba(255,179,71,.16)}
+  .cell img{width:44px;height:44px;display:block;margin:0 auto 8px}
+  .cell .nm{font-size:10px;color:#3A3A3A;line-height:1.3;word-break:break-all}
+  .cell .sz{font-size:10px;color:#9E9E9E;margin-top:3px;font-variant-numeric:tabular-nums}
+  /* 图标用 mask 方案：独立 SVG 文件 + currentColor 变色 */
+  .ico{width:32px;height:32px;margin:0 auto 8px;background:#4F8FF7;
+       -webkit-mask:center/contain no-repeat;mask:center/contain no-repeat}
+  .t1{background:#4F8FF7}.t2{background:#F5455C}
+  .t3{background:#00E5FF}.t4{background:#FF8A8A}
+  .row{display:flex;gap:14px;align-items:center;margin:8px 0 18px}
+  .row .ico{margin:0}
+  .tag{font-size:11px;color:#9E9E9E}
+  code{background:#FFF1DC;padding:1px 5px;border-radius:4px;font-size:11px}
+</style>
+</head>
+<body>
+
+<h1>第二层：手绘贴纸 & 图标 · SVG 单文件</h1>
+<div class="sub">每个文件独立、矢量、可任意缩放。体积均为 0.13–0.24 KB，远小于位图。</div>
+
+<h2>手绘贴纸（主题 4 装饰用）</h2>
+<div class="grid" id="stickers"></div>
+
+<h2>功能图标（<code>mask</code> 方案：独立文件 + currentColor 变色）</h2>
+<div class="grid" id="icons"></div>
+
+<h2>同一图标在四主题下的颜色</h2>
+<div class="row" id="themes"></div>
+<div class="tag">图标文件只有一个，颜色由 CSS 的 <code>background</code> 决定，切主题不用换图。</div>
+
+<script>
+const stickers = ['hand-star','hand-bubble','hand-cloud','hand-heart',
+                  'hand-sparkle','hand-sun','hand-flower','hand-leaf'];
+const icons = ['ico-home','ico-activity','ico-todo','ico-qrcode','ico-mine',
+               'ico-workbench','ico-booking','ico-setting','ico-feedback',
+               'ico-logout','ico-refresh','ico-location','ico-search',
+               'ico-arrow','ico-check'];
+
+// 贴纸：直接 <img> 引用独立文件
+stickers.forEach(n=>{
+  fetch(n+'.svg').then(r=>r.text()).then(t=>{
+    const kb = (new Blob([t]).size/1024).toFixed(2);
+    document.getElementById('stickers').insertAdjacentHTML('beforeend',
+      `<div class="cell"><img src="${n}.svg" alt="${n}">
+        <div class="nm">${n.replace('hand-','')}</div>
+        <div class="sz">${kb} KB</div></div>`);
+  });
+});
+
+// 图标：mask 方案，独立文件 + 可变色
+icons.forEach(n=>{
+  fetch(n+'.svg').then(r=>r.text()).then(t=>{
+    const kb = (new Blob([t]).size/1024).toFixed(2);
+    document.getElementById('icons').insertAdjacentHTML('beforeend',
+      `<div class="cell">
+        <div class="ico t1" style="-webkit-mask-image:url(${n}.svg);mask-image:url(${n}.svg)"></div>
+        <div class="nm">${n.replace('ico-','')}</div>
+        <div class="sz">${kb} KB</div></div>`);
+  });
+});
+
+// 四主题配色演示（同一个 ico-home.svg）
+['t1','t2','t3','t4'].forEach((t,i)=>{
+  const names = ['主题1 蓝','主题2 红','主题3 青','主题4 粉'];
+  document.getElementById('themes').insertAdjacentHTML('beforeend',
+    `<div><div class="ico ${t}" style="-webkit-mask-image:url(ico-home.svg);mask-image:url(ico-home.svg)"></div>
+      <div class="tag">${names[i]}</div></div>`);
+});
+</script>
+
+</body>
+</html>

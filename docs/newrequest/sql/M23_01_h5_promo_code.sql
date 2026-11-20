@@ -1,0 +1,16 @@
+-- ============================================================
+-- M23_01 H5推广码迁移脚本（替代原微信小程序码）
+-- 变更说明：
+--   1. 推广码生成方式从微信小程序码改为 H5 URL 二维码（ZXing 生成）
+--   2. 二维码内容 = promo.h5-base-url + ?ref_t=租户ID&ref_u=用户ID
+--   3. 顾客手机浏览器扫码 → 打开 H5 登录页 → 登录后自动归因
+--   4. 归因逻辑复用现有 promotion_attribution 表 + scanAttribution 接口
+-- 影响范围：
+--   - 后端：PromotionDistributionServiceImpl.generateMyQrcode() 改用 ZXing 生成 H5 二维码
+--   - 前端：bossPromo / staff/promo / customer/promo 页面展示 H5 二维码
+--   - 前端：login/index.vue 新增 onLoad 解析 ref_t/ref_u 参数，登录后调用归因接口
+--   - 配置：application.yml 新增 promo.h5-base-url 配置项
+-- 无需新增表：复用现有 promotion_code + promotion_attribution 表
+-- ============================================================
+
+-- 无 DDL 变更，仅记录本次迁移

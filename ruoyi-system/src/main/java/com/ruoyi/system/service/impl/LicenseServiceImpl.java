@@ -21,6 +21,7 @@ import com.ruoyi.system.mapper.SysTenantVersionLogMapper;
 import com.ruoyi.system.service.IBizBundleService;
 import com.ruoyi.system.service.IFeatureFlagService;
 import com.ruoyi.system.service.ILicenseService;
+import com.ruoyi.system.utils.LicenseGenerateTool;
 import com.ruoyi.system.utils.LicenseSignUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -368,6 +369,8 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
     @Override
     public void replaceLicense(String licenseJson) {
         try {
+            // ★密文兼容：LIC1- 前缀密文先解密为 JSON，存量明文 JSON 原样透传
+            licenseJson = unwrapLicenseInput(licenseJson);
             JsonNode node = objectMapper.readTree(licenseJson);
 
             // === hard模式：必须携带有效签名，禁止明文切换 ===
@@ -634,13 +637,21 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
         //   但 version_type 是可靠的版本标识，以此为准保证 FEAT_RATING 等小微版功能可用
         String tenantVersionType = loadTenantVersionType(tenantId);
         boolean isMicroTenant = isMicroVersionType(tenantVersionType);
+        // ★T10.10 根因修复：micro_pro（付费版）跳过 biz_bundle 第三维过滤
+        //   历史事故（M20_05 FEAT_RATING / M21_07 FEAT_SELF_BOOKING / M26_02 FEAT_ROOM_SEAT_LAYOUT）
+        //   均为新增 FEAT_* 开关时 biz_bundle.feature_flags 漏补 → applyBizFilter 第三维剔除 →
+        //   FeatureInterceptor 抛「小微版无此功能权限」。micro_pro 为付费版，应拥有全部小微版功能，
+        //   不再依赖 biz_bundle 逐开关声明，从根源杜绝此类事故。
+        boolean isMicroPro = "micro_pro".equalsIgnoreCase(tenantVersionType);
         SysLicense license = loadTenantLicense(tenantId);
         if (license == null) {
             // 无 License 的租户
             if (isMicroTenant) {
                 // ★小微版无 License 时按 MICRO_FEATURES 授权（version_type 为权威来源）
-                Set<String> microFeatures = Collections.unmodifiableSet(
-                    applyBizFilter(EditionFeatureConfig.MICRO_FEATURES, bizCode));
+                //   micro_pro 跳过 biz_bundle 过滤（付费版全功能）
+                Set<String> microFeatures = isMicroPro
+                    ? Collections.unmodifiableSet(new HashSet<>(EditionFeatureConfig.MICRO_FEATURES))
+                    : Collections.unmodifiableSet(applyBizFilter(EditionFeatureConfig.MICRO_FEATURES, bizCode));
                 tenantFeaturesCache.put(tenantId, microFeatures);
                 tenantEditionCache.put(tenantId, EditionFeatureConfig.EDITION_MICRO);
                 return microFeatures;
@@ -667,12 +678,22 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
         // 维度①：License 授权功能（并集策略：版本默认 ∪ 数据库存储）
         Set<String> licenseFeatures = parseFeatures(license.getFeatures(), edition);
         // 维度②：版本开关（feature_flag 表驱动，兜底常量，T10.3）
-        Set<String> editionFeatures = featureFlagService.getEditionFeatureSet(edition);
+        //   ★T10.10 根因修复：micro_pro 付费版直接用 MICRO_FEATURES 常量，不查 feature_flag 表
+        //     历史事故链：新增 @RequireFeature("FEAT_XXX") → feature_flag 表漏登记（第二维缺失）
+        //     → getEditionFeatureSet 不含该 FEAT_* → intersection.retainAll 剔除 →
+        //     FeatureInterceptor 抛「小微版无此功能权限」。
+        //     micro_pro 付费版应拥有全部小微版功能，不再依赖 feature_flag 表逐开关声明。
+        Set<String> editionFeatures = isMicroPro
+            ? new HashSet<>(EditionFeatureConfig.MICRO_FEATURES)
+            : featureFlagService.getEditionFeatureSet(edition);
         // ①∩②：License 授权 ∩ 版本功能（T3.12 防"License 有但版本未分配"串功能）
         Set<String> intersection = new HashSet<>(licenseFeatures);
         intersection.retainAll(editionFeatures);
         // 维度③：业态包过滤（仅 FEAT_* 参与交集，legacy 透传；业态包缺失则跳过，T10.2/T10.8）
-        Set<String> result = Collections.unmodifiableSet(applyBizFilter(intersection, bizCode));
+        //   ★micro_pro 付费版跳过第三维过滤（T10.10 根因修复，与第二维同理）
+        Set<String> result = isMicroPro
+            ? Collections.unmodifiableSet(intersection)
+            : Collections.unmodifiableSet(applyBizFilter(intersection, bizCode));
         tenantFeaturesCache.put(tenantId, result);
         return result;
     }
@@ -834,6 +855,8 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
     @Override
     public void importLicenseForTenant(Long tenantId, String licenseJson) {
         try {
+            // ★密文兼容：LIC1- 前缀密文先解密为 JSON，存量明文 JSON 原样透传
+            licenseJson = unwrapLicenseInput(licenseJson);
             JsonNode node = objectMapper.readTree(licenseJson);
 
             // === hard模式：强制签名校验 ===
@@ -985,12 +1008,16 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
     }
 
     /**
-     * Admin 侧签发：为指定租户生成可直接导入的 License JSON（T15.33+）。
-     * <p>输出格式与 {@link #importLicenseForTenant(Long, String)} 完全对齐：
-     * 包含 licenseId / tenantId / edition / licenseType / customer / features /
-     * industries / expiresAt / machineFingerprint / licenseVersion / signature。
+     * Admin 侧签发：为指定租户生成可直接导入的 License 密文串（T15.33+，2026-10-25 密文化改造）。
+     * <p>内部先组装标准 License JSON（含 licenseId / tenantId / edition / licenseType / customer /
+     * features / industries / expiresAt / machineFingerprint / licenseVersion / signature），
+     * 再整体 AES 加密为单行密文串（LIC1- 前缀）返回，避免明文 JSON 在交付环节被窥探/手改；
+     * 导入端（{@link #importLicenseForTenant(Long, String)} / {@link #replaceLicense(String)}）
+     * 按前缀自动解密后走原有流程，hard 模式仍强制 RSA 验签（加密防窥探、签名防伪造双保险）。
      * <p>soft 模式：signature = "LOCAL-GENERATED"（导入端 soft 模式不校验签名）；
      * hard 模式：必须配置 {@code license.private-key}，使用 RSA-SHA256 真实签名。
+     *
+     * @return License 密文串（LIC1- 前缀单行字符串；兼容存量导入端时可解密回标准 JSON）
      */
     @Override
     public String generateLicenseForTenant(Long tenantId, String payloadJson) {
@@ -1111,14 +1138,84 @@ public class LicenseServiceImpl implements ILicenseService, FeatureChecker {
             out.put("signature", signature);
 
             String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(out);
+            // ★密文交付：签名 JSON 整体 AES 加密为单行密文串返回，租户管理员拿到的是不可读不可改的密文
+            String cipherToken = LicenseGenerateTool.encrypt(json);
             log.info("[License] Admin 签发 License | tenantId={} | edition={} | versionType={} | licenseId={} | hardMode={}",
                 tenantId, edition, versionType, licenseId, licenseProperties.isHardMode());
-            return json;
+            return cipherToken;
         } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {
             throw new ServiceException("License签发失败: " + e.getMessage());
         }
+    }
+
+    /**
+     * 解包 License 导入输入：兼容 Admin 侧下发的 AES 密文串（LIC1- 前缀，含复制丢前缀容错）与存量明文 JSON。
+     * <p>密文先解密再进入后续流程（hard 模式仍强制 RSA 验签，篡改/伪造双保险）；
+     * 带前缀密文解密失败视为损坏或被篡改，fail-fast 提示重新获取。
+     */
+    private String unwrapLicenseInput(String input) {
+        if (StrUtil.isBlank(input)) {
+            return input;
+        }
+        try {
+            // 密文/明文识别与解密统一收口在 LicenseGenerateTool（与 Controller 层预解析同一口径）
+            return LicenseGenerateTool.toPlainJson(input);
+        } catch (Exception e) {
+            throw new ServiceException("License 密文无效或已被篡改，请向平台管理员重新获取");
+        }
+    }
+
+    /**
+     * ★运维迁移：用当前配置的 RSA 私钥对存量 License 重新签名（soft→hard 切换时的一次性修复）。
+     * <p>历史存量 License 的 signature 多为 soft 模式占位（LOCAL-GENERATED / LOCAL-SWITCH）或旧公钥签名，
+     * 换用新公钥后 hard 验签会失败并把系统级 License 误判为 TAMPERED。本方法按存量字段重算签名内容并用私钥重新签名，
+     * 使全部 License 与新公钥对齐；对被误判 TAMPERED 的记录复位为 ACTIVE。
+     */
+    @Override
+    public int resignAllLicenses() {
+        if (!licenseProperties.isHardMode()) {
+            throw new ServiceException("当前为 soft 模式，License 本就不校验签名，无需重签迁移");
+        }
+        String privateKey = licenseProperties.getPrivateKey();
+        if (StrUtil.isBlank(privateKey)) {
+            throw new ServiceException("未配置 license.private-key（环境变量 LICENSE_PRIVATE_KEY），无法重签存量 License");
+        }
+        // 遍历所有非作废状态的 License（含被换公钥误判为 TAMPERED 的记录），逐条用私钥重算签名。
+        // REVOKED/REPLACED 属业务终态，不参与重签。
+        List<SysLicense> licenses = licenseMapper.selectList(
+            Wrappers.<SysLicense>lambdaQuery()
+                .in(SysLicense::getStatus, "ACTIVE", "TAMPERED", "EXPIRED")
+        );
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        int count = 0;
+        for (SysLicense lic : licenses) {
+            String expiresAtStr = lic.getExpiresAt() != null ? sdf.format(lic.getExpiresAt()) : "";
+            String signContent = LicenseSignUtil.buildSignContent(
+                lic.getLicenseId(), lic.getEdition(), lic.getLicenseType(),
+                lic.getCustomer(), lic.getFeatures(), lic.getIndustries(),
+                expiresAtStr, lic.getMachineFingerprint(), lic.getLicenseVersion()
+            );
+            String signature = LicenseSignUtil.sign(signContent, privateKey);
+            SysLicense update = new SysLicense();
+            update.setId(lic.getId());
+            update.setSignature(signature);
+            // 因更换公钥被误判篡改的记录复位为 ACTIVE（EXPIRED 等真实业务状态保持不变）
+            if ("TAMPERED".equals(lic.getStatus())) {
+                update.setStatus("ACTIVE");
+            }
+            licenseMapper.updateById(update);
+            // 清除该租户缓存，触发按新签名重新加载
+            if (lic.getTenantId() != null) {
+                evictTenantCache(lic.getTenantId());
+            }
+            count++;
+        }
+        // 重载系统级 License（换公钥后系统级记录也可能被 TAMPERED，重签后需重新加载生效）
+        loadAndVerify();
+        log.info("[License] 存量 License 重签迁移完成，共重签 {} 条", count);
+        return count;
     }
 
     /**

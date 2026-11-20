@@ -52,7 +52,7 @@ spring:
           driverClassName: com.mysql.cj.jdbc.Driver
           # jdbc 所有参数配置参考 https://lionli.blog.csdn.net/article/details/122018562
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
-          url: jdbc:mysql://localhost:3306/ry-vue?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
+          url: jdbc:mysql://localhost:3306/ry-flowable-plus?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
           username: root
           password:
         # 从库数据源
@@ -60,7 +60,7 @@ spring:
           lazy: true
           type: ${spring.datasource.type}
           driverClassName: com.mysql.cj.jdbc.Driver
-          url: jdbc:mysql://localhost:3306/ry-vue?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
+          url: jdbc:mysql://localhost:3306/ry-flowable-plus?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
           username:
           password:
 #        oracle:
@@ -172,11 +172,16 @@ mail:
 
 --- # License授权配置（生产环境加固模式）
 license:
-  # 生产环境强制使用hard模式：RSA签名验证 + 机器指纹绑定
+  # 生产环境强制使用hard模式：RSA签名验证 + 机器指纹绑定，禁止明文切换版本
   enforce-mode: hard
-  # RSA公钥(Base64) - 由 LicenseGenerateTool keygen 生成，将公钥填入此处
-  # 示例: public-key: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A...
-  public-key:
+  # RSA公钥(Base64) - 用于验证 License 签名（由 LicenseGenerateTool keygen 生成）。
+  #   公钥可安全入库；对应私钥通过环境变量注入，切勿提交仓库。
+  public-key: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzX28ANnP2yQqR9LeODLHMH5kekqSCJD+xWfHQ6t3kLb9Vt9OQAPMQuWrqtMvDvmdnasRptB1IumYTke9oAMXXEvoAXN3W3ShbbpMQ4Rcz1UFlBF5Rr8UjesC+vpr9gUN3eLS6BE06y1hVzu32P5PhkdD9/3Q3Dc7/cByZWXx4lZHGnMMuL/Rapdd/Xa11h5zw9qAvuqBWteM86rTZFTjxbEf4BjM687M72T7Ve6E20DUQwffJAHQkG0XEpEoMVHW4vPwsCcIHo0t2fkyFa2IhSOuG5Y933hMheF5MhoHpDTxTyuRl2WVvdv/9z0HAouo0LoduWFHZHRSRkWnUyMUmwIDAQAB
+  # RSA私钥(Base64) - 仅 Admin 侧签发/重签 License 使用。
+  #   ★安全：禁止硬编码或提交仓库，部署时通过环境变量 LICENSE_PRIVATE_KEY 注入
+  #   （Linux: export LICENSE_PRIVATE_KEY=xxx ；Windows: setx LICENSE_PRIVATE_KEY xxx）。
+  #   缺省为空时，hard 模式签发/重签接口会 fail-fast 报错，不影响验签与正常登录。
+  private-key: ${LICENSE_PRIVATE_KEY:}
   verify-fingerprint: true
   allow-plain-switch: false
 
@@ -189,8 +194,44 @@ sms:
   accessKeyId: xxxxxxx
   accessKeySecret: xxxxxx
   signName: 测试
+  # 游客短信验证码模板ID（阿里云/腾讯云控制台审核通过后填入，如 SMS_1234567；enabled=true 时必填）
+  visitor-template-id:
+  # 开发模式验证码：★生产禁止开启（未配云短信时直接报错，杜绝假校验）
+  dev-code-enabled: false
+  # 同一手机号每日发送上限（防刷，默认 10）
+  sms-day-limit: 10
+  # 短信核验服务不可用时的保底开关（生产默认关闭，通道故障时临时置true降级）
+  sms-verify-fallback-enabled: true
   # 腾讯专用
   sdkAppId:
+
+--- # 阿里云号码认证服务 PNVS（一键登录 + 短信认证共用同一把 AccessKey 与 dypnsapi.aliyuncs.com 端点）
+# ★安全：AccessKey 为敏感凭据，建议上线后到阿里云控制台轮换/重置，勿长期留存于仓库
+number-auth:
+  # ===== H5 一键登录（控制台已创建 H5 一键登录方案，sceneCode 就绪，启用）=====
+  enabled: true
+  accessKeyId:
+  accessKeySecret:
+  # 认证方案 Code（控制台创建 H5 一键登录方案后获取）
+  sceneCode: FC220000013710116
+  # 页面地址（必须与控制台方案登记一致：协议 + // + 域名 + /）
+  pageUrl: https://xiaozhangben.com.cn/
+  # 源地址（末尾无 /）
+  origin: https://xiaozhangben.com.cn
+  # ===== PNVS 短信认证（赠送签名+模板；SendSmsVerifyCode 发码 / CheckSmsVerifyCode 核验）=====
+  # 对应 SMS_ENABLED：true 时游客验证码走阿里云真实下发 + 平台托管核验；false 时降级 devCode（仅 dev）
+  smsEnabled: true
+  # 赠送签名（控制台「赠送签名配置」页原样抄写，必须搭配赠送模板）
+  smsSignName: 恒创联众
+  # 赠送模板 Code（登录/注册验证码模板；字符串，勿写成数字）
+  smsTemplateCode: "100001"
+  smsCountryCode: "86"
+  smsCodeLength: 6
+  # 验证码有效期（单位：秒，300 = 5 分钟）
+  smsValidTime: 300
+  # 重复发送策略（1）/ 两次发送最小间隔（秒，60）
+  smsDuplicatePolicy: 1
+  smsInterval: 60
 
 --- # 微信小程序（T13.1 code2session 一键登录；未配置 appid/secret 时一键登录不可用，仍可账号密码登录）
 wx:
@@ -204,7 +245,7 @@ wx:
 
 --- # H5推广码配置（顾客手机浏览器扫码进入的登录页地址，带 ref_t/ref_u 参数用于登录后归因）
 promo:
-  h5-base-url: http://118.89.133.114/h5/#/pages/login/index
+  h5-base-url: https://xiaozhangben.com.cn/h5/#/pages/login/index
 
 --- # 企业微信自建应用（T13.3 企微应用消息；未配置时消息发送返回 FAILED，不阻塞主流程）
 wecom:

@@ -1,0 +1,15 @@
+
+.page.data-v-bf33f812 { padding: 24rpx;
+}
+.card.data-v-bf33f812 { background: #fff; border-radius: 16rpx; padding: 32rpx; margin-bottom: 24rpx;
+}
+.card.unread.data-v-bf33f812 { border-left: 8rpx solid #f56c6c;
+}
+.title.data-v-bf33f812 { font-size: 32rpx; font-weight: bold; display: block;
+}
+.desc.data-v-bf33f812 { font-size: 24rpx; color: #909399; margin-top: 12rpx; display: block;
+}
+.time.data-v-bf33f812 { font-size: 22rpx; color: #c0c4cc; margin-top: 12rpx; display: block;
+}
+.section-title.data-v-bf33f812 { font-size: 30rpx; font-weight: bold; margin: 8rpx 0 24rpx;
+}

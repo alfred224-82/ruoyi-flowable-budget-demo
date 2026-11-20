@@ -1,0 +1,31 @@
+
+.page.data-v-63f372ef { padding: 24rpx;
+}
+.card.data-v-63f372ef { background: #fff; border-radius: 16rpx; padding: 32rpx; margin-bottom: 24rpx;
+}
+.card-title.data-v-63f372ef { font-size: 30rpx; font-weight: bold; display: block; margin-bottom: 20rpx;
+}
+.grid.data-v-63f372ef { display: flex; flex-wrap: wrap;
+}
+.stat.data-v-63f372ef { width: 50%; box-sizing: border-box; padding: 16rpx 8rpx; text-align: center;
+}
+.num.data-v-63f372ef { display: block; font-size: 36rpx; font-weight: bold; color: #67c23a;
+}
+.label.data-v-63f372ef { display: block; font-size: 24rpx; color: #909399; margin-top: 8rpx;
+}
+.detail-item.data-v-63f372ef { display: flex; justify-content: space-between; align-items: center; padding: 20rpx 0; border-bottom: 1rpx solid #f0f2f5;
+}
+.detail-item.data-v-63f372ef:last-child { border-bottom: none;
+}
+.detail-info.data-v-63f372ef { flex: 1;
+}
+.customer.data-v-63f372ef { font-size: 28rpx; font-weight: bold; display: block;
+}
+.service.data-v-63f372ef { font-size: 24rpx; color: #606266; margin-top: 4rpx; display: block;
+}
+.time.data-v-63f372ef { font-size: 22rpx; color: #909399; margin-top: 4rpx; display: block;
+}
+.amount.data-v-63f372ef { font-size: 30rpx; font-weight: bold; color: #67c23a;
+}
+.loading.data-v-63f372ef, .empty.data-v-63f372ef { text-align: center; color: #909399; padding: 60rpx 0;
+}

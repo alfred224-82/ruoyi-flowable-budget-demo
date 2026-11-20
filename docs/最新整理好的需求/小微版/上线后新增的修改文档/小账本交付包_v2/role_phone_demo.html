@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="t4">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>电话图标 · 按角色显示规则</title>
+<link rel="stylesheet" href="theme_tokens.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  body{margin:0;background:var(--page-bg)}
+  .wrap{max-width:430px;margin:0 auto;padding:14px calc(var(--gutter) - 4px) 30px}
+  h1{font-size:var(--font-title);font-weight:700;margin:0 0 4px;text-align:center}
+  .sub{font-size:11.5px;color:var(--text-sub);text-align:center;margin-bottom:14px;line-height:1.6}
+
+  .sw{display:flex;gap:6px;background:var(--card-bg);padding:5px;border-radius:999px;
+    box-shadow:var(--shadow-card);width:fit-content;margin:0 auto 10px}
+  .sw button{width:26px;height:26px;border-radius:50%;border:2px solid transparent;
+    font-size:11px;color:#fff;font-weight:700}
+  .sw button.on{border-color:var(--brand);transform:scale(1.1)}
+  .s1{background:#4F8FF7}.s2{background:#F5455C}.s3{background:#0B0F19}.s4{background:#FFB347}
+
+  .roles{display:flex;gap:6px;margin-bottom:14px}
+  .roles button{flex:1;height:38px;border-radius:19px;font-size:12.5px;font-weight:600;
+    border:1px solid var(--border);color:var(--text-sub);background:var(--card-bg);
+    box-shadow:var(--shadow-card)}
+  .roles button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+
+  .who{text-align:center;font-size:12px;color:var(--text-sub);margin-bottom:12px}
+  .who b{color:var(--text)}
+
+  .box{background:var(--card-bg);border-radius:var(--radius-card);
+    box-shadow:var(--shadow-card);padding:13px;margin-bottom:11px;overflow:hidden}
+  .box h2{font-size:13px;margin:0 0 9px;display:flex;justify-content:space-between;align-items:baseline}
+  .box h2 .r{font-size:11px;font-weight:400;color:var(--text-sub)}
+
+  .row{display:flex;align-items:center;gap:10px;padding:10px 0;
+    border-bottom:1px solid var(--border)}
+  .row:last-child{border-bottom:0}
+  .row .av{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:none}
+  .row .bd{flex:1;min-width:0}
+  .row .nm{font-size:14px;font-weight:600;display:flex;align-items:center;gap:5px}
+  .row .ph{font-size:11.5px;color:var(--text-sub);margin-top:2px;
+    font-variant-numeric:tabular-nums;letter-spacing:.2px}
+  .row .me{font-size:9px;padding:1px 6px;border-radius:5px;background:var(--brand-weak);
+    color:var(--brand);font-weight:600}
+  .row .ops{display:flex;gap:6px;flex:none}
+  .icb{width:34px;height:34px;border-radius:50%;border:1px solid rgba(24,180,120,.35);
+    display:flex;align-items:center;justify-content:center;background:rgba(24,180,120,.10)}
+  .icb:active{transform:scale(.9)}
+  .icb svg{width:19px;height:19px;display:block}
+  .icb .ph{fill:#18B478}
+  .hidden{opacity:.35}
+  .no{font-size:10.5px;color:var(--text-sub);padding:0 4px}
+
+  table{width:100%;border-collapse:collapse;font-size:11.5px}
+  th,td{padding:6px 3px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+  th{font-size:10.5px;color:var(--text-sub);font-weight:600}
+  td:first-child{width:66px;font-weight:600}
+  .y{color:#18B478;font-weight:600}.n{color:var(--danger)}
+  .note{font-size:11px;color:var(--text-sub);line-height:1.75;
+    background:var(--brand-weak);border-radius:var(--radius-card);padding:11px 13px}
+  .note b{color:var(--text)}
+  code{background:var(--brand-weak);padding:1px 5px;border-radius:4px;font-size:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="sw">
+    <button class="s1" onclick="setTheme('t1',this)">1</button>
+    <button class="s2" onclick="setTheme('t2',this)">2</button>
+    <button class="s3" onclick="setTheme('t3',this)">3</button>
+    <button class="s4 on" onclick="setTheme('t4',this)">4</button>
+  </div>
+
+  <div class="roles">
+    <button id="r-customer" class="on" onclick="setRole('customer')">我是顾客</button>
+    <button id="r-staff" onclick="setRole('staff')">我是员工</button>
+    <button id="r-boss" onclick="setRole('boss')">我是老板</button>
+  </div>
+
+  <h1>电话图标显示规则</h1>
+  <div class="sub">同一份名单，不同角色看到的电话按钮不同</div>
+  <div class="who">当前身份：<b id="whoName">李静（顾客）</b></div>
+
+  <div class="box">
+    <h2>活动人员 <span class="r">长荡湖两日游</span></h2>
+    <div id="list"></div>
+  </div>
+
+  <div class="box">
+    <h2>规则矩阵</h2>
+    <table>
+      <tr><th>我是谁</th><th>能看到谁</th><th>看不到</th></tr>
+      <tr><td>顾客</td><td>主持人 / 员工</td><td>自己<br><span style="font-size:10px">（顾客端不展示其他顾客信息）</span></td></tr>
+      <tr><td>员工</td><td>顾客、同事、老板</td><td>自己</td></tr>
+      <tr><td>老板</td><td>顾客、员工</td><td>自己</td></tr>
+    </table>
+    <div class="note" style="margin-top:10px">
+      <b>核心原则：不给自己打电话</b>——当前登录者本人的那一行永远不显示电话图标。
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>图标规范：绿色手机，不用座机</h2>
+    <div class="note" style="margin-top:0">
+      统一用<b>手机形状</b>的图标（竖长方形 + 听筒条 + 底部圆点），
+      不要用带听筒线的座机造型——现在基本都用手机，座机容易误会。<br><br>
+      颜色统一为<b>绿色 #18B478</b>，与「已确认」同色系，视觉上表达"可联系"。
+      按钮做成浅绿底 + 绿色图标的圆形，不用实心填充，避免过重。
+    </div>
+  </div>
+
+
+
+<script>
+// 手机形状图标（非座机），绿色
+const PHONE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path class="ph" d="M7.5 2h9c.6 0 1 .4 1 1v18c0 .6-.4 1-1 1h-9c-.6 0-1-.4-1-1V3c0-.6.4-1 1-1Zm0 1.5v16.2c0 .1.1.3.3.3h8.4c.2 0 .3-.2.3-.3V3.5c0-.1-.1-.3-.3-.3H7.8c-.2 0-.3.2-.3.3Z"/><path class="ph" d="M10.7 4.4h2.6c.2 0 .3.1.3.3s-.1.3-.3.3h-2.6c-.2 0-.3-.1-.3-.3s.1-.3.3-.3Z"/><circle class="ph" cx="12" cy="18.3" r="1"/></svg>`;
+
+// 角色 → 可见的目标角色
+const CAN_SEE = {
+  customer: ['host'],            // 顾客只能联系主持人
+  staff:    ['customer','host','boss'],  // 员工可联系顾客、同事、老板
+  boss:     ['customer','host'],  // 老板可联系顾客、员工
+};
+
+// 名单数据
+const P = [
+  {id:'u1', n:'张伟',   role:'customer', ph:'138****4521', av:'a3_male_suit'},
+  {id:'u2', n:'李静',   role:'customer', ph:'136****7788', av:'a1_female_sea'},
+  {id:'h1', n:'黄导游', role:'host',     ph:'159****0234', av:'a2_male_street'},
+  {id:'h2', n:'刘司机', role:'host',     ph:'137****6612', av:'a4_female_grass'},
+  {id:'b1', n:'李杰',   role:'boss',     ph:'186****3390', av:'a3_male_suit'},
+];
+
+// 当前登录者
+const ME = { customer:'u2', staff:'h1', boss:'b1' };
+const ME_NAME = { customer:'李静（顾客）', staff:'黄导游（员工 / 主持）', boss:'李杰（老板）' };
+let role = 'customer';
+
+function setRole(r){
+  role = r;
+  document.getElementById('whoName').textContent = ME_NAME[r];
+  ['customer','staff','boss'].forEach(k=>
+    document.getElementById('r-'+k).classList.toggle('on', k===r));
+  render();
+}
+
+function render(){
+  const myId = ME[role];
+  document.getElementById('list').innerHTML = P.map(p=>{
+    const isMe = p.id === myId;
+    const can  = !isMe && CAN_SEE[role].includes(p.role);
+
+    let right;
+    if(isMe){
+      right = `<span class="no">本人</span>`;
+    }else if(can){
+      right = `<button class="icb" onclick="call('${p.n}')" title="拨打电话">${PHONE_SVG}</button>`;
+    }else{
+      right = `<span class="no">不可见</span>`;
+    }
+
+    const showPh = can || isMe;   // 自己能看自己号码，别人看不到就不显示
+    return `<div class="row ${can?'':'hidden'}">
+      <img class="av" src="avatars_out/${p.av}_md.webp">
+      <div class="bd">
+        <div class="nm">${p.n}${isMe?'<span class="me">我</span>':''}</div>
+        <div class="ph">${showPh ? p.ph : '***'}</div>
+      </div>
+      <div class="ops">${right}</div>
+    </div>`;
+  }).join('');
+}
+
+function call(n){ alert('调起系统拨号：'+n); }
+function setTheme(t,el){
+  document.documentElement.setAttribute('data-theme',t);
+  document.querySelectorAll('.sw button').forEach(b=>b.classList.toggle('on',b===el));
+}
+render();
+</script>
+</body>
+</html>

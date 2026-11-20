@@ -1,0 +1,68 @@
+
+/* M27 T27.5：4 风格变体——页面结构/元素位置/中文文案完全一致，仅配色/圆角/图标风格/动效氛围不同 */
+.login.data-v-45258083 { padding: 80rpx 60rpx; min-height: 100vh; box-sizing: border-box; background: var(--tbg, #f5f6f8);
+}
+.brand.data-v-45258083 { font-size: 30rpx; color: var(--ttext2, #909399); text-align: center; letter-spacing: 4rpx; margin-bottom: 16rpx;
+}
+.logo.data-v-45258083 { font-size: 56rpx; font-weight: bold; text-align: center; margin-bottom: 40rpx; color: var(--ttext, #303133);
+}
+.store-banner.data-v-45258083 { display: flex; align-items: center; justify-content: space-between; background: var(--tp-soft, #ecf5ff); border-radius: var(--tradius, 12rpx); padding: 20rpx 24rpx; margin-bottom: 40rpx;
+}
+.store-info.data-v-45258083 { display: flex; flex-direction: column;
+}
+.store-name.data-v-45258083 { font-size: 28rpx; color: var(--ttext, #303133); font-weight: bold;
+}
+.store-city.data-v-45258083 { font-size: 22rpx; color: var(--ttext2, #909399); margin-top: 6rpx;
+}
+.store-switch.data-v-45258083 { font-size: 24rpx; color: var(--tp, #409eff); font-weight: bold;
+}
+.input.data-v-45258083 { background: #fff; border-radius: var(--tradius, 12rpx); padding: 24rpx; margin-bottom: 30rpx; color: var(--ttext, #303133);
+}
+.btn.data-v-45258083 { background: var(--tp, #409eff); color: #fff; border-radius: var(--tradius, 12rpx); margin-top: 20rpx;
+}
+.btn-wx.data-v-45258083 { background: #07c160; color: #fff; border-radius: var(--tradius, 12rpx); margin-top: 20rpx;
+}
+.btn-phone.data-v-45258083 { background: #ff6a00; color: #fff; border-radius: var(--tradius, 12rpx); margin-top: 20rpx;
+}
+
+/* 活力渐变风：渐变背景 + 圆润图标 */
+.login.theme-vivid.data-v-45258083 { background: var(--tgrad);
+}
+/* 温暖手绘风：暖色底 */
+.login.theme-handdrawn.data-v-45258083 { background: var(--tgrad);
+}
+/* 暗黑科技风：深色底 + 霓虹边 + 文字反色 */
+.login.theme-dark.data-v-45258083 { background: var(--tgrad);
+}
+.login.theme-dark .input.data-v-45258083 { background: #16213E; color: #EAEAEA; border: 1rpx solid var(--tp, #00E5FF);
+}
+.login.theme-dark .store-banner.data-v-45258083 { background: rgba(0, 229, 255, 0.12);
+}
+.login.theme-dark .btn.data-v-45258083 { box-shadow: 0 0 16rpx var(--tp, #00E5FF);
+}
+
+/* ★手绘主题装饰贴纸 */
+.login.data-v-45258083 { position: relative;
+}
+.sticker.data-v-45258083 { position: absolute; opacity: .8; pointer-events: none; z-index: 0;
+}
+.brand.data-v-45258083, .logo.data-v-45258083, .store-banner.data-v-45258083, .form.data-v-45258083 { position: relative; z-index: 1;
+}
+.sticker-cloud-tl.data-v-45258083 { top: 120rpx; left: 20rpx; width: 100rpx; height: 80rpx; transform: rotate(-8deg);
+}
+.sticker-star-tr.data-v-45258083 { top: 140rpx; right: 30rpx; width: 60rpx; height: 60rpx; transform: rotate(12deg);
+}
+.sticker-sparkle-l.data-v-45258083 { top: 200rpx; left: 40rpx; width: 44rpx; height: 44rpx; transform: rotate(-15deg);
+}
+.sticker-heart-r.data-v-45258083 { top: 190rpx; right: 20rpx; width: 64rpx; height: 64rpx; transform: rotate(10deg);
+}
+.sticker-star-bl.data-v-45258083 { bottom: 260rpx; left: 20rpx; width: 52rpx; height: 52rpx; transform: rotate(-12deg);
+}
+.sticker-cloud-bl.data-v-45258083 { bottom: 180rpx; left: 40rpx; width: 90rpx; height: 72rpx; transform: rotate(6deg);
+}
+.sticker-sparkle-bl.data-v-45258083 { bottom: 220rpx; left: 120rpx; width: 40rpx; height: 40rpx; transform: rotate(20deg);
+}
+.sticker-bubble-br.data-v-45258083 { bottom: 180rpx; right: 20rpx; width: 100rpx; height: 100rpx; transform: rotate(-5deg);
+}
+.sticker-bubble-br-sm.data-v-45258083 { bottom: 240rpx; right: 60rpx; width: 56rpx; height: 56rpx; transform: rotate(8deg);
+}

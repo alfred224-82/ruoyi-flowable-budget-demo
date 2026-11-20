@@ -1,0 +1,53 @@
+
+.page.data-v-20c5f713 { padding: 24rpx; padding-bottom: 140rpx; background: var(--page-bg, #f5f6f8); min-height: 100vh;
+}
+.card.data-v-20c5f713 { background: var(--card-bg, #fff); border-radius: var(--radius-card, 16rpx); padding: 32rpx; margin-bottom: 24rpx; box-shadow: var(--shadow-card, none); color: var(--text, #303133);
+}
+.user-card.data-v-20c5f713 { display: flex; align-items: center;
+}
+.avatar-img.data-v-20c5f713 { width: 96rpx; height: 96rpx; border-radius: 50%;
+}
+.avatar.data-v-20c5f713 { width: 96rpx; height: 96rpx; border-radius: 50%; background: var(--brand, #e6a23c); color: #fff; font-size: 40rpx; display: flex; align-items: center; justify-content: center;
+}
+.user-info.data-v-20c5f713 { margin-left: 24rpx;
+}
+.name.data-v-20c5f713 { font-size: 32rpx; font-weight: bold; display: block; color: var(--text, #303133);
+}
+.role.data-v-20c5f713 { font-size: 24rpx; color: var(--brand, #e6a23c); margin-top: 8rpx; display: block;
+}
+.card-title.data-v-20c5f713 { font-size: 30rpx; font-weight: bold; display: block; margin-bottom: 12rpx; color: var(--text, #303133);
+}
+.pay-desc.data-v-20c5f713 { font-size: 26rpx; color: var(--text-sub, #606266); line-height: 1.6;
+}
+.link-text.data-v-20c5f713 { font-size: 28rpx; color: var(--brand, #409eff);
+}
+.btn-logout.data-v-20c5f713 { background: var(--card-bg, #fff); color: var(--danger, #f56c6c); border: 2rpx solid var(--danger, #f56c6c); border-radius: var(--radius-btn, 12rpx); margin-top: 40rpx; font-size: 30rpx;
+}
+
+/* ★手绘主题装饰贴纸 */
+.page.data-v-20c5f713 { position: relative;
+}
+.sticker.data-v-20c5f713 { position: absolute; opacity: .8; pointer-events: none; z-index: 0;
+}
+.card.data-v-20c5f713, .btn-logout.data-v-20c5f713 { position: relative; z-index: 1;
+}
+.sticker-star-tl.data-v-20c5f713 { top: 16rpx; left: 16rpx; width: 52rpx; height: 52rpx; transform: rotate(-10deg);
+}
+.sticker-bubble-tr.data-v-20c5f713 { top: 10rpx; right: 16rpx; width: 56rpx; height: 56rpx; transform: rotate(8deg);
+}
+.sticker-sparkle-tr.data-v-20c5f713 { top: 40rpx; right: 6rpx; width: 32rpx; height: 32rpx; transform: rotate(-15deg);
+}
+.sticker-cloud-user.data-v-20c5f713 { top: 40rpx; right: 10rpx; width: 64rpx; height: 52rpx; transform: rotate(5deg);
+}
+.sticker-sparkle-member.data-v-20c5f713 { top: 16rpx; right: 16rpx; width: 36rpx; height: 36rpx; transform: rotate(20deg);
+}
+.sticker-star-member.data-v-20c5f713 { top: 40rpx; right: 6rpx; width: 40rpx; height: 40rpx; transform: rotate(-12deg);
+}
+.sticker-star-bl.data-v-20c5f713 { bottom: 120rpx; left: 16rpx; width: 44rpx; height: 44rpx; transform: rotate(-8deg);
+}
+.sticker-sparkle-bl.data-v-20c5f713 { bottom: 140rpx; left: 60rpx; width: 28rpx; height: 28rpx; transform: rotate(15deg);
+}
+.sticker-cloud-bc.data-v-20c5f713 { bottom: 100rpx; left: 50%; transform: translateX(-50%) rotate(3deg); width: 56rpx; height: 44rpx;
+}
+.sticker-cloud-br.data-v-20c5f713 { bottom: 100rpx; right: 16rpx; width: 72rpx; height: 56rpx; transform: rotate(-5deg);
+}

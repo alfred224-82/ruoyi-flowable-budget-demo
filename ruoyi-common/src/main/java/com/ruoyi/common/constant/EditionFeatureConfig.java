@@ -197,6 +197,8 @@ public class EditionFeatureConfig {
         "FEAT_RATING",                   // 通用评价与点赞（scene=SERVICE）
         "FEAT_SELF_BOOKING",             // 自助预约（项目/房间/助教三类预约入口）
         "FEAT_STAFF_SCHEDULE",           // 员工排班管理（周/月+早晚班+Boss 自定时间+发布后可修正，M22/T22.6）
+        "FEAT_ROOM_SEAT_LAYOUT",         // 房间座位布局与选座(拖拽定位+复制布局+存为模板+平台默认模板，M26/T26.4~T26.6)
+        "FEAT_ACTIVITY_LOCK",            // 活动锁定与座位编排(锁定/解锁+加人/移座/互换+操作日志留痕，M28/T28.1~T28.5)
         // === M18 平台合规底线（全版本默认启用，T18.8） ===
         "FEAT_IMAGE_COMPLIANCE",         // 图片合规（OCR 文字路 + 视觉审核路两路并行）
         "FEAT_SENSITIVE_WORD"            // 全局敏感词引擎（text/voice_ocr/image_ocr 三路共用）

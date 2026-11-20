@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="t4">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>报名确认流程 · 老板端待处理</title>
+<link rel="stylesheet" href="theme_tokens.css">
+<link rel="stylesheet" href="components.css">
+<link rel="stylesheet" href="svg_assets.css">
+<script src="icons_datauri.js"></script>
+<script src="svg_assets.js"></script>
+<style>
+  body{margin:0;background:var(--page-bg)}
+  .wrap{max-width:430px;margin:0 auto;padding:14px calc(var(--gutter) - 4px) 20px}
+  .switcher{display:flex;gap:6px;background:var(--card-bg);padding:5px;border-radius:999px;
+    box-shadow:var(--shadow-card);width:fit-content;margin:0 auto 12px}
+  .switcher button{width:26px;height:26px;border-radius:50%;border:2px solid transparent;
+    font-size:11px;color:#fff;font-weight:700}
+  .switcher button.on{border-color:var(--brand);transform:scale(1.1)}
+  .sw1{background:#4F8FF7}.sw2{background:#F5455C}.sw3{background:#0B0F19}.sw4{background:#FFB347}
+
+  /* 步骤指示 */
+  .steps{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:14px}
+  .steps b{font-size:11px;color:var(--text-sub);font-weight:500;padding:3px 9px;border-radius:99px}
+  .steps b.on{background:var(--brand);color:#fff;font-weight:600}
+  .steps i{width:14px;height:1px;background:var(--border)}
+
+  .hd{text-align:center;margin-bottom:14px}
+  .hd .t{font-size:var(--font-title);font-weight:700}
+  .hd .s{font-size:12px;color:var(--text-sub);margin-top:3px}
+
+  .sec-t{font-size:12px;color:var(--text-sub);margin:14px 0 7px;font-weight:600}
+
+  /* 活动卡片（我的待处理里） */
+  .act{background:var(--card-bg);border-radius:var(--radius-card);
+    box-shadow:var(--shadow-card);padding:13px;margin-bottom:10px}
+  .act .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .act .nm{font-size:15px;font-weight:600;line-height:1.35}
+  .act .st{font-size:10px;padding:3px 8px;border-radius:var(--radius-tag);
+    background:rgba(24,180,120,.14);color:#18B478;font-weight:600;flex:none}
+  .act .meta{font-size:11.5px;color:var(--text-sub);margin-top:5px;line-height:1.6}
+  .act .btns{display:flex;gap:7px;margin-top:10px}
+  .act .btns button{flex:1;height:36px;border-radius:18px;font-size:13px;font-weight:600;
+    display:flex;align-items:center;justify-content:center;gap:5px}
+  .b-mine{border:1px solid var(--brand);color:var(--brand);background:transparent}
+  .b-conf{background:var(--brand);color:#fff;box-shadow:var(--shadow-btn)}
+  .b-gray{border:1px solid var(--border);color:var(--text-sub);background:transparent}
+
+  /* 进度 */
+  .prog{background:var(--card-bg);border-radius:var(--radius-card);
+    box-shadow:var(--shadow-card);padding:13px;margin-bottom:10px}
+  .prog .r1{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .prog .r1 .l{font-size:var(--font-sub);font-weight:600}
+  .prog .r1 .v{font-size:12px;color:var(--text-sub)}
+  .prog .r1 .v b{font-size:20px;color:var(--brand);font-variant-numeric:tabular-nums}
+  .track{height:8px;border-radius:99px;background:var(--brand-weak);overflow:hidden}
+  .fill{height:100%;border-radius:99px;background:var(--brand);transition:width .35s var(--ease)}
+  :root[data-theme="t3"] .fill{background:linear-gradient(90deg,var(--brand),var(--brand-2))}
+  .prog .cond{margin-top:10px;padding-top:9px;border-top:1px solid var(--border);
+    font-size:11.5px;color:var(--text-sub);line-height:1.85}
+  .prog .cond div{display:flex;align-items:center;gap:6px}
+  .dot{width:15px;height:15px;border-radius:50%;flex:none;display:flex;
+    align-items:center;justify-content:center;font-size:9px;color:#fff}
+  .d-no{background:var(--border);color:var(--text-sub)}
+  .d-ok{background:#18B478}
+
+  /* 名单表 */
+  .tb{background:var(--card-bg);border-radius:var(--radius-card);
+    box-shadow:var(--shadow-card);overflow:hidden;margin-bottom:10px}
+  .th{display:flex;padding:8px 11px;background:var(--brand-weak);
+    font-size:10.5px;color:var(--text-sub);font-weight:600;align-items:center}
+  .th span:nth-child(1){width:60px}
+  .th span:nth-child(2){flex:1}
+  .th span:nth-child(3){width:34px;text-align:center}
+  .th span:nth-child(4){width:30px;text-align:center}
+  .th span:nth-child(5){width:66px;text-align:center}
+  .tr{display:flex;align-items:center;padding:9px 11px;
+    border-bottom:1px solid var(--border);transition:opacity .2s}
+  .tr:last-child{border-bottom:0}
+  .tr.out{opacity:.5}
+  .tr .nm{width:60px;font-size:13px;font-weight:600;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  .tr .ph{flex:1;font-size:11.5px;color:var(--text-sub);
+    font-variant-numeric:tabular-nums;letter-spacing:.2px}
+  .tr .pay{width:34px;text-align:center}
+  .tr .pay i{font-size:9.5px;font-style:normal;padding:2px 5px;border-radius:5px}
+  .tr .se{width:30px;text-align:center;font-size:11.5px;color:var(--text-sub)}
+  .tr .op{width:66px;text-align:center;display:flex;gap:4px;justify-content:center}
+  .mini{height:26px;padding:0 8px;border-radius:13px;font-size:11px;font-weight:600;
+    border:1px solid var(--border);color:var(--text-sub);background:transparent}
+  .mini.ok{background:#18B478;border-color:#18B478;color:#fff}
+  .mini.no{background:var(--border);color:var(--text-sub);border-color:transparent}
+  .mini:active{transform:scale(.93)}
+  .iconb{width:26px;height:26px;border-radius:50%;border:1px solid var(--border);
+    display:inline-flex;align-items:center;justify-content:center;color:var(--brand);
+    background:transparent;flex:none}
+  .iconb:active{transform:scale(.9)}
+  .tb .host{background:var(--brand-weak);opacity:.78}
+
+  /* 批量 */
+  .bar{background:var(--card-bg);border-radius:var(--radius-card);
+    box-shadow:var(--shadow-card);padding:11px 13px;margin-bottom:10px;
+    display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .bar .l{font-size:12px;color:var(--text-sub)}
+  .bar button{height:32px;padding:0 14px;border-radius:16px;font-size:12.5px;font-weight:600;
+    border:1px solid var(--brand);color:var(--brand);background:transparent}
+
+  /* 锁定 */
+  .lockbtn{width:100%;height:50px;border-radius:var(--radius-btn);font-size:15.5px;
+    font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px;
+    transition:all .2s var(--ease)}
+  .lock-dis{background:var(--border);color:var(--text-sub);cursor:not-allowed}
+  .lock-on{background:var(--brand);color:#fff;box-shadow:var(--shadow-btn)}
+  .lock-done{background:rgba(24,180,120,.14);color:#18B478;border:1px solid rgba(24,180,120,.4)}
+  .lockbtn:active:not(.lock-dis){transform:scale(.97)}
+  .why{font-size:11px;color:var(--danger);text-align:center;margin-top:7px;line-height:1.6}
+
+  .note{font-size:11px;color:var(--text-sub);line-height:1.7;background:var(--brand-weak);
+    border-radius:var(--radius-card);padding:11px 13px;margin-top:14px}
+  .note b{color:var(--text)}
+  .cmp{margin-top:18px;font-size:12px;color:var(--text-sub);line-height:1.9}
+  .cmp h3{font-size:13px;color:var(--text);margin:0 0 8px}
+  .cmp table{width:100%;border-collapse:collapse;font-size:11.5px}
+  .cmp td{padding:5px 0;border-bottom:1px solid var(--border);vertical-align:top}
+  .cmp td:first-child{width:74px;color:var(--text);font-weight:600}
+  .hide{display:none}
+  .tiptoast{position:fixed;left:50%;top:58%;transform:translateX(-50%);
+    background:rgba(0,0,0,.8);color:#fff;padding:9px 18px;border-radius:22px;
+    font-size:13px;z-index:99}
+
+  .listbox{background:var(--card-bg);border-radius:var(--radius-card);
+    box-shadow:var(--shadow-card);overflow:hidden;margin-bottom:10px}
+  .li{display:flex;align-items:center;gap:9px;padding:12px 13px;
+    border-bottom:1px solid var(--border);cursor:pointer}
+  .li:last-child{border-bottom:0}
+  .li:active{background:var(--brand-weak)}
+  .li .lt{flex:1;min-width:0}
+  .li .nm{font-size:14.5px;font-weight:600;line-height:1.35;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .li .mt{font-size:11.5px;color:var(--text-sub);margin-top:3px}
+  .li .tg{font-size:10px;padding:3px 8px;border-radius:var(--radius-tag);
+    font-weight:600;flex:none}
+  .t-ok{background:rgba(24,180,120,.14);color:#18B478}
+  .t-lock{background:rgba(245,166,35,.16);color:#B7791F}
+  .t-end{background:rgba(134,144,156,.16);color:var(--text-sub)}
+  .li .ar{color:var(--text-sub);font-size:17px;flex:none;line-height:1}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="switcher">
+    <button class="sw1" onclick="setTheme('t1',this)">1</button>
+    <button class="sw2" onclick="setTheme('t2',this)">2</button>
+    <button class="sw3" onclick="setTheme('t3',this)">3</button>
+    <button class="sw4 on" onclick="setTheme('t4',this)">4</button>
+  </div>
+
+  <div class="steps">
+    <b id="s1" class="on">① 活动列表</b><i></i>
+    <b id="s2">② 活动详情</b><i></i>
+    <b id="s3">③ 锁定执行</b>
+  </div>
+
+  <!-- ===== STEP 1 ===== -->
+  <div id="v1">
+    <div class="hd"><div class="t">我的待处理</div><div class="s">老板端 · 杰杰旅游社</div></div>
+
+    <div class="listbox">
+      <div class="li" onclick="go(2)">
+        <div class="lt">
+          <div class="nm">旅游大巴，由黄导游、刘司机主持</div>
+          <div class="mt">8 人已报名 · <span style="color:var(--danger)">5 人待确认</span></div>
+        </div>
+        <span class="tg t-ok">报名中</span>
+        <span class="ar">›</span>
+      </div>
+      <div class="li">
+        <div class="lt">
+          <div class="nm">长荡湖两日游</div>
+          <div class="mt">7 人 · 已确认</div>
+        </div>
+        <span class="tg t-lock">已锁定</span>
+        <span class="ar">›</span>
+      </div>
+      <div class="li">
+        <div class="lt">
+          <div class="nm">秋季周边游</div>
+          <div class="mt">12 人 · 已完成</div>
+        </div>
+        <span class="tg t-end">已结束</span>
+        <span class="ar">›</span>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:16px">
+      <b>分工原则：</b>列表页只放状态标签（报名中 / 已锁定 / 已结束），整行可点进入详情页；
+      所有操作按钮（确认报名、结束、下架、锁定）一律放在详情页底部——那里空间大，按钮不挤。
+    </div>
+  </div>
+
+  <!-- ===== STEP 2 ===== -->
+  <div id="v2" class="hide">
+    <div class="hd"><div class="t">长荡湖两日游</div><div class="s">2026-10-14 07:10 发车 · 旅游大巴</div></div>
+
+    <div class="prog">
+      <div class="r1">
+        <span class="l">报名确认进度</span>
+        <span class="v"><b id="okN">3</b> / 8 人已确认</span>
+      </div>
+      <div class="track"><div class="fill" id="fill" style="width:37.5%"></div></div>
+      <div class="cond">
+        <div><span class="dot" id="c1"></span>全部人员已确认（<span id="c1t">还有 5 人待确认</span>）</div>
+        <div><span class="dot" id="c2"></span>已达成团门槛 6 人（<span id="c2t">已确认 3 人</span>）</div>
+      </div>
+    </div>
+
+    <div class="bar">
+      <span class="l"><i data-ico="ico-mine" class="sm"></i> 报名顾客 8 人</span>
+      <button onclick="allOk()">全部确认</button>
+    </div>
+
+    <div class="tb">
+      <div class="th"><span>姓名</span><span>手机号</span><span>费用</span><span>座</span><span>确认</span></div>
+      <div id="rows"></div>
+    </div>
+
+    <div class="sec-t">本场主持（不计入顾客名额）</div>
+    <div class="tb">
+      <div class="tr host"><span class="nm">黄导游</span><span class="ph">138****0012</span>
+        <span class="pay"></span><span class="se">A1</span>
+        <span class="op"><button class="iconb" onclick="toast('正在呼叫 黄导游…')"><i data-ico="ico-booking" class="sm"></i></button></span></div>
+      <div class="tr host"><span class="nm">刘司机</span><span class="ph">139****8834</span>
+        <span class="pay"></span><span class="se">A2</span>
+        <span class="op"><button class="iconb" onclick="toast('正在呼叫 刘司机…')"><i data-ico="ico-booking" class="sm"></i></button></span></div>
+    </div>
+
+    <div style="height:12px"></div>
+    <button class="lockbtn lock-dis" id="lk" onclick="doLock()">锁定活动</button>
+    <div class="why" id="why">需先完成全部人员确认</div>
+
+    <div style="height:14px"></div>
+    <button class="b-gray" style="width:100%;height:42px;border-radius:21px" onclick="go(1)">← 返回活动列表</button>
+
+    <div class="note">
+      <b>三态设计：</b>每人可标记 已确认 / 不参加。标记「不参加」的人不再计入成团人数，
+      也不阻塞锁定——否则一个打不通的电话会让活动永远锁不上。
+    </div>
+  </div>
+
+  <!-- ===== STEP 3 ===== -->
+  <div id="v3" class="hide">
+    <div class="hd"><div class="t">长荡湖两日游</div><div class="s">2026-10-14 07:10 发车 · 旅游大巴</div></div>
+
+    <div class="prog">
+      <div class="r1">
+        <span class="l">报名确认进度</span>
+        <span class="v"><b id="okN2">7</b> / 7 人已确认</span>
+      </div>
+      <div class="track"><div class="fill" style="width:100%"></div></div>
+      <div class="cond">
+        <div><span class="dot d-ok">✓</span>全部人员已确认</div>
+        <div><span class="dot d-ok">✓</span>已达成团门槛 6 人</div>
+      </div>
+    </div>
+
+    <div style="background:rgba(24,180,120,.1);border-radius:var(--radius-card);
+      padding:13px;margin-bottom:12px;font-size:12.5px;color:#18B478;
+      display:flex;align-items:center;gap:7px">
+      <i data-ico="ico-check" class="sm"></i>
+      <span>已锁定 · 名单固定为 7 人，不可增减</span>
+    </div>
+
+    <div class="tb">
+      <div class="th"><span>姓名</span><span>手机号</span><span>费用</span><span>座</span><span>状态</span></div>
+      <div id="rows2"></div>
+    </div>
+
+    <button class="lockbtn lock-done" style="margin-top:12px" onclick="toast('进入执行阶段')">开始执行活动</button>
+    <div style="height:10px"></div>
+    <button class="b-gray" style="width:100%;height:42px;border-radius:21px" onclick="reset()">重置演示</button>
+
+    <div class="cmp">
+      <h3>完整流程</h3>
+      <table>
+        <tr><td>① 入口</td><td>我的待处理 → 活动卡片 → 查看参与人员</td></tr>
+        <tr><td>② 确认</td><td>逐人电话确认，标 已确认 或 不参加</td></tr>
+        <tr><td>③ 门槛</td><td>两个条件同时满足，锁定按钮才可点</td></tr>
+        <tr><td>④ 锁定</td><td>名单固定，不可增减</td></tr>
+        <tr><td>⑤ 执行</td><td>按钮变「开始执行活动」，活动进入进行中</td></tr>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const NEED = 6;   // 成团门槛
+const P = [
+ {n:'张伟',  ph:'138****4521', pay:1, se:'A3', s:'ok'},
+ {n:'李静',  ph:'136****7788', pay:1, se:'A4', s:'ok'},
+ {n:'王芳',  ph:'159****0234', pay:1, se:'B1', s:'ok'},
+ {n:'陈国强',ph:'137****6612', pay:1, se:'B2', s:''},
+ {n:'刘敏',  ph:'186****3390', pay:0, se:'B3', s:''},
+ {n:'赵阿姨',ph:'133****1178', pay:1, se:'B4', s:''},
+ {n:'孙鹏',  ph:'150****7729', pay:1, se:'C1', s:''},
+ {n:'周琳',  ph:'188****5560', pay:1, se:'C2', s:''},
+];
+let locked = false;
+
+function render(){
+  document.getElementById('rows').innerHTML = P.map((p,i)=>`
+    <div class="tr ${p.s==='no'?'out':''}">
+      <span class="nm">${p.n}</span>
+      <span class="ph">${p.ph}</span>
+      <span class="pay"><i class="${p.pay?'st-y':'st-n'}">${p.pay?'已付':'未付'}</i></span>
+      <span class="se">${p.se}</span>
+      <span class="op">
+        <button class="iconb" onclick="toast('正在呼叫 ${p.n}…')"><i data-ico="ico-booking" class="sm"></i></button>
+        ${p.s==='ok' ? `<button class="mini ok" onclick="setS(${i},'')">已确认</button>`
+         : p.s==='no' ? `<button class="mini no" onclick="setS(${i},'')">不参加</button>`
+         : `<button class="mini" onclick="setS(${i},'ok')">确认</button>
+            <button class="mini" onclick="setS(${i},'no')" style="padding:0 6px">✕</button>`}
+      </span>
+    </div>`).join('');
+  bindIcons(document);
+  upd();
+}
+function setS(i,v){ P[i].s = v; render(); }
+function allOk(){ P.forEach(p=>{ if(!p.s) p.s='ok'; }); render(); }
+
+function upd(){
+  const ok = P.filter(p=>p.s==='ok').length;
+  const no = P.filter(p=>p.s==='no').length;
+  const todo = P.filter(p=>!p.s).length;
+  const total = P.length - no;               // 不参加者退出统计
+  document.getElementById('okN').textContent = ok;
+  document.getElementById('fill').style.width = (ok/total*100)+'%';
+
+  const c1ok = todo===0, c2ok = ok>=NEED;
+  document.getElementById('c1').className = 'dot '+(c1ok?'d-ok':'d-no');
+  document.getElementById('c1').textContent = c1ok?'✓':'';
+  document.getElementById('c2').className = 'dot '+(c2ok?'d-ok':'d-no');
+  document.getElementById('c2').textContent = c2ok?'✓':'';
+  document.getElementById('c1t').textContent = c1ok?'已完成':`还有 ${todo} 人待处理`;
+  document.getElementById('c2t').textContent = c2ok?`已确认 ${ok} 人 ≥ ${NEED}`:`已确认 ${ok} 人，还差 ${NEED-ok} 人`;
+
+  const btn = document.getElementById('lk'), why = document.getElementById('why');
+  if(c1ok && c2ok){
+    btn.className='lockbtn lock-on'; btn.textContent='锁定活动'; why.textContent='';
+  }else{
+    btn.className='lockbtn lock-dis';
+    why.textContent = !c1ok ? '需先完成全部人员确认' : `已确认人数不足成团门槛 ${NEED} 人`;
+  }
+}
+function doLock(){
+  if(document.getElementById('lk').classList.contains('lock-dis')) return;
+  const un = P.filter(p=>p.s==='ok' && !p.pay).length;
+  if(un && !confirm('有 '+un+' 人尚未付款，确定锁定？')) return;
+  locked = true; go(3);
+}
+function go(n){
+  [1,2,3].forEach(i=>{
+    document.getElementById('v'+i).classList.toggle('hide', i!==n);
+    document.getElementById('s'+i).classList.toggle('on', i===n);
+  });
+  if(n===3){
+    const fin = P.filter(p=>p.s==='ok');
+    document.getElementById('okN2').textContent = fin.length;
+    document.getElementById('rows2').innerHTML = fin.map(p=>`
+      <div class="tr"><span class="nm">${p.n}</span><span class="ph">${p.ph}</span>
+        <span class="pay"><i class="${p.pay?'st-y':'st-n'}">${p.pay?'已付':'未付'}</i></span>
+        <span class="se">${p.se}</span>
+        <span class="op"><i class="st-y" style="font-size:9.5px;font-style:normal;padding:2px 6px;border-radius:5px">已确认</i></span>
+      </div>`).join('');
+    bindIcons(document);
+  }
+  window.scrollTo(0,0);
+}
+function reset(){
+  locked=false;
+  P.forEach((p,i)=>p.s = i<3?'ok':'');
+  render(); go(1);
+}
+function toast(t){
+  const d=document.createElement('div'); d.className='tiptoast'; d.textContent=t;
+  document.body.appendChild(d); setTimeout(()=>d.remove(),1400);
+}
+render(); go(1);
+</script>
+</body>
+</html>

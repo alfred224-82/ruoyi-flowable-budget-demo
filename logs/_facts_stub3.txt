@@ -1,0 +1,233 @@
+===== Q1) 内容安全实现清单与定性 =====
+  引用 IContentSecurity 的类 = 3
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/ContentSecurityServiceImpl.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/security/IContentSecurity.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/security/impl/ContentSecurityBlacklistChecker.java
+  implements IContentSecurity 的实现类 = 2: ContentSecurityServiceImpl, ContentSecurityBlacklistChecker
+--- ContentSecurityBlacklistChecker  (ruoyi-system/src/main/java/com/ruoyi/system/service/security/impl/ContentSecurityBlacklistChecker.java)  行数 89
+  1| package com.ruoyi.system.service.security.impl;
+  2| 
+  3| import cn.hutool.core.util.StrUtil;
+  4| import com.ruoyi.system.service.security.ContentCheckResult;
+  5| import com.ruoyi.system.service.security.IContentSecurity;
+  6| import lombok.extern.slf4j.Slf4j;
+  7| import org.springframework.beans.factory.annotation.Value;
+  8| import org.springframework.stereotype.Component;
+  9| 
+  10| import javax.annotation.PostConstruct;
+  11| import java.util.Arrays;
+  12| import java.util.List;
+  13| import java.util.stream.Collectors;
+  14| 
+  15| /**
+  16|  * 内容安全审核实现（T12.4，关键词黑名单模式）
+  17|  * <p>
+  18|  * 未接入微信 imgSecCheck/msgSecCheck 前的本地防护：
+  19|  * <ul>
+  20|  *   <li>文本审核：按配置的关键词黑名单匹配，命中即 REJECT；</li>
+  21|  *   <li>图片审核：仅校验 URL 非空后放行（本地无法做图片内容识别）；</li>
+  22|  *   <li>接入微信真实接口时新增实现类并标注 @Primary 覆盖本 Bean 即可，业务侧零改动。</li>
+  23|  * </ul>
+  24|  * <p>
+  25|  * 配置项：{@code content.security.blacklist}（逗号分隔关键词列表），留空则全放行。
+  26|  *
+  27|  * @author ruoyi
+  28|  * @date 2026-09-10
+  29|  */
+  30| @Slf4j
+  31| @Component("contentSecurityChecker")
+  32| public class ContentSecurityBlacklistChecker implements IContentSecurity {
+  33| 
+  34|     private static final String PROVIDER = "blacklist";
+  35| 
+  36|     /** 黑名单关键词（逗号分隔），配置于 application.yml */
+  37|     @Value("${content.security.blacklist:}")
+  38|     private String blacklistConfig;
+  39| 
+  40|     /** 解析后的关键词列表（小写） */
+  41|     private List<String> blacklistKeywords;
+  42| 
+  43|     @PostConstruct
+  44|     public void init() {
+  45|         if (StrUtil.isNotBlank(blacklistConfig)) {
+  46|             blacklistKeywords = Arrays.stream(blacklistConfig.split(","))
+  47|                 .map(String::trim)
+  48|                 .filter(StrUtil::isNotBlank)
+  49|                 .map(String::toLowerCase)
+  50|                 .collect(Collectors.toList());
+  51|             log.info("[ContentSecurity] 关键词黑名单已加载 {} 个：{}", blacklistKeywords.size(), blacklistKeywords);
+  52|         } else {
+  53|             blacklistKeywords = List.of();
+  54|             log.info("[ContentSecurity] 未配置关键词黑名单（content.security.blacklist），文本审核全放行");
+  55|         }
+  56|     }
+  57| 
+  58|     @Override
+  59|     public ContentCheckResult checkImage(String scene, String imageUrl) {
+  60|         if (StrUtil.isBlank(imageUrl)) {
+  61|             return ContentCheckResult.error(PROVIDER, "imageUrl is blank");
+  62|         }
+  63|         // 本地无法做图片内容识别，仅校验 URL 非空后放行
+  64|         log.debug("[ContentSecurity] checkImage scene={} url={} → 本地放行（无图片识别能力）", scene, imageUrl);
+  65|         return ContentCheckResult.pass(PROVIDER);
+  66|     }
+  67| 
+  68|     @Override
+  69|     public ContentCheckResult checkText(String scene, String text) {
+  70|         if (StrUtil.isBlank(text)) {
+  71|             return ContentCheckResult.pass(PROVIDER);
+  72|         }
+  73|         if (blacklistKeywords.isEmpty()) {
+  74|             log.debug("[ContentSecurity] checkText scene={} → 黑名单为空，放行", scene);
+  75|             return ContentCheckResult.pass(PROVIDER);
+  76|         }
+  77|         String lowerText = text.toLowerCase();
+  78|         for (String keyword : blacklistKeywords) {
+  79|             if (lowerText.contains(keyword)) {
+  80|                 log.warn("[ContentSecurity] checkText scene={} 命中黑名单关键词 '{}' → REJECT", scene, keyword);
+
+  --- ContentSecurityServiceImpl 关键行 ---
+      L12| import com.ruoyi.system.service.IContentSecurityService;
+      L14| import com.ruoyi.system.service.security.IContentSecurity;
+      L21| * <p>委派 {@link IContentSecurity} Provider（默认桩放行），统一写 biz_content_security_log 留痕。
+      L29| public class ContentSecurityServiceImpl implements IContentSecurityService {
+      L31| private final IContentSecurity contentSecurity;
+      L41| return result;
+      L48| return result;
+      L58| return TableDataInfo.build(page);
+
+===== Q2) 图片管线实现清单 =====
+  图片管线接口 = 1: ruoyi-system/src/main/java/com/ruoyi/system/service/image/IImagePipeline.java
+  实现类 = 1: ImagePipelineStub
+  --- ImagePipelineStub 全文 ---
+--- ImagePipelineStub  (ruoyi-system/src/main/java/com/ruoyi/system/service/image/impl/ImagePipelineStub.java)  行数 67
+  1| package com.ruoyi.system.service.image.impl;
+  2| 
+  3| import cn.hutool.core.util.StrUtil;
+  4| import com.ruoyi.system.domain.ImageTask;
+  5| import com.ruoyi.system.mapper.ImageTaskMapper;
+  6| import com.ruoyi.system.service.image.IImagePipeline;
+  7| import lombok.RequiredArgsConstructor;
+  8| import lombok.extern.slf4j.Slf4j;
+  9| import org.springframework.stereotype.Component;
+  10| 
+  11| /**
+  12|  * 图片处理管线桩实现（T12.3 / T12.7，默认降级）
+  13|  * <p>未接入真实渲染服务前的可扩展桩：登记 biz_image_task 后同步生成占位成品 URL 并置 SUCCESS，
+  14|  * 打通"上传即返回、成品回写"链路；接入真实图片处理时新增实现并标注 @Primary 覆盖本桩即可。
+  15|  * <p>真实实现应改为异步：submit 仅登记 PENDING 任务并返回，由后台任务/回调生成成品后回写 result_url，失败重试与告警。
+  16|  *
+  17|  * @author ruoyi
+  18|  * @date 2026-09-05
+  19|  */
+  20| @Slf4j
+  21| @Component("imagePipelineStub")
+  22| @RequiredArgsConstructor
+  23| public class ImagePipelineStub implements IImagePipeline {
+  24| 
+  25|     private final ImageTaskMapper imageTaskMapper;
+  26| 
+  27|     @Override
+  28|     public Long submit(String taskType, Long themeId, String sourceUrl, String spec) {
+  29|         ImageTask task = new ImageTask();
+  30|         task.setThemeId(themeId);
+  31|         task.setTaskType(taskType);
+  32|         task.setSourceUrl(sourceUrl);
+  33|         task.setSpec(spec);
+  34|         task.setStatus("PENDING");
+  35|         task.setRetryCount(0);
+  36|         imageTaskMapper.insert(task);
+  37| 
+  38|         // 桩：同步模拟生成成品（真实实现应异步处理并回调回写）
+  39|         try {
+  40|             task.setStatus("PROCESSING");
+  41|             imageTaskMapper.updateById(task);
+  42|             String resultUrl = render(sourceUrl, spec);
+  43|             task.setStatus("SUCCESS");
+  44|             task.setResultUrl(resultUrl);
+  45|             imageTaskMapper.updateById(task);
+  46|             log.info("[ImagePipelineStub] 衍生图任务 {} 生成成功（桩）：{} → {}", task.getId(), sourceUrl, resultUrl);
+  47|         } catch (Exception e) {
+  48|             task.setStatus("FAILED");
+  49|             task.setErrorMsg(StrUtil.maxLength(e.getMessage(), 1000));
+  50|             imageTaskMapper.updateById(task);
+  51|             log.warn("[ImagePipelineStub] 衍生图任务 {} 生成失败（桩）", task.getId(), e);
+  52|         }
+  53|         return task.getId();
+  54|     }
+  55| 
+  56|     /**
+  57|      * 桩渲染：以查询参数模拟成品 URL（真实实现应输出实际处理后的 OSS 对象 URL）
+  58|      */
+  59|     private String render(String sourceUrl, String spec) {
+  60|         if (StrUtil.isBlank(sourceUrl)) {
+  61|             return null;
+  62|         }
+  63|         String sep = sourceUrl.contains("?") ? "&" : "?";
+  64|         return sourceUrl + sep + "x-render-spec=" + (spec == null ? "" : spec) + "&rendered=stub";
+  65|     }
+  66| }
+  67| 
+
+===== Q3) 企微实现清单（T13.2）=====
+  企微接口 = 3: ruoyi-system/src/main/java/com/ruoyi/system/mapper/WecomSyncLogMapper.java, ruoyi-system/src/main/java/com/ruoyi/system/service/IWecomSyncService.java, ruoyi-system/src/main/java/com/ruoyi/system/service/wecom/IWecomIntegration.java
+  实现类 = 2: WecomSyncServiceImpl, WecomIntegrationStub
+  --- WecomIntegrationStub 全文 ---
+--- WecomIntegrationStub  (ruoyi-system/src/main/java/com/ruoyi/system/service/wecom/impl/WecomIntegrationStub.java)  行数 57
+  1| package com.ruoyi.system.service.wecom.impl;
+  2| 
+  3| import cn.hutool.core.util.StrUtil;
+  4| import com.ruoyi.system.service.wecom.IWecomIntegration;
+  5| import com.ruoyi.system.service.wecom.WecomUserInfo;
+  6| import lombok.extern.slf4j.Slf4j;
+  7| import org.springframework.stereotype.Component;
+  8| 
+  9| import java.net.URLEncoder;
+  10| import java.nio.charset.StandardCharsets;
+  11| 
+  12| /**
+  13|  * 企微集成桩实现（T13.2，默认降级）
+  14|  * <p>OAuth：按企微标准拼接授权链接（真实可用），code 换取用户返回模拟成员（不请求企微 API）；
+  15|  * 接入真实实现（校验可信域名 / getuserinfo / 通讯录读取）时新增 Bean 并标注 @Primary 覆盖即可。
+  16|  *
+  17|  * @author ruoyi
+  18|  * @date 2026-09-05
+  19|  */
+  20| @Slf4j
+  21| @Component
+  22| public class WecomIntegrationStub implements IWecomIntegration {
+  23| 
+  24|     /** 企微网页授权入口 */
+  25|     private static final String AUTH_BASE = "https://open.weixin.qq.com/connect/oauth2/authorize";
+  26| 
+  27|     @Override
+  28|     public String buildAuthUrl(String corpId, String agentId, String redirectUri, String state) {
+  29|         String redirect = redirectUri == null ? "" : URLEncoder.encode(redirectUri, StandardCharsets.UTF_8);
+  30|         String st = StrUtil.isBlank(state) ? "STATE" : state;
+  31|         String url = AUTH_BASE + "?appid=" + StrUtil.nullToEmpty(corpId)
+  32|             + "&redirect_uri=" + redirect
+  33|             + "&response_type=code&scope=snsapi_base&state=" + st
+  34|             + "&agentid=" + StrUtil.nullToEmpty(agentId) + "#wechat_redirect";
+  35|         log.info("[WecomStub] 构造企微授权链接（桩）：{}", url);
+  36|         return url;
+  37|     }
+  38| 
+  39|     @Override
+  40|     public WecomUserInfo getUserInfo(String corpId, String code) {
+  41|         WecomUserInfo info = new WecomUserInfo();
+  42|         info.setCorpId(corpId);
+  43|         if (StrUtil.isBlank(code)) {
+  44|             info.setMember(false);
+  45|             info.setUserId(null);
+  46|             log.warn("[WecomStub] 授权 code 为空，返回游客身份（桩）");
+  47|             return info;
+  48|         }
+  49|         // 桩：以 code 派生模拟 userid，不请求企微 API
+  50|         info.setMember(true);
+  51|         info.setUserId("stub_" + StrUtil.maxLength(code, 32));
+  52|         info.setName("企微成员(桩)");
+  53|         log.info("[WecomStub] 模拟换取企微用户（桩）corpId={} code={} → userId={}", corpId, code, info.getUserId());
+  54|         return info;
+  55|     }
+  56| }
+  57| 

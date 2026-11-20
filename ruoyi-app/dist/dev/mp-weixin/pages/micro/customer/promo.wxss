@@ -1,0 +1,63 @@
+
+.page.data-v-b2d4fa10 { padding: 24rpx; padding-bottom: 140rpx; min-height: 100vh; background: var(--page-bg, #f5f6f8);
+}
+.card.data-v-b2d4fa10 { background: var(--card-bg, #fff); border-radius: var(--radius-card, 16rpx); padding: 28rpx; margin-bottom: 20rpx; box-shadow: var(--shadow-card, none);
+}
+.card-title.data-v-b2d4fa10 { font-size: 30rpx; font-weight: bold; display: block; margin-bottom: 20rpx; color: var(--text, #303133);
+}
+.code-area.data-v-b2d4fa10 { text-align: center;
+}
+.qr-img.data-v-b2d4fa10 { width: 360rpx; height: 360rpx; display: block; margin: 0 auto 16rpx;
+}
+.qr-tip.data-v-b2d4fa10 { font-size: 24rpx; color: var(--text-sub, #909399); display: block; text-align: center; margin-bottom: 12rpx;
+}
+.scene.data-v-b2d4fa10 { font-size: 26rpx; color: var(--text-sub, #606266); display: block; word-break: break-all; margin-bottom: 12rpx;
+}
+.status.data-v-b2d4fa10 { font-size: 24rpx; padding: 4rpx 16rpx; border-radius: var(--radius-tag, 6rpx);
+}
+.status.on.data-v-b2d4fa10 { background: #f0f9eb; color: #67c23a;
+}
+.status.off.data-v-b2d4fa10 { background: #fef0f0; color: #f56c6c;
+}
+.stat-row.data-v-b2d4fa10 { text-align: center;
+}
+.stat-num.data-v-b2d4fa10 { font-size: 48rpx; font-weight: bold; color: var(--brand, #67c23a); display: block;
+}
+.stat-label.data-v-b2d4fa10 { font-size: 24rpx; color: var(--text-sub, #909399); display: block; margin-top: 8rpx;
+}
+.coupon-row.data-v-b2d4fa10 { display: flex; align-items: center; padding: 16rpx 0; border-bottom: 1rpx solid var(--border, #f0f2f5);
+}
+.coupon-row.data-v-b2d4fa10:last-child { border-bottom: none;
+}
+.coupon-name.data-v-b2d4fa10 { flex: 1; font-size: 28rpx; color: var(--text, #303133);
+}
+.coupon-status.data-v-b2d4fa10 { font-size: 24rpx; color: var(--text-sub, #909399);
+}
+.btn.data-v-b2d4fa10 { background: var(--brand, #67c23a); color: #fff; border-radius: var(--radius-btn, 12rpx); font-size: 28rpx; margin-top: 20rpx;
+}
+.loading.data-v-b2d4fa10, .empty.data-v-b2d4fa10 { text-align: center; color: var(--text-sub, #909399); padding: 60rpx 0;
+}
+
+/* ★手绘主题装饰贴纸 */
+.page.data-v-b2d4fa10 { position: relative;
+}
+.sticker.data-v-b2d4fa10 { position: absolute; opacity: .8; pointer-events: none; z-index: 0;
+}
+.card.data-v-b2d4fa10 { position: relative; z-index: 1;
+}
+.sticker-bubble-qr-tr.data-v-b2d4fa10 { top: 10rpx; right: 10rpx; width: 56rpx; height: 56rpx; transform: rotate(8deg);
+}
+.sticker-sparkle-qr-r.data-v-b2d4fa10 { top: 60rpx; right: 6rpx; width: 32rpx; height: 32rpx; transform: rotate(15deg);
+}
+.sticker-bubble-qr-l.data-v-b2d4fa10 { top: 120rpx; left: 6rpx; width: 52rpx; height: 52rpx; transform: rotate(-6deg);
+}
+.sticker-star-qr-r.data-v-b2d4fa10 { top: 100rpx; right: 6rpx; width: 44rpx; height: 44rpx; transform: rotate(-10deg);
+}
+.sticker-cloud-qr-r.data-v-b2d4fa10 { top: 160rpx; right: 6rpx; width: 56rpx; height: 44rpx; transform: rotate(5deg);
+}
+.sticker-star-prog-l.data-v-b2d4fa10 { bottom: 16rpx; left: 16rpx; width: 44rpx; height: 44rpx; transform: rotate(-12deg);
+}
+.sticker-sparkle-prog-l.data-v-b2d4fa10 { bottom: 40rpx; left: 60rpx; width: 28rpx; height: 28rpx; transform: rotate(20deg);
+}
+.sticker-cloud-prog-r.data-v-b2d4fa10 { bottom: 16rpx; right: 16rpx; width: 72rpx; height: 56rpx; transform: rotate(-5deg);
+}

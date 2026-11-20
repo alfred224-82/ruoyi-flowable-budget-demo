@@ -1,0 +1,27 @@
+
+.page.data-v-f2a68407 { padding: 24rpx; min-height: 100vh; background: #f5f6f8;
+}
+.card-header.data-v-f2a68407 { margin-bottom: 20rpx;
+}
+.card-title.data-v-f2a68407 { font-size: 34rpx; font-weight: bold;
+}
+.card.data-v-f2a68407 { background: #fff; border-radius: 16rpx; padding: 28rpx; margin-bottom: 20rpx;
+}
+.cust-top.data-v-f2a68407 { display: flex; align-items: center; justify-content: space-between;
+}
+.cust-name.data-v-f2a68407 { font-size: 30rpx; font-weight: bold; flex: 1;
+}
+.cust-time.data-v-f2a68407 { font-size: 22rpx; color: #c0c4cc;
+}
+.cust-bottom.data-v-f2a68407 { margin-top: 12rpx; display: flex; align-items: center; justify-content: space-between;
+}
+.cust-label.data-v-f2a68407 { font-size: 24rpx; color: #909399;
+}
+.cust-status.data-v-f2a68407 { font-size: 24rpx; padding: 4rpx 16rpx; border-radius: 6rpx;
+}
+.cust-status.active.data-v-f2a68407 { background: #f0f9eb; color: #67c23a;
+}
+.cust-status.inactive.data-v-f2a68407 { background: #f0f2f5; color: #909399;
+}
+.loading.data-v-f2a68407, .empty.data-v-f2a68407 { text-align: center; color: #909399; padding: 80rpx 0;
+}

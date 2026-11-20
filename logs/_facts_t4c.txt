@@ -1,0 +1,72 @@
+===== FeeAccrualJob (85 行) =====
+  L41| @XxlJob("salaryAccrualJob")
+  L53| @XxlJob("assetDepreciationJob")
+  L65| @XxlJob("loanInterestJob")
+
+===== T5.17 三级预警阈值（85/95/100）全仓定位 =====
+  命中文件 = 15
+  --- ruoyi-system/src/main/java/com/ruoyi/system/domain/bo/FundPoolConfigBo.java
+      L57| * 预警阈值百分比
+      L59| @NotNull(message = "预警阈值不能为空")
+  --- ruoyi-system/src/main/java/com/ruoyi/system/domain/bo/ReservedBudgetBo.java
+      L56| * 预警阈值百分比
+  --- ruoyi-system/src/main/java/com/ruoyi/system/domain/FeeBudgetTrackConfig.java
+      L47| * 预警阈值百分比
+  --- ruoyi-system/src/main/java/com/ruoyi/system/domain/FeeFundPoolConfig.java
+      L61| * 预警阈值百分比
+  --- ruoyi-system/src/main/java/com/ruoyi/system/domain/ReservedBudget.java
+      L68| * 预警阈值百分比
+  --- ruoyi-system/src/main/java/com/ruoyi/system/domain/vo/ReservedBudgetVo.java
+      L70| * 预警阈值百分比
+  --- ruoyi-system/src/main/java/com/ruoyi/system/service/ICategoryBudgetService.java
+      L13| * 预算执行 85%🟡/95%🟠/100%🔴 三级预警随校验结果一并产出。
+  --- ruoyi-system/src/main/java/com/ruoyi/system/service/IFundPoolConfigService.java
+      L33| * 获取指定层级的预警阈值
+  --- ruoyi-system/src/main/java/com/ruoyi/system/service/impl/CategoryBudgetServiceImpl.java
+      L32| * 大类额度硬拦截 + 85%🟡/95%🟠/100%🔴 三级预警（设计文档 2.2 #4）。
+      L127| // 三级预警：85%🟡 / 95%🟠 / 100%🔴（每单触发一次消息，通知老板+财务）
+  --- ruoyi-system/src/main/java/com/ruoyi/system/service/impl/FundPoolConfigServiceImpl.java
+      L182| // 2. 从配置表读取初始额度和预警阈值
+  --- ruoyi-system/src/main/java/com/ruoyi/system/service/impl/ReservedBudgetServiceImpl.java
+      L138| + "）使用比例已达 " + usageRatio + "%，超过预警阈值 " + threshold + "%，请及时关注。",
+  --- ruoyi-ui/src/components/PanThumb/index.vue
+      L61| transform-origin: 95% 40%;
+      L72| left: 95%;
+  --- ruoyi-ui/src/utils/generator/render.js
+      L80| // https://cn.vuejs.org/v2/guide/render-function.html#%E6%B7%B1%E5%85%A5%E6%95%B0%E6%8D%AE%E5%AF%B9%E8%B1%A1
+  --- ruoyi-ui/src/views/login.vue
+      L362| background: rgba(255, 255, 255, 0.85);
+  --- ruoyi-ui/src/views/system/fee/init/index.vue
+      L52| <el-table-column label="预警阈值(%)" width="160" align="center">
+
+===== T5.17 追溯时间线 =====
+  ExpenseBillServiceImpl L153| // T6.4 匹配链路追溯：记录命中规则快照（FEAT_RULE_ENGINE_CUSTOM 关闭时同样保留，便于审计）
+  ExpenseBillServiceImpl L316| * T6.2 报销单落库后落打卡记录（入追溯时间线）
+  TrackControlController 行数 = 121
+      L34| @RequireFeature("FEAT_EXPENSE_CONTROL")
+      L35| public class TrackControlController extends BaseController {
+      L43| @SaCheckPermission("fee:track:list")
+      L44| @GetMapping("/config/list")
+      L45| public TableDataInfo<FeeBudgetTrackConfig> configList(
+      L59| @PostMapping("/check")
+      L60| public R<ITrackControlService.TrackCheckResult> checkTrack(
+      L70| @GetMapping("/type")
+      L71| public R<String> getTrackType(
+      L80| @RequireFeature("FEE_TRACK_CONTROL")
+      L81| @SaCheckPermission("fee:track:edit")
+      L83| @PostMapping("/config/batchSet")
+      L84| public R<Void> batchConfig(@RequestBody BatchTrackRequest request) {
+      L113| public static class BatchTrackRequest {
+
+===== T14.4 SubscribeQuotaServiceImpl =====
+  行数 = 113
+      L22| * <p>授权/消费均以原子条件 UPDATE（setSql 自增自减 + remaining&gt;0 守卫）执行，杜绝并发超发；
+      L31| public class SubscribeQuotaServiceImpl implements ISubscribeQuotaService {
+      L36| public int grant(String openid, String templateId) {
+      L61| public boolean checkAndConsume(String openid, String templateId) {
+      L66| // 原子条件消费：仅当 remaining_count>0 时 -1，否则 0 行 → 授权不足，不发送
+      L72| .setSql("remaining_count = remaining_count - 1")
+      L82| public int remaining(String openid, String templateId) {
+      L88| public TableDataInfo<SysSubscribeQuotaVo> queryPageList(String openid, PageQuery pageQuery) {
+      L101| .setSql("remaining_count = remaining_count + 1")
+  WechatTemplateMessageProvider 是否调 SubscribeQuota = false

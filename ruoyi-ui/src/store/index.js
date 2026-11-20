@@ -7,6 +7,7 @@ import tagsView from './modules/tagsView'
 import permission from './modules/permission'
 import settings from './modules/settings'
 import bizCopy from './modules/bizCopy'
+import theme from './modules/theme'
 import getters from './getters'
 
 Vue.use(Vuex)
@@ -19,7 +20,8 @@ const store = new Vuex.Store({
     tagsView,
     permission,
     settings,
-    bizCopy
+    bizCopy,
+    theme
   },
   getters
 })

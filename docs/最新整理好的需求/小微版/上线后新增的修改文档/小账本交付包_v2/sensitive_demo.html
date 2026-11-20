@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="t4">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>敏感词检查 · 全局规则演示</title>
+<link rel="stylesheet" href="theme_tokens.css">
+<link rel="stylesheet" href="components.css">
+<link rel="stylesheet" href="svg_assets.css">
+<script src="icons_datauri.js"></script>
+<script src="svg_assets.js"></script>
+<style>
+  body{margin:0;background:var(--page-bg)}
+  .wrap{max-width:430px;margin:0 auto;padding:14px calc(var(--gutter) - 4px) 24px}
+  .switcher{display:flex;gap:6px;background:var(--card-bg);padding:5px;border-radius:999px;
+    box-shadow:var(--shadow-card);width:fit-content;margin:0 auto 14px}
+  .switcher button{width:26px;height:26px;border-radius:50%;border:2px solid transparent;
+    font-size:11px;color:#fff;font-weight:700}
+  .switcher button.on{border-color:var(--brand);transform:scale(1.1)}
+  .sw1{background:#4F8FF7}.sw2{background:#F5455C}.sw3{background:#0B0F19}.sw4{background:#FFB347}
+
+  .tabs{display:flex;gap:6px;margin-bottom:14px;background:var(--card-bg);
+    border-radius:999px;padding:4px;box-shadow:var(--shadow-card)}
+  .tabs button{flex:1;height:32px;border-radius:16px;font-size:12.5px;font-weight:600;
+    color:var(--text-sub);background:transparent}
+  .tabs button.on{background:var(--brand);color:#fff}
+
+  h1{font-size:var(--font-title);font-weight:700;margin:0 0 4px;text-align:center}
+  .sub{font-size:11.5px;color:var(--text-sub);text-align:center;margin-bottom:16px;line-height:1.6}
+
+  .box{background:var(--card-bg);border-radius:var(--radius-card);
+    box-shadow:var(--shadow-card);padding:14px;margin-bottom:12px}
+  .box h2{font-size:13px;margin:0 0 10px;display:flex;justify-content:space-between;align-items:baseline}
+  .box h2 .r{font-size:11px;font-weight:400;color:var(--text-sub)}
+
+  /* 输入区 */
+  .fld{margin-bottom:10px}
+  .fld .lb{font-size:11.5px;color:var(--text-sub);margin-bottom:5px}
+  .fld textarea{width:100%;min-height:76px;padding:10px 12px;font-size:13px;line-height:1.6;
+    border:1px solid var(--border);border-radius:var(--radius-card);
+    background:var(--card-bg);color:var(--text);resize:vertical;
+    font-family:inherit}
+  .fld textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-weak)}
+  .hit{background:rgba(229,69,69,.2);border-radius:3px;padding:0 1px}
+
+  /* 提示条三种强度 */
+  .alert{border-radius:var(--radius-card);padding:10px 12px;font-size:12px;
+    line-height:1.6;margin-bottom:10px;display:flex;gap:8px;align-items:flex-start}
+  .alert .ic{width:17px;height:17px;border-radius:50%;flex:none;color:#fff;
+    font-size:11px;display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .a-low{background:rgba(255,209,102,.16);color:#8A6D00}
+  .a-low .ic{background:#F5A623}
+  .a-mid{background:rgba(245,166,35,.18);color:#8A5A00}
+  .a-mid .ic{background:#F5A623}
+  .a-high{background:rgba(229,69,69,.12);color:var(--danger)}
+  .a-high .ic{background:var(--danger)}
+  .alert b{font-weight:700}
+
+  .btn{width:100%;height:46px;border-radius:var(--radius-btn);font-size:15px;font-weight:600;
+    display:flex;align-items:center;justify-content:center;background:var(--brand);color:#fff;
+    box-shadow:var(--shadow-btn)}
+  .btn:active{transform:scale(.97)}
+  .btn-dis{background:var(--border);color:var(--text-sub);box-shadow:none;cursor:not-allowed}
+
+  /* 强度说明表 */
+  table{width:100%;border-collapse:collapse;font-size:11.5px}
+  th,td{padding:7px 4px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+  th{font-size:10.5px;color:var(--text-sub);font-weight:600}
+  td:first-child{width:64px}
+
+  /* 异常列表 */
+  .ex{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+  .ex:last-child{border-bottom:0}
+  .ex .bd{flex:1;min-width:0}
+  .ex .t1{font-size:13px;font-weight:600;line-height:1.4}
+  .ex .t2{font-size:11px;color:var(--text-sub);margin-top:3px;line-height:1.5}
+  .ex .ops{display:flex;gap:5px;align-items:center}
+  .mini{height:26px;padding:0 9px;border-radius:13px;font-size:11px;font-weight:600;
+    border:1px solid var(--border);color:var(--text-sub);background:transparent}
+  .mini.g{background:#18B478;border-color:#18B478;color:#fff}
+  .mini.r{background:var(--danger);border-color:var(--danger);color:#fff}
+  .mini:active{transform:scale(.93)}
+  .lv{font-size:9.5px;padding:2px 7px;border-radius:6px;flex:none;font-weight:600}
+  .lv-h{background:rgba(229,69,69,.14);color:var(--danger)}
+  .lv-m{background:rgba(245,166,35,.18);color:#B7791F}
+  .lv-l{background:rgba(255,209,102,.2);color:#8A6D00}
+  .stt{font-size:9.5px;padding:2px 7px;border-radius:6px;background:var(--brand-weak);color:var(--brand)}
+
+  /* 二次确认弹窗 */
+  .mask{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.45);
+    display:none;align-items:center;justify-content:center;padding:24px}
+  .mask.on{display:flex}
+  .dlg{background:var(--card-bg);border-radius:calc(var(--radius-card)+4px);
+    padding:18px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.2)}
+  .dlg h3{font-size:15px;margin:0 0 8px}
+  .dlg p{font-size:12.5px;color:var(--text-sub);line-height:1.7;margin:0 0 14px}
+  .dlg .row{display:flex;gap:8px}
+  .dlg .row button{flex:1;height:40px;border-radius:20px;font-size:13.5px;font-weight:600}
+  .b1{border:1px solid var(--border);color:var(--text-sub);background:transparent}
+  .b2{background:var(--danger);color:#fff}
+
+  .note{font-size:11px;color:var(--text-sub);line-height:1.7;background:var(--brand-weak);
+    border-radius:var(--radius-card);padding:11px 13px}
+  .note b{color:var(--text)}
+  .hide{display:none}
+  code{background:var(--brand-weak);padding:1px 5px;border-radius:4px;font-size:10.5px}
+
+  .flow{display:flex;flex-direction:column;gap:8px}
+  .step{display:flex;gap:9px;align-items:flex-start;padding:9px 11px;
+    background:var(--brand-weak);border-radius:var(--radius-card)}
+  .step i{width:20px;height:20px;border-radius:50%;background:var(--brand);color:#fff;
+    font-size:11px;font-style:normal;display:flex;align-items:center;justify-content:center;flex:none}
+  .step .t{font-size:12.5px;line-height:1.6}
+  .step .t b{display:block;font-size:11.5px;color:var(--text-sub);font-weight:400;margin-top:2px}
+
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{padding:6px 13px;border-radius:16px;font-size:12.5px;font-weight:500;
+    border:1px solid var(--border);color:var(--text-sub);background:transparent}
+  .chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+  .chip:active{transform:scale(.94)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="switcher">
+    <button class="sw1" onclick="setTheme('t1',this)">1</button>
+    <button class="sw2" onclick="setTheme('t2',this)">2</button>
+    <button class="sw3" onclick="setTheme('t3',this)">3</button>
+    <button class="sw4 on" onclick="setTheme('t4',this)">4</button>
+  </div>
+
+  <div class="tabs">
+    <button id="tab1" class="on" onclick="tab(1)">提交拦截</button>
+    <button id="tab2" onclick="tab(2)">拦截日志</button>
+    <button id="tab3" onclick="tab(3)">投诉表单</button>
+    <button id="tab4" onclick="tab(4)">用户准则</button>
+  </div>
+
+  <!-- ===== TAB1 提交拦截 ===== -->
+  <div id="v1">
+    <h1>敏感词检查</h1>
+    <div class="sub">目的不是内容审查，是防客诉<br>夸大承诺会变成客户投诉的依据</div>
+
+    <div class="box">
+      <h2>活动介绍 <span class="r">提交前自动检查</span></h2>
+      <div class="fld">
+        <textarea id="ta" oninput="check()">本行程绝对稳赚不赔，全程零风险，国家级导游带队，保证玩得开心！</textarea>
+      </div>
+      <div id="alerts"></div>
+      <button class="btn" id="sb" onclick="submit()">提交活动</button>
+    </div>
+
+    <div class="box">
+      <h2>试试这几个词</h2>
+      <div class="note" style="margin-top:0">
+        <b>承诺类</b>：稳赚不赔、保证、包满意 —— 客户可要求兑现<br>
+        <b>夸张类</b>：绝佳、顶级 —— 体验落差易被指虚假宣传<br>
+        <b>极限词</b>：国家级、第一 —— 广告法风险、职业举报<br>
+        <b>绝对化</b>：零风险、100% —— 出意外即被追责<br><br>
+        四类行为一致：<b>命中即禁止提交</b>，并说明每个词为什么有风险。
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB2 拦截日志 ===== -->
+  <div id="v2" class="hide">
+    <h1>拦截日志</h1>
+    <div class="sub">提交被拦截的记录（只读）<br>内容未提交成功，老板无需处理</div>
+
+    <div class="box">
+      <h2>最近拦截 <span class="r">3 条</span></h2>
+      <div class="ex">
+        <span class="lv lv-h">承诺类</span>
+        <div class="bd">
+          <div class="t1">刘司机 尝试提交「周末棋牌赛」</div>
+          <div class="t2">10-19 14:22 · 命中：稳赚不赔 · <span class="stt">已拦截</span></div>
+        </div>
+      </div>
+      <div class="ex">
+        <span class="lv lv-m">夸张类</span>
+        <div class="bd">
+          <div class="t1">黄导游 尝试提交「长荡湖两日游」</div>
+          <div class="t2">10-19 11:05 · 命中：稳赚不赔 · <span class="stt">已拦截</span></div>
+        </div>
+      </div>
+      <div class="ex">
+        <span class="lv lv-m">夸张类</span>
+        <div class="bd">
+          <div class="t1">李杰 尝试提交「秋季周边游」</div>
+          <div class="t2">10-18 16:40 · 命中：国家级 · <span class="stt">已拦截</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="box">
+      <h2>为什么是日志不是待办</h2>
+      <div class="note" style="margin-top:0">
+        命中即拦截，内容<b>根本没提交成功</b>，所以不存在需要复核的队列。<br><br>
+        这里只是<b>留痕</b>：谁、什么时候、尝试提交什么、命中哪个词。
+        老板不用处理，真出了客诉能查到当时拦过。
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB3 投诉表单 ===== -->
+  <div id="v3" class="hide">
+    <h1>投诉 / 反馈</h1>
+    <div class="sub">顾客端：我的 → 投诉 / 反馈<br>提交前同样过敏感词</div>
+
+    <div class="box">
+      <h2>投诉类型 <span class="r">单选</span></h2>
+      <div class="chips">
+        <span class="chip on" onclick="pick(this)">服务态度</span>
+        <span class="chip" onclick="pick(this)">行程不符</span>
+        <span class="chip" onclick="pick(this)">收费争议</span>
+        <span class="chip" onclick="pick(this)">其他</span>
+      </div>
+    </div>
+
+    <div class="box">
+      <h2>投诉内容</h2>
+      <div class="fld">
+        <textarea id="ta2" oninput="check2()">你们导游全程敷衍，明显是骗人的，必须退款！</textarea>
+      </div>
+      <div id="alerts2"></div>
+      <button class="btn" id="sb2" onclick="submit2()">提交投诉</button>
+    </div>
+
+    <div class="box">
+      <h2>为什么投诉也要过敏感词</h2>
+      <div class="note" style="margin-top:0">
+        投诉是顾客写的，同样可能含<b>辱骂、人身攻击、威胁</b>等表述。<br><br>
+        如果不过滤，平台反而变成新的纠纷载体——客服和老板看到这些内容也难处理。<br><br>
+        规则与活动文案一致：<b>命中即禁止提交</b>，并提示具体是哪个词，
+        引导顾客改成客观描述。
+      </div>
+    </div>
+
+    <div class="box">
+      <h2>投诉词库（与活动文案不同）</h2>
+      <div class="note" style="margin-top:0">
+        <b>辱骂攻击</b>：垃圾、骗子、滚 —— 禁止提交<br>
+        <b>人身威胁</b>：等着、告死你 —— 禁止提交<br>
+        <b>情绪夸大</b>：骗人、敷衍 —— 提示修改措辞<br><br>
+        两套词库分开维护，但前台行为一致：命中即拦截。
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB3 用户准则 ===== -->
+  <div id="v4" class="hide">
+    <h1>用户准则</h1>
+    <div class="sub">若仍担心图片引发客诉<br>可用协议声明 + 举报入口兜底</div>
+
+    <div class="box">
+      <h2>为什么这样可行</h2>
+      <div class="note" style="margin-top:0">
+        法律上是<b>「通知-删除」避风港</b>：平台在协议中要求用户对上传内容负责、
+        设有举报渠道、接到举报及时下架，即可减轻责任。<br><br>
+        <b>但光写一句「用户自负」没用</b>——必须有举报入口且能真的下架，否则法院不认。
+      </div>
+    </div>
+
+    <div class="box">
+      <h2>三件套</h2>
+      <div class="flow">
+        <div class="step"><i>1</i><div class="t">用户准则中写明内容责任归属<b>发布者对其上传内容承担全部责任</b></div></div>
+        <div class="step"><i>2</i><div class="t">活动页放「举报」入口<b>用户可一键举报违规内容</b></div></div>
+        <div class="step"><i>3</i><div class="t">老板端能收到举报并下架<b>我的待处理 → 内容举报</b></div></div>
+      </div>
+    </div>
+
+    <div class="box">
+      <h2>可直接用的条款文本</h2>
+      <div class="note" style="margin-top:0;line-height:1.9">
+        ① <b>内容责任</b>：用户对其发布、上传的文字、图片、音视频内容承担全部法律责任，
+        保证不含有违反法律法规或侵犯他人合法权益的内容。<br><br>
+        ② <b>授权</b>：用户授权本平台在其服务范围内展示、传播上述内容。<br><br>
+        ③ <b>违规处理</b>：平台有权对违规内容采取删除、屏蔽、终止服务等措施，
+        无需事先通知，且不承担由此产生的任何责任。<br><br>
+        ④ <b>举报机制</b>：任何用户发现违规内容可通过举报入口反馈，
+        平台将在收到后及时处理。<br><br>
+        ⑤ <b>免责</b>：平台对用户发布内容不承担审查义务，
+        但因平台明知或应知违法而未处理的除外。
+      </div>
+    </div>
+
+    <div class="box">
+      <h2>需要注意的边界</h2>
+      <div class="note" style="margin-top:0">
+        准则能<b>减轻</b>责任，不能<b>免除</b>。若平台明知或应知存在违法内容而未处理，仍需担责。<br><br>
+        所以：收到举报后<b>必须及时处理</b>，不能放着不管。这也是为什么举报入口和下架能力一定要做。
+      </div>
+    </div>
+  </div>
+
+<script>
+// 词库按客诉风险分类 —— 前台行为统一为「拦截」
+const WORDS = [
+  {w:'稳赚不赔', lv:'承诺', why:'客户可据此要求兑现承诺'},
+  {w:'保证',     lv:'承诺', why:'做不到即被投诉'},
+  {w:'包满意',   lv:'承诺', why:'体验落差易引发纠纷'},
+  {w:'绝佳',     lv:'夸张', why:'实际落差大，易被指虚假宣传'},
+  {w:'顶级',     lv:'夸张', why:'实际落差大，易被指虚假宣传'},
+  {w:'国家级',   lv:'极限', why:'广告法风险，也可能被职业举报'},
+  {w:'第一',     lv:'极限', why:'广告法风险，也可能被职业举报'},
+  {w:'零风险',   lv:'绝对', why:'一旦出意外，客户直接拿文案追责'},
+  {w:'100%',     lv:'绝对', why:'一旦出意外，客户直接拿文案追责'},
+];
+let level = 'none';
+
+function check(){
+  const txt = document.getElementById('ta').value;
+  const hits = WORDS.filter(x=>txt.includes(x.w));
+  const box = document.getElementById('alerts');
+  const btn = document.getElementById('sb');
+
+  // 高亮
+  let html = txt;
+  hits.forEach(x=>{ html = html.split(x.w).join(`<span class="hit">${x.w}</span>`); });
+
+  if(!hits.length){
+    box.innerHTML=''; btn.className='btn'; btn.textContent='提交活动'; level='none'; return;
+  }
+
+  level = 'block';
+  const names = hits.map(x=>x.w).join('、');
+
+  const detail = hits.map(x=>`${x.w}（${x.lv}类·${x.why}）`).join('；');
+  box.innerHTML = `<div class="alert a-high"><span class="ic">!</span>
+    <span><b>无法提交</b> — 文案包含易引发客诉的用语：<b>${names}</b><br>
+    <span style="font-size:11px;opacity:.85">${detail}</span><br>
+    建议改为客观描述后重新提交。</span></div>`;
+
+  btn.className = 'btn btn-dis';
+  btn.textContent = '包含敏感词，无法提交';
+}
+
+function submit(){
+  if(level==='block') return;
+  alert('提交成功');
+}
+function closeMask(){ document.getElementById('mask').classList.remove('on'); }
+function doSubmit(){ closeMask(); }
+function tab(n){
+  [1,2,3,4].forEach(i=>{
+    document.getElementById('v'+i).classList.toggle('hide', i!==n);
+    document.getElementById('tab'+i).classList.toggle('on', i===n);
+  });
+}
+// 投诉表单词库
+const WORDS2 = [
+  {w:'骗子', lv:'辱骂攻击', why:'含人身攻击，请客观描述问题'},
+  {w:'垃圾', lv:'辱骂攻击', why:'含人身攻击，请客观描述问题'},
+  {w:'骗人', lv:'情绪夸大', why:'建议改为具体事实，便于核实处理'},
+  {w:'敷衍', lv:'情绪夸大', why:'建议改为具体事实，便于核实处理'},
+  {w:'告死你', lv:'人身威胁', why:'含威胁表述，请客观描述问题'},
+];
+let level2 = 'none';
+function check2(){
+  const txt = document.getElementById('ta2').value;
+  const hits = WORDS2.filter(x=>txt.includes(x.w));
+  const box = document.getElementById('alerts2');
+  const btn = document.getElementById('sb2');
+  if(!hits.length){ box.innerHTML=''; btn.className='btn'; btn.textContent='提交投诉'; level2='none'; return; }
+  level2='block';
+  const names = hits.map(x=>x.w).join('、');
+  const detail = hits.map(x=>`${x.w}（${x.lv}·${x.why}）`).join('；');
+  box.innerHTML = `<div class="alert a-high"><span class="ic">!</span>
+    <span><b>无法提交</b> — 投诉内容包含不当用语：<b>${names}</b><br>
+    <span style="font-size:11px;opacity:.85">${detail}</span><br>
+    改为客观描述后，我们会更快处理。</span></div>`;
+  btn.className='btn btn-dis'; btn.textContent='包含敏感词，无法提交';
+}
+function submit2(){
+  if(level2==='block') return;
+  alert('投诉已提交，老板端「我的待处理」将收到');
+}
+function pick(el){
+  el.parentElement.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+}
+check2();
+
+check();
+bindIcons(document);
+</script>
+</body>
+</html>

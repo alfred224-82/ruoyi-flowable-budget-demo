@@ -54,6 +54,14 @@
         <span><i class="el-icon-key" /> 授权信息</span>
         <el-button
           v-hasPermi="['system:license:manage']"
+          style="float: right; padding: 3px 10px; margin-left: 8px"
+          type="danger"
+          size="mini"
+          :loading="resignLoading"
+          @click="handleResignLicense"
+        >重签存量License</el-button>
+        <el-button
+          v-hasPermi="['system:license:manage']"
           style="float: right; padding: 3px 10px"
           type="warning"
           size="mini"
@@ -171,17 +179,17 @@
       </div>
     </el-dialog>
 
-    <!-- 导出 License 对话框（T15.33+ 改造：原「机器指纹」改为「签发 License JSON」） -->
+    <!-- 导出 License 对话框（T15.33+ 改造：原「机器指纹」改为「签发 License 密文」；v1.29 密文交付） -->
     <el-dialog title="导出 License" :visible.sync="exportLicenseDialogVisible" width="720px" append-to-body>
       <el-alert
-        title="配置授权参数后点击「生成 License」，复制生成的 JSON 交给租户管理员，在其「版本升级」页面粘贴导入即可激活对应版本。"
+        title="配置授权参数后点击「导出」，复制生成的 License 密文（LIC1- 开头单行串，不可读不可改）交给租户管理员，在其「版本升级」页面粘贴导入，导入端自动解密验签后激活对应版本。"
         type="info"
         :closable="false"
         show-icon
         style="margin-bottom: 15px"
       />
       <!-- 配置表单 -->
-      <el-form ref="exportForm" :model="exportForm" :rules="exportRules" label-width="100px" v-if="!exportLicenseJson">
+      <el-form ref="exportForm" :model="exportForm" :rules="exportRules" label-width="100px" v-if="!exportLicenseToken">
         <el-form-item label="目标租户">
           <el-tag v-if="selectedTenantId" type="primary">{{ selectedTenantName }}</el-tag>
           <el-tag v-else type="info">未选择（将生成系统级 License）</el-tag>
@@ -238,11 +246,11 @@
             <el-tag v-if="selectedTenantId" type="primary">{{ selectedTenantName }}</el-tag>
             <el-tag v-else type="info">系统级 License</el-tag>
           </el-form-item>
-          <el-form-item label="License JSON">
+          <el-form-item label="License 密文">
             <el-input
               type="textarea"
               :rows="14"
-              :value="exportLicenseJson"
+              :value="exportLicenseToken"
               readonly
               ref="exportLicenseInput"
             />
@@ -250,13 +258,13 @@
         </el-form>
       </div>
       <div slot="footer" class="dialog-footer">
-        <template v-if="!exportLicenseJson">
+        <template v-if="!exportLicenseToken">
           <el-button @click="exportLicenseDialogVisible = false">取 消</el-button>
           <el-button type="primary" :loading="exportLicenseLoading" @click="handleGenerateLicense">导 出</el-button>
         </template>
         <template v-else>
           <el-button @click="resetExportForm">重新配置</el-button>
-          <el-button type="primary" icon="el-icon-document-copy" @click="copyLicenseJson">再次复制</el-button>
+          <el-button type="primary" icon="el-icon-document-copy" @click="copyLicenseToken">再次复制</el-button>
         </template>
       </div>
     </el-dialog>
@@ -264,7 +272,7 @@
 </template>
 
 <script>
-import { getLicenseInfo, replaceLicense, generateLicense } from '@/api/system/license'
+import { getLicenseInfo, replaceLicense, generateLicense, resignLicense } from '@/api/system/license'
 import { getTenantLicense, getTenantSelector } from '@/api/system/tenant'
 
 // 全量功能清单（与后端 EditionFeatureConfig 保持同步）
@@ -351,9 +359,9 @@ export default {
       customerDialogVisible: false,
       customerName: '',
       customerLoading: false,
-      // 导出 License 对话框（T15.33+ 改造：原「机器指纹」改为「签发 License JSON」）
+      // 导出 License 对话框（T15.33+ 改造：原「机器指纹」改为「签发 License 密文」）
       exportLicenseDialogVisible: false,
-      exportLicenseJson: '',
+      exportLicenseToken: '',
       exportLicenseLoading: false,
       exportForm: {
         tenantType: 'enterprise',
@@ -375,7 +383,9 @@ export default {
       selectedTenantName: '',
       tenantGroups: {},
       tenantLoading: false,
-      tenantLicenseInfo: {}
+      tenantLicenseInfo: {},
+      // 存量 License 重签迁移（soft→hard 一次性修复）
+      resignLoading: false
     }
   },
   computed: {
@@ -489,6 +499,18 @@ export default {
     isFeatureEnabled(code) {
       return (this.licenseInfo.features || []).includes(code)
     },
+    /** ★运维迁移：对存量 License 用当前私钥重新签名（soft→hard 切换后的一次性修复） */
+    handleResignLicense() {
+      this.$modal.confirm('此操作将用当前私钥对全部存量 License 重新签名，并把被误判为“已篡改”的记录复位为正常。仅在启用 hard 模式并配置好私钥环境变量后执行，是否继续？').then(() => {
+        this.resignLoading = true
+        return resignLicense()
+      }).then(response => {
+        this.$modal.msgSuccess(response.msg || ('重签完成，共处理 ' + (response.data || 0) + ' 条 License'))
+        this.getInfo()
+      }).catch(() => {}).finally(() => {
+        this.resignLoading = false
+      })
+    },
     industryLabel(code) {
       return INDUSTRY_MAP[code] || code
     },
@@ -540,7 +562,7 @@ export default {
           : (this.licenseInfo.expiresAt === '永久' ? 'permanent' : '365'),
         customer: this.licenseInfo.customer || this.selectedTenantName || ''
       }
-      this.exportLicenseJson = ''
+      this.exportLicenseToken = ''
       this.exportLicenseDialogVisible = true
     },
     /** 导出表单：产品线切换时重置版本档位 */
@@ -568,7 +590,7 @@ export default {
     handleExportLicenseTypeChange(val) {
       this.exportForm.duration = val === 'TRIAL' ? '7' : '365'
     },
-    /** 调用后端签发 License JSON，成功后自动复制到剪贴板 */
+    /** 调用后端签发 License 密文，成功后自动复制到剪贴板 */
     handleGenerateLicense() {
       this.$refs.exportForm.validate(valid => {
         if (!valid) return
@@ -583,25 +605,25 @@ export default {
           durationDays: this.exportForm.duration === 'permanent' ? null : parseInt(this.exportForm.duration)
         }
         generateLicense(payload).then(response => {
-          this.exportLicenseJson = response.data || ''
-          if (!this.exportLicenseJson) {
+          this.exportLicenseToken = response.data || ''
+          if (!this.exportLicenseToken) {
             this.$modal.msgError('签发失败：后端返回空内容')
             return
           }
           // 自动复制到剪贴板
-          this.copyLicenseJson()
+          this.copyLicenseToken()
         }).finally(() => {
           this.exportLicenseLoading = false
         })
       })
     },
-    /** 重新配置：清空已生成的 JSON，回到表单 */
+    /** 重新配置：清空已生成的密文，回到表单 */
     resetExportForm() {
-      this.exportLicenseJson = ''
+      this.exportLicenseToken = ''
     },
-    /** 复制 License JSON 到剪贴板 */
-    copyLicenseJson() {
-      const text = this.exportLicenseJson
+    /** 复制 License 密文到剪贴板 */
+    copyLicenseToken() {
+      const text = this.exportLicenseToken
       if (!text) {
         this.$modal.msgWarning('License 内容为空')
         return

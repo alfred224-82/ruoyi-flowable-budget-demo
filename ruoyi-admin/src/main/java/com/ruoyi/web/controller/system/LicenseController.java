@@ -80,6 +80,21 @@ public class LicenseController extends BaseController {
     }
 
     /**
+     * ★运维迁移：对存量 License 重新签名（soft→hard 切换后的一次性修复）。
+     * <p>将 sys_license 中 ACTIVE/TAMPERED/EXPIRED 的记录用当前私钥重新签名，
+     * 并把因更换公钥而被误判为 TAMPERED 的记录复位为 ACTIVE。
+     * <p>仅 hard 模式且已配置 license.private-key（环境变量 LICENSE_PRIVATE_KEY）时可用，幂等可重复执行。
+     *
+     * @return 本次重签的 License 条数
+     */
+    @SaCheckPermission("system:license:manage")
+    @PostMapping("/resign")
+    public R<Integer> resign() {
+        int count = licenseService.resignAllLicenses();
+        return R.ok("重签完成，共处理 " + count + " 条 License", count);
+    }
+
+    /**
      * 试用剩余时长
      */
     @GetMapping("/trial-status")

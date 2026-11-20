@@ -1,0 +1,90 @@
+=== A. 母文档 组A~E 提及行 ===
+  L9 | **v1.12 重大变更**：依据《多业态SaaS平台需求规格说明书》4.1 版本矩阵与 5.4「资金管控为高级版核心能力」，资金管控 **11 类重能力由基础版下移至高级版**（设计文档 1.7 矩阵 / 5.1 组 A 开关），基础版收敛为「轻量记账 + 项目资金流 + 全量业态能力」；**35 个已交付任务 ✅→🔄**（需补 `@RequireFeature`、重排菜单模板、加开关前置校验）；新增 **M10~M14 五个里程碑共 45 个 🆕 任务**；任务总数 **71 → 116**
+  L134 | | ✅ T1.7 | **平台底座建表**：`biz_bundle`（业态包：`biz_code`/`name`/`menus` JSON/`copy` JSON/`schema_blocks` JSON/`engine_strategy`/`feature_flags` JSON/`status`）、`feature_flag`（开关表驱动：`code`/`name`/`biz_code`/`basic_enabled`/`advanced_enabled`/`pro_enabled`/`status`）、`tenant_biz_config`（单店覆盖：`tenant_id`/`modul
+  L190 | > **v1.12 变更（🔄 4 项）**：T4.1 需补 `pro` ↔ `PROFESSIONAL` 双向兼容映射（同 `ENTERPRISE` 处理方式，**不改存量数据**）；T4.2 开关清单由 16 项扩展至 **33 项**（设计文档 5.1 组 A~D），并改为 `feature_flag` 表驱动；T4.3 前端能力下发需按「业态包 + 版本开关」双维渲染，文案改 `t('key')`；T4.5 防串用例需扩展至 **24 条**（新增多业态/引导态/计费三类）。
+  L211 | > **下移能力 → 开关编码对照**（设计文档 5.1 组 A）：
+  L273 | | ✅ T6.8 | **承接 M5 下移能力的高级版开关落地**：为 T5.6~T5.11、T5.13~T5.18 共 12 项已交付能力统一补齐版本管控——① 逐项接口标注 `@RequireFeature`（开关编码见 M5 对照表）；② 菜单从基础版授权模板（T2.2）迁至高级版模板，基础版模板移除 3208/3215/3216/3209/3204/3205/3211~3214 及对应按钮；③ `salaryAccrualJob`/`assetDepreciationJob`/`loanInterestJob`/`invoiceSupplementRemindJob`/`invoice
+  L732 | 2. **接口规范**：高级/专业版增量接口**必须**标注 `@RequireFeature("FEAT_XXX")`，同时保留 `@SaCheckPermission`。**v1.12 起基础版接口不再一律豁免**——凡能力已从基础版下移（设计文档 5.1 组 A 的 11 项开关）的存量接口，必须补标 `@RequireFeature` 并同步调整授权模板与菜单回收（T6.8）；仅基础版标配且不下移的接口（收支三表、轻量记账、项目资金流、报销提交与审批）可继续不加开关注解。
+  L896 | | 开关数量 | 22 | **33** | **33** | **33** | **33** | 组 A 11 项下移 + 组 B 9 项原有高级版 + 组 C 6 项新增 + 组 D 7 项原有专业版（设计文档 5.1）；小微版不新增开关，靠角色模板（version_type）+client_type+tenant_type_scope 控制；v1.15 不新增开关 |
+  L931 | | 🔄 T4.2 | 开关集合从 22 项扩展至 **33 项**（组 A 11 + 组 B 9 + 组 C 6 + 组 D 7），并从 `EditionFeatureConfig` 静态集合迁到 `feature_flag` **表驱动** | 设计文档 5.1 / T10.3 |
+  L932 | | 🔄 T4.3 | `FeatureInterceptor` 支持三维判定（版本 + 业态 + License）；组 A 11 项开关对应的**存量接口补标** `@RequireFeature` | T6.8 / 规范第 2 条 |
+  L1284 | | 版本开关与四校验点统一管控 | T16.12 | SQL + BE | `FEAT_PROMOTION_DISTRIBUTION`（`feature_flag` 第 34 项，组 E） |
+  L1297 | | 功能开关 | 33 | **34** | +1（`FEAT_PROMOTION_DISTRIBUTION`，组 E，basic/advanced/pro 三列均 = 0） |
+  L1308 | | `M16_03_first_order_feature_flag.sql` | T16.4 / T16.8 / T16.12 | `first_order_record` + `feature_flag` 新增 `FEAT_PROMOTION_DISTRIBUTION`（第 34 项，组 E） | ✅ 已落盘 |
+  L1333 | **变更记录**：v1.20 分册冲突实测裁定与 note 对齐（2026-09-10）：**不增删任务、不改任务定义与优先级**，任务总数 160 / 里程碑 17 / 开关 34 / 防串用例 34 条 / P0-P1-P2 = 120-33-7 全部不变；四态由 v1.19 的 **90/6/43/21** 变为 **✅92 / 🔄5 / 🟡42 / 🆕21**。起因是《系统管理》分册（v1.16）与母文档在 4 项任务上判定相反，逐项以**代码实测**裁定：**T1.5 🔄→✅**（`FeeExpenseCategoryController` L31 类级 `@RequireF
+
+=== B. 母文档出现的 FEAT_* 去重清单 ===
+  共 35 项
+    FEAT_BAD_DEBT
+    FEAT_BOSS_DASHBOARD
+    FEAT_BUDGET_PREPARE
+    FEAT_CREDIT_SCORE
+    FEAT_DEPT_BUDGET
+    FEAT_ELASTIC_QUOTA
+    FEAT_EVIDENCE_CHAIN
+    FEAT_EXPENSE_CONTROL
+    FEAT_EXPORT_2D
+    FEAT_EXPORT_TEMPLATE_CUSTOM
+    FEAT_FACE_RECOGNITION
+    FEAT_FLOW_CUSTOM
+    FEAT_FLOW_MULTI_LEVEL
+    FEAT_HIDDEN_COST
+    FEAT_INVOICE_SUPPLEMENT
+    FEAT_INVOICE_VERIFY
+    FEAT_ISOLATED_SCHEMA
+    FEAT_LINK_RULE
+    FEAT_LINK_RULE_CUSTOM
+    FEAT_MEMBER_LOAD
+    FEAT_MULTI_ACCOUNT_SET
+    FEAT_MULTI_ORG
+    FEAT_OPEN_API
+    FEAT_ORG_SNAPSHOT
+    FEAT_OWN_MINIAPP
+    FEAT_PROFIT_REPORT
+    FEAT_PROMOTION_DISTRIBUTION
+    FEAT_RULE_ENGINE_BASE
+    FEAT_RULE_ENGINE_CUSTOM
+    FEAT_RULE_GRAYSCALE
+    FEAT_SUBJECT_3LAYER
+    FEAT_TIME_CLOCK
+    FEAT_VOUCHER_EXPORT
+    FEAT_WECOM
+    FEAT_XXX
+
+=== C. 各分册 sql 脚本数（含 00_执行顺序.sql）===
+  系统管理   总  26 | 索引 有 | 业务 25
+  专业版    总  54 | 索引 有 | 业务 53
+  高级版    总  51 | 索引 有 | 业务 50
+  基础版    总  36 | 索引 有 | 业务 35
+  小微版    总  34 | 索引 有 | 业务 33
+
+=== D. T7.2 人脸比对 前端赛道实测 ===
+  ruoyi-app 文件数 44 | ruoyi-ui/src 文件数 448
+  --- ruoyi-app 命中 7 处 ---
+    ruoyi-app/pages/expense/create.vue:95 | <!-- ========== 大额人脸核身（专业版，FEAT_FACE_RECOGNITION，T7.2/T8.5） ========== -->
+    ruoyi-app/pages/expense/create.vue:97 | <text class="banner-text">🧑 大额报销（≥2000）将触发人脸核身，提交时请配合采集</text>
+    ruoyi-app/pages/expense/create.vue:135 | /** 人脸核身金额阈值（专业版默认，T7.2） */
+    ruoyi-app/pages/expense/create.vue:182 | /** 大额人脸触发（≥2000，T7.2） */
+    ruoyi-app/pages/expense/create.vue:291 | /** 大额人脸核身（专业版）：不一致仅标记不拦截，采集流程未就绪时提示后可继续 */
+    ruoyi-app/pages/expense/create.vue:296 | title: '人脸核身',
+    ruoyi-app/pages/expense/create.vue:297 | content: '大额报销（≥2000元）需人脸核身，采集功能部署中，是否先提交？',
+  --- ruoyi-ui/src 命中 7 处 ---
+    ruoyi-ui/src/api/system/fee/fundPro.js:106 | // 人脸核身配置查询
+    ruoyi-ui/src/api/system/fee/fundPro.js:114 | // 人脸核身配置保存
+    ruoyi-ui/src/api/system/fee/fundPro.js:123 | // 人脸核身触发判定
+    ruoyi-ui/src/api/system/fee/fundPro.js:132 | // 提交人脸核身结果
+    ruoyi-ui/src/api/system/fee/fundPro.js:133 | export function submitFaceVerify(data) {
+    ruoyi-ui/src/views/fee/config/face.vue:3 | <el-alert title="人脸核身：大额（默认≥2000）或敏感大类报销触发人脸采集，与入职底照比对；不一致仅标记存疑进入异常池，不拦截流程（strong 级证据）。" type="info" :closable="false" s
+    ruoyi-ui/src/views/fee/config/face.vue:14 | <el-form-item label="启用人脸核身">
+
+=== E. 后端 FaceVerify 类清单 ===
+  ruoyi-admin/src/main/java/com/ruoyi/web/controller/fee/FeeFaceVerifyController.java (90 行)
+  ruoyi-system/src/main/java/com/ruoyi/system/domain/bo/FeeFaceConfigBo.java (34 行)
+  ruoyi-system/src/main/java/com/ruoyi/system/domain/bo/FeeFaceVerifyBo.java (47 行)
+  ruoyi-system/src/main/java/com/ruoyi/system/domain/FeeFaceVerifyRecord.java (87 行)
+  ruoyi-system/src/main/java/com/ruoyi/system/domain/vo/FeeFaceTriggerVo.java (32 行)
+  ruoyi-system/src/main/java/com/ruoyi/system/domain/vo/FeeFaceVerifyRecordVo.java (68 行)
+  ruoyi-system/src/main/java/com/ruoyi/system/mapper/FeeFaceVerifyRecordMapper.java (15 行)
+  ruoyi-system/src/main/java/com/ruoyi/system/service/IFeeFaceVerifyService.java (50 行)
+  ruoyi-system/src/main/java/com/ruoyi/system/service/impl/FeeFaceVerifyServiceImpl.java (192 行)
+  ruoyi-common/src/main/java/com/ruoyi/common/translation/TranslationInterface.java (18 行)

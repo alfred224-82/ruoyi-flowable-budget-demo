@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="t4">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>头像点击放大 · 两档方案演示</title>
+<link rel="stylesheet" href="theme_tokens.css">
+<link rel="stylesheet" href="components.css">
+<link rel="stylesheet" href="svg_assets.css">
+<link rel="stylesheet" href="avatar_viewer.css">
+<script src="icons_datauri.js"></script>
+<script src="svg_assets.js"></script>
+<style>
+  body{margin:0;background:var(--page-bg)}
+  .wrap{max-width:430px;margin:0 auto;padding:16px calc(var(--gutter) - 4px) 24px}
+  .switcher{display:flex;gap:6px;background:var(--card-bg);padding:5px;border-radius:999px;
+    box-shadow:var(--shadow-card);width:fit-content;margin:0 auto 16px}
+  .switcher button{width:26px;height:26px;border-radius:50%;border:2px solid transparent;
+    font-size:11px;color:#fff;font-weight:700}
+  .switcher button.on{border-color:var(--brand);transform:scale(1.1)}
+  .sw1{background:#4F8FF7}.sw2{background:#F5455C}.sw3{background:#0B0F19}.sw4{background:#FFB347}
+
+  h1{font-size:var(--font-title);font-weight:700;margin:0 0 4px;text-align:center}
+  .sub{font-size:12px;color:var(--text-sub);text-align:center;margin-bottom:18px;line-height:1.6}
+
+  .box{background:var(--card-bg);border-radius:var(--radius-card);
+    box-shadow:var(--shadow-card);padding:14px;margin-bottom:12px}
+  .box h2{font-size:13px;margin:0 0 4px;display:flex;justify-content:space-between;align-items:baseline}
+  .box h2 .r{font-size:11px;font-weight:400;color:var(--text-sub)}
+  .box .desc{font-size:11.5px;color:var(--text-sub);line-height:1.7;margin-bottom:12px}
+
+  /* 各场景头像 */
+  .scene{margin-bottom:16px}
+  .scene .lb{font-size:11px;color:var(--text-sub);margin-bottom:7px}
+  .row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
+  .row:last-child{border-bottom:0}
+  .row .info{flex:1}
+  .row .nm{font-size:14px;font-weight:600}
+  .row .mt{font-size:11.5px;color:var(--text-sub);margin-top:2px}
+  .row .op{display:flex;gap:5px}
+
+  img[data-zoom]{cursor:zoom-in;transition:transform .14s var(--ease)}
+  img[data-zoom]:active{transform:scale(.93)}
+
+  .mini{height:26px;padding:0 9px;border-radius:13px;font-size:11px;font-weight:600;
+    border:1px solid var(--border);color:var(--text-sub);background:transparent}
+  .mini.ok{background:#18B478;border-color:#18B478;color:#fff}
+  .mini:active{transform:scale(.93)}
+
+  /* 顶栏 */
+  .topbar{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .topbar .tt{font-size:var(--font-sub);font-weight:600;flex:1}
+
+  .tbl{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px}
+  .tbl td{padding:6px 0;border-bottom:1px solid var(--border);vertical-align:top}
+  .tbl td:first-child{width:76px;color:var(--text);font-weight:600}
+  .tbl b{color:var(--brand)}
+  :root[data-theme="t3"] .tbl b{color:var(--brand-2)}
+  code{background:var(--brand-weak);padding:1px 5px;border-radius:4px;font-size:10.5px}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="switcher">
+    <button class="sw1" onclick="setTheme('t1',this)">1</button>
+    <button class="sw2" onclick="setTheme('t2',this)">2</button>
+    <button class="sw3" onclick="setTheme('t3',this)">3</button>
+    <button class="sw4 on" onclick="setTheme('t4',this)">4</button>
+  </div>
+
+  <h1>头像点击放大</h1>
+  <div class="sub">两档方案：缩略档进首屏，放大档点了才下载<br>点任意头像试试 →</div>
+
+  <!-- 场景1 顶栏 -->
+  <div class="box">
+    <h2>场景一 · 顶栏小头像 <span class="r">40px</span></h2>
+    <div class="desc">最常见也最容易被人忽略的位置。40px 的图点开能看清脸。</div>
+    <div class="topbar">
+      <img src="avatars_out/a1_female_sea_md.webp" data-zoom data-name="李静"
+           style="width:40px;height:40px;border-radius:50%;object-fit:cover">
+      <span class="tt">李静</span>
+      <span class="tag">顾客</span>
+    </div>
+  </div>
+
+  <!-- 场景2 名单列表 -->
+  <div class="box">
+    <h2>场景二 · 报名名单 <span class="r">48px</span></h2>
+    <div class="desc">报名确认页的核心场景：看不清脸就点一下放大，确认完再点右侧按钮。</div>
+    <div id="list"></div>
+  </div>
+
+  <!-- 场景3 个人中心 -->
+  <div class="box">
+    <h2>场景三 · 个人中心大头像 <span class="r">72px</span></h2>
+    <div class="desc">本人头像，通常也是最大的显示尺寸。</div>
+    <div class="row">
+      <img src="avatars_out/a2_male_street_md.webp" data-zoom data-name="黄导游"
+           style="width:72px;height:72px;border-radius:50%;object-fit:cover">
+      <div class="info">
+        <div class="nm" style="font-size:16px">黄导游</div>
+        <div class="mt">业务员 · 13688990012</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 方案说明 -->
+  <div class="box">
+    <h2>两档规格</h2>
+    <table class="tbl">
+      <tr><td>缩略档</td><td><code>_md.webp</code> 120px · <b>2.6–4.1 KB</b><br>列表、顶栏、卡片统一用这一档，进首屏</td></tr>
+      <tr><td>放大档</td><td><code>_xl.webp</code> 400px · <b>15.9–21.4 KB</b><br>点击后才下载，不进首屏、不影响加载</td></tr>
+      <tr><td>兜底</td><td><code>_md.jpg</code> 3.7–5.0 KB<br>不支持 WebP 的旧浏览器降级</td></tr>
+      <tr><td>原图</td><td>1328×1776 · 2.9 MB<br><b>不下发给前端</b>，仅服务端归档</td></tr>
+    </table>
+  </div>
+
+  <div class="box">
+    <h2>接入方式 <span class="r">一行属性</span></h2>
+    <div class="desc">
+      给任意 <code>&lt;img&gt;</code> 加 <code>data-zoom</code> 即可，放大图路径自动从
+      <code>_md</code> 推导到 <code>_xl</code>，不用手写两遍：<br><br>
+      <code>&lt;img src="avatars_out/a1_female_sea_md.webp" data-zoom data-name="李静"&gt;</code>
+    </div>
+    <div class="desc" style="margin-bottom:0">
+      采用事件委托，列表刷新、动态插入的新头像无需重新绑定。<br>
+      打开时先用已缓存的缩略图模糊放大占位（0 延迟），xl 下载完平滑替换，不会白屏等待。
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>关闭方式</h2>
+    <div class="desc" style="margin-bottom:0">
+      · 点击遮罩任意处<br>· 按 Esc 键（桌面端）<br>· iOS 向下滑动<br>· 点底部 × 按钮
+    </div>
+  </div>
+</div>
+
+<script src="avatar_viewer.js"></script>
+<script>
+const P=[
+ {n:'张伟',  av:'a3_male_suit',    ph:'138****4521', se:'A3', ok:1},
+ {n:'李静',  av:'a1_female_sea',   ph:'136****7788', se:'A4', ok:1},
+ {n:'王芳',  av:'a4_female_grass', ph:'159****0234', se:'B1', ok:1},
+ {n:'陈国强',av:'a2_male_street',  ph:'137****6612', se:'B2', ok:0},
+ {n:'赵阿姨',av:'a1_female_sea',   ph:'133****1178', se:'B4', ok:0},
+];
+document.getElementById('list').innerHTML = P.map((p,i)=>`
+  <div class="row">
+    <img src="avatars_out/${p.av}_md.webp" data-zoom data-name="${p.n}"
+         style="width:48px;height:48px;border-radius:50%;object-fit:cover;flex:none">
+    <div class="info">
+      <div class="nm">${p.n}</div>
+      <div class="mt">${p.ph} · 座位 ${p.se}</div>
+    </div>
+    <div class="op">
+      <button class="mini ${p.ok?'ok':''}" onclick="tg(this)">${p.ok?'已确认':'确认'}</button>
+    </div>
+  </div>`).join('');
+function tg(b){
+  const on = b.classList.toggle('ok');
+  b.textContent = on ? '已确认' : '确认';
+}
+bindIcons(document);
+</script>
+</body>
+</html>

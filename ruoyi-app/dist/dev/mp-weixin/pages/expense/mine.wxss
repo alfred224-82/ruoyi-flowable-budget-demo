@@ -1,0 +1,39 @@
+
+.page.data-v-03489997 { padding: 24rpx; padding-bottom: 60rpx;
+}
+.banner.data-v-03489997 { background: rgba(230, 162, 60, .12); border-radius: 12rpx; padding: 20rpx; margin-bottom: 20rpx;
+}
+.banner-text.data-v-03489997 { font-size: 26rpx; color: #e6a23c; font-weight: bold;
+}
+.filter.data-v-03489997 { display: flex; margin-bottom: 20rpx;
+}
+.filter-item.data-v-03489997 { flex: 1; text-align: center; font-size: 26rpx; color: #606266; padding: 12rpx 0; background: #fff; border-radius: 8rpx; margin-right: 12rpx;
+}
+.filter-item.data-v-03489997:last-child { margin-right: 0;
+}
+.filter-item.active.data-v-03489997 { color: #fff; background: #409eff;
+}
+.card.data-v-03489997 { background: #fff; border-radius: 16rpx; padding: 28rpx; margin-bottom: 20rpx;
+}
+.desc.data-v-03489997 { font-size: 24rpx; color: #909399; display: block;
+}
+.item-head.data-v-03489997 { display: flex; align-items: center; margin-bottom: 12rpx;
+}
+.item-title.data-v-03489997 { flex: 1; font-size: 30rpx; font-weight: bold; color: #303133; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.amount.data-v-03489997 { font-size: 30rpx; font-weight: bold; color: #303133; margin-left: 16rpx; flex-shrink: 0;
+}
+.item-row.data-v-03489997 { display: flex; align-items: center; margin-bottom: 8rpx;
+}
+.badge.data-v-03489997 { font-size: 22rpx; border: 1rpx solid; border-radius: 8rpx; padding: 2rpx 12rpx; margin-right: 12rpx; flex-shrink: 0;
+}
+.tag.data-v-03489997 { font-size: 20rpx; border-radius: 6rpx; padding: 2rpx 12rpx; margin-right: 12rpx;
+}
+.tag.warn.data-v-03489997 { background: rgba(230, 162, 60, .12); color: #e6a23c;
+}
+.reject-tip.data-v-03489997 { margin-top: 12rpx; background: rgba(245, 108, 108, .08); border-radius: 8rpx; padding: 12rpx;
+}
+.link.data-v-03489997 { color: #409eff; font-size: 24rpx; margin-top: 8rpx; display: inline-block;
+}
+.load-tip.data-v-03489997 { text-align: center; padding: 16rpx 0;
+}

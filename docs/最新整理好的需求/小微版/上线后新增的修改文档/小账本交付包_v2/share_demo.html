@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="t4">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>名单截图分享 · 实现方案</title>
+<link rel="stylesheet" href="theme_tokens.css">
+<link rel="stylesheet" href="components.css">
+<script src="lib/html-to-image.min.js"></script>
+<script src="lib/html2canvas.min.js"></script>
+<script src="avatars_datauri.js"></script>
+<style>
+  body{margin:0;background:var(--page-bg)}
+  .wrap{max-width:430px;margin:0 auto;padding:14px calc(var(--gutter) - 4px) 30px}
+  h1{font-size:var(--font-title);font-weight:700;margin:0 0 4px;text-align:center}
+  .sub{font-size:11.5px;color:var(--text-sub);text-align:center;margin-bottom:16px;line-height:1.6}
+
+  /* 待截图的名单卡片 */
+  #shot{background:var(--card-bg);border-radius:var(--radius-card);
+    box-shadow:var(--shadow-card);padding:14px;margin-bottom:12px}
+  #shot .hd{font-size:15px;font-weight:700;line-height:1.4}
+  #shot .mt{font-size:11.5px;color:var(--text-sub);margin-top:3px;line-height:1.6}
+  #shot .bar{display:flex;gap:8px;margin:11px 0 9px}
+  #shot .bar div{flex:1;background:var(--brand-weak);border-radius:8px;padding:7px 9px;text-align:center}
+  #shot .bar .n{font-size:16px;font-weight:700;color:var(--brand);font-variant-numeric:tabular-nums}
+  #shot .bar .l{font-size:9.5px;color:var(--text-sub);margin-top:2px}
+  .srow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+  .srow:last-child{border-bottom:0}
+  .srow .av{width:36px;height:36px;border-radius:50%;object-fit:cover;flex:none}
+  .srow .info{flex:1;min-width:0}
+  .srow .nm{font-size:13.5px;font-weight:600}
+  .srow .ph{font-size:11px;color:var(--text-sub);font-variant-numeric:tabular-nums;letter-spacing:.2px}
+  .srow .se{font-size:13px;font-weight:700;background:var(--brand);color:#fff;
+    padding:4px 9px;border-radius:6px;flex:none;min-width:34px;text-align:center}
+  .srow .ok{font-size:10px;padding:2px 7px;border-radius:5px;flex:none;font-weight:600}
+  .ok-y{background:rgba(24,180,120,.14);color:#18B478}
+  .ok-n{background:var(--border);color:var(--text-sub)}
+  #shot .ft{margin-top:10px;padding-top:9px;border-top:1px solid var(--border);
+    font-size:10px;color:var(--text-sub);text-align:center;line-height:1.6}
+
+  .btn{width:100%;height:46px;border-radius:var(--radius-btn);font-size:15px;font-weight:600;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    background:var(--brand);color:#fff;box-shadow:var(--shadow-btn);margin-bottom:8px}
+  .btn:active{transform:scale(.97)}
+  .btn-g{border:1px solid var(--border);color:var(--text-sub);background:transparent;box-shadow:none}
+
+  .box{background:var(--card-bg);border-radius:var(--radius-card);
+    box-shadow:var(--shadow-card);padding:13px;margin-bottom:11px}
+  .box h2{font-size:13px;margin:0 0 9px}
+  .box p{font-size:11.5px;color:var(--text-sub);line-height:1.75;margin:0 0 8px}
+  .box p:last-child{margin-bottom:0}
+
+  /* 生成结果预览 */
+  #out{display:none}
+  #out.on{display:block}
+  #out img{width:100%;border-radius:var(--radius-card);box-shadow:var(--shadow-card);display:block}
+
+  table{width:100%;border-collapse:collapse;font-size:11.5px}
+  th,td{padding:6px 3px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+  th{font-size:10.5px;color:var(--text-sub);font-weight:600}
+  td:first-child{width:74px;font-weight:600}
+  .y{color:#18B478;font-weight:600}.n{color:var(--danger)}
+  code{background:var(--brand-weak);padding:1px 5px;border-radius:4px;font-size:10px}
+  .tag{display:inline-block;font-size:9.5px;padding:2px 7px;border-radius:5px;
+    background:var(--brand-weak);color:var(--brand);font-weight:600}
+  .toast{position:fixed;left:50%;top:56%;transform:translateX(-50%);
+    background:rgba(0,0,0,.8);color:#fff;padding:10px 20px;border-radius:22px;
+    font-size:13px;z-index:99;max-width:80%;text-align:center;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>名单截图分享</h1>
+  <div class="sub">选座页不显示姓名 → 本图是顾客知道谁坐哪的唯一途径<br>员工生成后发到活动群</div>
+
+  <!-- ===== 待截图区域 ===== -->
+  <div id="shot">
+    <div class="hd">长荡湖两日游 · 座位对照表</div>
+    <div class="mt">旅游大巴 · 10月14日 07:10 发车 · 主持：黄导游、刘司机</div>
+    <div class="bar">
+      <div><div class="n">8</div><div class="l">报名人数</div></div>
+      <div><div class="n">5</div><div class="l">已确认</div></div>
+      <div><div class="n">3</div><div class="l">待确认</div></div>
+    </div>
+    <div id="rows"></div>
+    <div class="ft"><b style="color:var(--text)">请核对您的座位</b><br>
+      手机号已脱敏（前三后四）· 仅供本场活动群内使用<br>
+      由「小账本」生成</div>
+  </div>
+
+  <button class="btn" onclick="gen()">生成名单图片</button>
+
+  <!-- ===== 结果 ===== -->
+  <div id="out">
+    <div class="box">
+      <h2>生成结果 <span class="tag" id="sz"></span></h2>
+      <p id="tip">正在处理…</p>
+      <div id="imgbox"></div>
+    </div>
+  </div>
+
+  <!-- ===== 方案说明 ===== -->
+  <div class="box">
+    <h2>为什么必须要有这个功能</h2>
+    <p>选座页采用最小信息披露，已占座位<b>只显示「已占」，不显示姓名和头像</b>。
+       这是对的，但带来一个缺口：<b>顾客无从知道谁坐在哪</b>。</p>
+    <p>本功能就是这个缺口的唯一补偿——员工生成座位对照表发到活动群，
+       顾客在群里看这张图就知道自己和同伴坐哪。</p>
+    <p style="color:var(--danger)"><b>两者必须配套：</b>选座页隐藏信息，
+       分享功能以可控方式释放给群成员。缺了分享功能，隐藏姓名就成了残缺设计——
+       顾客既看不到、也问不到。</p>
+  </div>
+
+  <div class="box">
+    <h2>为什么不用真截图</h2>
+    <p>员工手动截图有两个问题：一是截的是自己手机屏幕，<b>别人的手机型号、状态栏时间、电量都不同</b>，
+       发出去不专业；二是<b>可能截到别的顾客的完整信息</b>。</p>
+    <p>用前端生成图，输出的是统一排版的干净长图，且手机号在生成时就已脱敏。</p>
+  </div>
+
+  <div class="box">
+    <h2>手机号处理：前三后四</h2>
+    <p>页面上存脱敏值，生成图时也只写脱敏值：<code>138****4521</code>。</p>
+    <p>完整号码只在点击拨号时由前端临时拼进 <code>tel:</code> 链接，不出现在页面 DOM，
+       也不进入生成图。</p>
+  </div>
+
+  <div class="box">
+    <h2>两个库怎么选</h2>
+    <table>
+      <tr><th>库</th><th>体积</th><th>结论</th></tr>
+      <tr><td>html-to-image</td><td>19.4 KB<br><span style="font-size:10px;color:var(--text-sub)">gzip 6.4 KB</span></td><td class="y">推荐</td></tr>
+      <tr><td>输出图片</td><td>JPEG 81 KB<br><span style="font-size:10px;color:var(--text-sub)">PNG 183 KB</span></td><td class="y">用 JPEG</td></tr>
+      <tr><td>html2canvas</td><td>194 KB<br><span style="font-size:10px;color:var(--text-sub)">gzip 45 KB</span></td><td>兼容更稳</td></tr>
+    </table>
+    <p style="margin-top:8px">实测两者都能正确渲染圆角、阴影、渐变，以及本项目用的
+       <b>CSS mask 图标</b>（这是最容易翻车的点，已验证两个库都没问题）。</p>
+    <p>差 10 倍体积，优先用 html-to-image。<b>代码里已做自动降级</b>：
+       失败时自动切到 html2canvas，用户无感知。</p>
+    <p style="font-size:11px">注意：本地 <code>file://</code> 打开时 html-to-image 会因读不到
+       外部 CSS 规则而失败并触发降级；<b>线上同源部署不会出现</b>。</p>
+  </div>
+
+  <div class="box">
+    <h2>分享的三条路</h2>
+    <table>
+      <tr><th>环境</th><th>方式</th></tr>
+      <tr><td>普通浏览器</td><td class="y">navigator.share 直接调系统分享</td></tr>
+      <tr><td>微信内</td><td>分享接口被屏蔽 → <b>长按图片保存到相册</b>，再发群</td></tr>
+      <tr><td>都不行</td><td>复制链接 / 下载图片兜底</td></tr>
+    </table>
+    <p style="margin-top:8px"><b>微信里没法一键分享</b>，这是微信的限制，不是实现问题。
+       所以主路径设计成「生成图 → 长按保存 → 自己发群」，比原来员工手动截图还是少一步。</p>
+  </div>
+
+  <div class="box">
+    <h2>合规要点</h2>
+    <p>· 图上必须写明用途与脱敏说明，就像上面那张图的页脚</p>
+    <p>· 页面只存脱敏值，完整号码不进 DOM、不进图</p>
+    <p>· 报名页加告知：「组织者将获取联系方式用于活动通知」</p>
+    <p>· 生成动作记日志：谁、什么时候、导出了哪个活动</p>
+  </div>
+</div>
+
+<script>
+// ---------- 数据：页面只存脱敏值 ----------
+const P = [
+  {n:'张伟',  ph:'138****4521', se:'A3', ok:1, av:'a3_male_suit'},
+  {n:'李静',  ph:'136****7788', se:'A4', ok:1, av:'a1_female_sea'},
+  {n:'王芳',  ph:'159****0234', se:'B1', ok:1, av:'a4_female_grass'},
+  {n:'陈国强',ph:'137****6612', se:'B2', ok:0, av:'a2_male_street'},
+  {n:'刘敏',  ph:'186****3390', se:'B3', ok:0, av:'a1_female_sea'},
+  {n:'赵阿姨',ph:'133****1178', se:'B4', ok:0, av:'a4_female_grass'},
+];
+document.getElementById('rows').innerHTML = P.map(p=>`
+  <div class="srow">
+    <span class="se">${p.se}</span>
+    <img class="av" data-av="${p.av}">
+    <div class="info"><div class="nm">${p.n}</div><div class="ph">${p.ph}</div></div>
+    <span class="ok ${p.ok?'ok-y':'ok-n'}">${p.ok?'已确认':'待确认'}</span>
+  </div>`).join('');
+// 头像用 base64 data URI：避免 canvas 被跨域图片污染导致 toDataURL 失败
+document.querySelectorAll('[data-av]').forEach(img=>{
+  img.src = (window.AVATARS && window.AVATARS[img.dataset.av]) || '';
+});
+
+function toast(t,ms=2200){
+  const d=document.createElement('div'); d.className='toast'; d.textContent=t;
+  document.body.appendChild(d); setTimeout(()=>d.remove(),ms);
+}
+
+async function gen(){
+  const el = document.getElementById('shot');
+  const out = document.getElementById('out');
+  const tip = document.getElementById('tip');
+  const box = document.getElementById('imgbox');
+  out.classList.add('on'); tip.textContent='正在生成…'; box.innerHTML='';
+
+  let dataUrl, used='html-to-image';
+  try{
+    // ① 优先 html-to-image（19KB，渲染保真）
+    // 用 JPEG：同尺寸下 81KB vs PNG 183KB，文字类内容肉眼无差
+    dataUrl = await htmlToImage.toJpeg(el, {pixelRatio:2, quality:0.92, backgroundColor:'#ffffff'});
+  }catch(e){
+    // ② 降级 html2canvas（194KB，兼容性更稳）
+    try{
+      const c = await html2canvas(el, {scale:2, useCORS:true, backgroundColor:'#ffffff'});
+      dataUrl = c.toDataURL('image/jpeg', 0.92); used='html2canvas';
+    }catch(e2){
+      toast('生成失败'); tip.textContent='生成失败：'+e2.message; return;
+    }
+  }
+
+  const bytes = Math.round(dataUrl.length*0.75/1024);
+  document.getElementById('sz').textContent = bytes+' KB · '+used;
+  box.innerHTML = `<img src="${dataUrl}">`;
+
+  // ---------- 分享：三条路依次降级 ----------
+  try{
+    const blob = await (await fetch(dataUrl)).blob();
+    const file = new File([blob], '报名名单.png', {type:'image/png'});
+
+    // ① 系统分享（普通浏览器）
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      tip.textContent='点下方按钮可直接分享到微信 / 短信等';
+      const b=document.createElement('button');
+      b.className='btn'; b.textContent='分享图片';
+      b.onclick = async ()=>{
+        try{ await navigator.share({files:[file], title:'报名名单'}); }
+        catch(e){ if(e.name!=='AbortError') toast('分享失败，可长按图片保存'); }
+      };
+      box.appendChild(b);
+      // 仍给下载兜底
+      const d=document.createElement('button');
+      d.className='btn btn-g'; d.textContent='保存 / 下载图片';
+      d.onclick=()=>dl(dataUrl); box.appendChild(d);
+      return;
+    }
+  }catch(e){}
+
+  // ② 微信内 / 不支持分享文件 → 长按保存
+  const inWx = /MicroMessenger/i.test(navigator.userAgent);
+  tip.innerHTML = inWx
+    ? '微信内无法一键分享。<b>请长按下方图片 → 保存</b>到相册，再发到群里。'
+    : '当前环境不支持直接分享。<b>长按图片保存</b>，或点下方按钮下载。';
+  const d=document.createElement('button');
+  d.className='btn btn-g'; d.textContent='保存 / 下载图片';
+  d.onclick=()=>dl(dataUrl); box.appendChild(d);
+}
+
+function dl(url){
+  const a=document.createElement('a');
+  a.href=url; a.download='报名名单.jpg'; a.click();
+  toast('已保存到下载目录');
+}
+</script>
+</body>
+</html>

@@ -117,6 +117,12 @@ public class SysLoginService {
         if (captchaEnabled) {
             validateCaptcha(username, code, uuid);
         }
+        // ★超管豁免：admin 为平台级账号（sys_user.tenant_id 恒 NULL），忽略请求携带的租户ID——
+        //   登录页「记住账号」Cookie 会自动回填租户ID输入框，若照传则 loadUserByUsername 的
+        //   tenant_id 精确匹配永远命中不了 NULL，误报「账号不存在」；admin 登录一律不看租户ID
+        if ("admin".equals(username)) {
+            tenantId = null;
+        }
         // PC 端登录租户ID强制校验：admin 超管可留空（全局唯一用户名，无需租户隔离），
         // 其他所有用户必须填写 tenantId 以区分租户（tenantId 由平台管理员分配）
         if (tenantId == null && !"admin".equals(username)) {

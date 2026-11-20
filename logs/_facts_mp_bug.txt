@@ -1,0 +1,27 @@
+config/index.js 合法 api 键 = 79
+
+OK  micro/activity/browse.vue          api 引用 1 个: microActivityBrowse
+OK  micro/booking/add.vue              api 引用 2 个: microServiceOnSale, microBookingAdd
+OK  micro/booking/detail.vue           api 引用 4 个: microBookingList, microBookingComplete, microBookingReceive, microBookingCancel
+OK  micro/booking/list.vue             api 引用 4 个: microBookingList, microBookingComplete, microBookingReceive, microBookingCancel
+--- micro/bossHome/index.vue  (api 引用 3 个)
+      L105 未定义引用: weeklyRes   | const weeklyData = (weeklyRes && weeklyRes.data) || {}
+      L105 未定义引用: weeklyRes   | const weeklyData = (weeklyRes && weeklyRes.data) || {}
+OK  micro/customerBook/detail.vue      api 引用 2 个: microCustomerPayInfo, microCustomerCancelBook
+OK  micro/customerBook/list.vue        api 引用 2 个: microCustomerMyBook, microCustomerCancelBook
+OK  micro/customerBook/submit.vue      api 引用 1 个: microCustomerSubmitBook
+OK  micro/customerHome/index.vue       api 引用 1 个: microCustomerShop
+OK  micro/customerMine/index.vue       api 引用 1 个: microCustomerPayInfo
+OK  micro/mine/index.vue               api 引用 3 个: microNotifyList, microNotifyUnread, microNotifyRead
+OK  micro/report/index.vue             api 引用 3 个: microReportWeekly, microReportMonthly, microReportCashFlow
+OK  micro/report/trend.vue             api 引用 1 个: microReportTrend
+OK  micro/shop/config.vue              api 引用 1 个: microShopConfig
+OK  micro/staffHome/index.vue          api 引用 2 个: microStaffSchedule, microStaffCheckinSubmit
+OK  micro/staffIncome/detail.vue       api 引用 1 个: microStaffSchedule
+OK  micro/staffIncome/index.vue        api 引用 2 个: microStaffIncome, microStaffIncomeDetail
+OK  micro/staffMine/index.vue          api 引用 0 个: 
+
+===== 汇总 =====
+  未定义引用告警 = 2 处；config.api 拼写缺失 = 0 处
+  注：本扫描为保守静态分析，KEYWORDS 白名单 + 仅查 *Res/*Data/*List 类命名，
+      命中项需人工复核（读上下文确认非误报）后方可作为状态判定依据。

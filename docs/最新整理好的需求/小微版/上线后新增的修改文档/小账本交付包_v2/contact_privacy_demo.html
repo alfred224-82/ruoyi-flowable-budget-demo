@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="t4">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>员工信息公开开关 · 老板设置 + 顾客端联动</title>
+<link rel="stylesheet" href="theme_tokens.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  body{margin:0;background:var(--page-bg)}
+  .wrap{max-width:430px;margin:0 auto;padding:14px calc(var(--gutter) - 4px) 30px}
+  h1{font-size:var(--font-title);font-weight:700;margin:0 0 4px;text-align:center}
+  .sub{font-size:11.5px;color:var(--text-sub);text-align:center;margin-bottom:15px;line-height:1.6}
+
+  .sw{display:flex;gap:6px;background:var(--card-bg);padding:5px;border-radius:999px;
+    box-shadow:var(--shadow-card);width:fit-content;margin:0 auto 14px}
+  .sw button{width:26px;height:26px;border-radius:50%;border:2px solid transparent;
+    font-size:11px;color:#fff;font-weight:700}
+  .sw button.on{border-color:var(--brand);transform:scale(1.1)}
+  .s1{background:#4F8FF7}.s2{background:#F5455C}.s3{background:#0B0F19}.s4{background:#FFB347}
+
+  .sect{font-size:11px;color:var(--text-sub);font-weight:600;margin:0 4px 7px;letter-spacing:.5px}
+
+  .box{background:var(--card-bg);border-radius:var(--radius-card);
+    box-shadow:var(--shadow-card);padding:13px;margin-bottom:11px}
+  .box h2{font-size:13px;margin:0 0 9px;display:flex;justify-content:space-between;align-items:baseline}
+  .box h2 .r{font-size:11px;font-weight:400;color:var(--text-sub)}
+
+  /* 员工行 + 开关 */
+  .emp{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .emp:last-child{border-bottom:0}
+  .emp .av{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:none}
+  .emp .bd{flex:1;min-width:0}
+  .emp .nm{font-size:14px;font-weight:600}
+  .emp .rl{font-size:10.5px;color:var(--text-sub);margin-top:2px}
+  .tgs{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
+  .tg{font-size:9px;padding:1.5px 6px;border-radius:5px;background:var(--border);color:var(--text-sub)}
+  .tg.on-p{background:rgba(24,180,120,.14);color:#18B478}
+  .tg.on-w{background:rgba(7,193,96,.14);color:#07C160}
+
+  .tgswitch{display:flex;align-items:center;gap:7px;padding:8px 0;border-bottom:1px solid var(--border)}
+  .tgswitch:last-child{border-bottom:0}
+  .tgswitch .lb{flex:1}
+  .tgswitch .nm{font-size:12.5px;font-weight:600}
+  .tgswitch .dsc{font-size:10.5px;color:var(--text-sub);margin-top:2px;line-height:1.5}
+  .swt{width:42px;height:24px;border-radius:12px;background:var(--border);flex:none;
+    position:relative;transition:.2s;cursor:pointer}
+  .swt.on{background:#18B478}
+  .swt.on-w{background:#07C160}
+  .swt::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;
+    border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .swt.on::after,.swt.on-w::after{left:20px}
+
+  /* 顾客端：主持人头像行 */
+  .hosts{display:flex;gap:14px;padding:4px 0}
+  .hostitem{text-align:center;flex:none}
+  .hostitem img{width:52px;height:52px;border-radius:50%;object-fit:cover;
+    border:2px solid var(--brand-weak);display:block}
+  .hostitem .n{font-size:11.5px;margin-top:5px;font-weight:600}
+  .hint{font-size:10.5px;color:var(--text-sub);text-align:center;margin-top:8px}
+
+  /* 名片弹窗 */
+  .mask{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.45);
+    display:none;align-items:flex-end}
+  .mask.on{display:flex}
+  .card{background:var(--card-bg);width:100%;border-radius:20px 20px 0 0;
+    padding:22px 18px 26px;text-align:center;animation:up .22s ease}
+  @keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .card .cav{width:76px;height:76px;border-radius:50%;object-fit:cover;
+    border:3px solid var(--brand-weak);margin:0 auto}
+  .card .cnm{font-size:18px;font-weight:700;margin-top:11px}
+  .card .crl{font-size:12px;color:var(--text-sub);margin-top:3px}
+  .card .cdsc{font-size:11.5px;color:var(--text-sub);margin-top:9px;line-height:1.6}
+  .cops{display:flex;gap:12px;justify-content:center;margin-top:18px}
+  .cbtn{width:56px;padding:9px 0;border-radius:12px;background:var(--brand-weak);
+    display:flex;flex-direction:column;align-items:center;gap:5px}
+  .cbtn svg{width:22px;height:22px}
+  .cbtn .t{font-size:10px;color:var(--text-sub);font-weight:600}
+  .cbtn.p{background:rgba(24,180,120,.13)}
+  .cbtn.w{background:rgba(7,193,96,.13)}
+  .cbtn:active{transform:scale(.94)}
+  .noinfo{font-size:11.5px;color:var(--text-sub);margin-top:16px;line-height:1.6;
+    background:var(--brand-weak);border-radius:10px;padding:10px}
+  .closed{position:absolute;right:14px;top:14px;width:26px;height:26px;border-radius:50%;
+    background:var(--brand-weak);display:flex;align-items:center;justify-content:center;
+    font-size:15px;color:var(--text-sub)}
+  .card{position:relative}
+
+  .note{font-size:11px;color:var(--text-sub);line-height:1.75;
+    background:var(--brand-weak);border-radius:var(--radius-card);padding:11px 13px}
+  .note b{color:var(--text)}
+  table{width:100%;border-collapse:collapse;font-size:11.5px}
+  th,td{padding:6px 3px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+  th{font-size:10.5px;color:var(--text-sub);font-weight:600}
+  td:first-child{width:76px;font-weight:600}
+  code{background:var(--brand-weak);padding:1px 5px;border-radius:4px;font-size:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="sw">
+    <button class="s1" onclick="setTheme('t1',this)">1</button>
+    <button class="s2" onclick="setTheme('t2',this)">2</button>
+    <button class="s3" onclick="setTheme('t3',this)">3</button>
+    <button class="s4 on" onclick="setTheme('t4',this)">4</button>
+  </div>
+
+  <h1>员工信息公开开关</h1>
+  <div class="sub">老板决定公开什么 → 顾客点头像看到什么<br>下面开关可点击，实时联动</div>
+
+  <!-- ===== 老板端 ===== -->
+  <div class="sect">老板端 · 员工管理</div>
+  <div class="box">
+    <h2>信息公开设置 <span class="r">按员工单独设</span></h2>
+
+    <div class="emp">
+      <img class="av" src="avatars_out/a2_male_street_md.webp">
+      <div class="bd">
+        <div class="nm">黄导游</div>
+        <div class="rl">主持 · 业务员</div>
+        <div class="tgs" id="tag1"></div>
+      </div>
+    </div>
+
+    <div class="tgswitch">
+      <div class="lb">
+        <div class="nm">公开手机号</div>
+        <div class="dsc">顾客可看到并一键拨号</div>
+      </div>
+      <div class="swt on" id="swP" onclick="toggle('P')"></div>
+    </div>
+    <div class="tgswitch">
+      <div class="lb">
+        <div class="nm">公开微信号</div>
+        <div class="dsc">顾客可看到微信号并复制</div>
+      </div>
+      <div class="swt on-w" id="swW" onclick="toggle('W')"></div>
+    </div>
+  </div>
+
+  <!-- ===== 顾客端 ===== -->
+  <div class="sect">顾客端 · 活动详情页主持人</div>
+  <div class="box">
+    <h2>本场主持 <span class="r">点头像看效果</span></h2>
+    <div class="hosts">
+      <div class="hostitem" onclick="openCard()">
+        <img src="avatars_out/a2_male_street_md.webp">
+        <div class="n">黄导游</div>
+      </div>
+      <div class="hostitem" onclick="openCard()">
+        <img src="avatars_out/a4_female_grass_md.webp">
+        <div class="n">刘司机</div>
+      </div>
+    </div>
+    <div class="hint">↑ 点击头像，弹出员工名片</div>
+  </div>
+
+  <!-- ===== 说明 ===== -->
+  <div class="box">
+    <h2>四种组合</h2>
+    <table>
+      <tr><th>手机</th><th>微信</th><th>顾客看到</th></tr>
+      <tr><td>开</td><td>开</td><td>电话 + 微信两个图标</td></tr>
+      <tr><td>开</td><td>关</td><td>只有电话图标</td></tr>
+      <tr><td>关</td><td>开</td><td>只有微信图标</td></tr>
+      <tr><td>关</td><td>关</td><td>只有头像和名称，无任何图标</td></tr>
+    </table>
+  </div>
+
+  <div class="box">
+    <h2>为什么按员工单独设</h2>
+    <div class="note" style="margin-top:0">
+      不同员工意愿不同——有人愿意留微信方便客人，有人不想被打扰。<br><br>
+      做成<b>全局开关</b>的话，只要有一个人不愿意，就只能全部关掉，反而浪费了其他人的公开意愿。
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>微信号的实现方式（重要）</h2>
+    <div class="note" style="margin-top:0">
+      网页<b>无法直接调起微信加好友</b>——没有这个协议。可行做法是二选一：<br><br>
+      ① <b>显示微信号 + 复制按钮</b>，顾客复制后自己去微信搜索添加<br>
+      ② <b>显示个人微信二维码</b>，顾客长按识别添加<br><br>
+      <b>推荐 ②</b>：长按识别一步到位，比复制再搜索少两步。
+      需要员工在后台上传自己的微信名片二维码。
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>默认值建议</h2>
+    <div class="note" style="margin-top:0">
+      新入职员工<b>默认两个都关</b>，需要由员工自己主动开启。<br><br>
+      理由：默认公开等于替员工做了决定，涉及个人联系方式，应该交给本人选择。
+    </div>
+  </div>
+</div>
+
+<!-- 名片弹窗 -->
+<div class="mask" id="mask" onclick="if(event.target===this)closeCard()">
+  <div class="card">
+    <div class="closed" onclick="closeCard()">×</div>
+    <img class="cav" src="avatars_out/a2_male_street_md.webp">
+    <div class="cnm">黄导游</div>
+    <div class="crl">本场主持 · 从业 8 年</div>
+    <div class="cdsc">负责全程讲解与行程安排</div>
+    <div id="cops" class="cops"></div>
+    <div id="cnote"></div>
+  </div>
+</div>
+
+<script>
+const ST = {P:true, W:true};
+
+const PHONE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#18B478" d="M7.5 2h9c.6 0 1 .4 1 1v18c0 .6-.4 1-1 1h-9c-.6 0-1-.4-1-1V3c0-.6.4-1 1-1Zm0 1.5v16.2c0 .1.1.3.3.3h8.4c.2 0 .3-.2.3-.3V3.5c0-.1-.1-.3-.3-.3H7.8c-.2 0-.3.2-.3.3Z"/><path fill="#18B478" d="M10.7 4.4h2.6c.2 0 .3.1.3.3s-.1.3-.3.3h-2.6c-.2 0-.3-.1-.3-.3s.1-.3.3-.3Z"/><circle fill="#18B478" cx="12" cy="18.3" r="1"/></svg>`;
+const WECHAT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#07C160" d="M9.2 3C5.4 3 2.3 5.6 2.3 8.8c0 1.8 1 3.4 2.6 4.5l-.6 1.9c-.1.3.2.5.4.4l2.1-1.1c.8.2 1.6.4 2.4.4h.5c-.2-.5-.3-1.1-.3-1.6 0-3.1 2.9-5.6 6.6-5.6h.6C15.9 4.9 12.9 3 9.2 3Zm-2.5 3.6c.5 0 .9.4.9.9s-.4.9-.9.9-.9-.4-.9-.9.4-.9.9-.9Zm5 0c.5 0 .9.4.9.9s-.4.9-.9.9-.9-.4-.9-.9.4-.9.9-.9Z"/><path fill="#07C160" d="M21.7 12.9c0-2.7-2.6-4.9-5.8-4.9s-5.8 2.2-5.8 4.9c0 2.7 2.6 4.9 5.8 4.9.7 0 1.4-.1 2-.3l1.8.9c.2.1.5-.1.4-.4l-.5-1.6c1.4-1 2.1-2.3 2.1-3.5Zm-7.7-1.4c.4 0 .7.3.7.7s-.3.7-.7.7-.7-.3-.7-.7.3-.7.7-.7Zm3.8 0c.4 0 .7.3.7.7s-.3.7-.7.7-.7-.3-.7-.7.3-.7.7-.7Z"/></svg>`;
+
+function toggle(k){
+  ST[k] = !ST[k];
+  document.getElementById('sw'+k).className = 'swt' + (ST[k] ? (k==='W'?' on-w':' on') : '');
+  renderTags();
+}
+
+function renderTags(){
+  let h='';
+  if(ST.P) h += '<span class="tg on-p">手机已公开</span>';
+  if(ST.W) h += '<span class="tg on-w">微信已公开</span>';
+  if(!ST.P && !ST.W) h += '<span class="tg">均未公开</span>';
+  document.getElementById('tag1').innerHTML = h;
+}
+
+function openCard(){
+  let h='', note='';
+  if(ST.P) h += `<div class="cbtn p" onclick="alert('调起系统拨号：138****4521')">${PHONE_SVG}<span class="t">打电话</span></div>`;
+  if(ST.W) h += `<div class="cbtn w" onclick="alert('展示微信二维码，长按识别添加')">${WECHAT_SVG}<span class="t">加微信</span></div>`;
+  if(!ST.P && !ST.W){
+    note = `<div class="noinfo">该员工未公开联系方式<br>如需联系，请通过门店或客服转达</div>`;
+  }
+  document.getElementById('cops').innerHTML = h;
+  document.getElementById('cnote').innerHTML = note;
+  document.getElementById('mask').classList.add('on');
+}
+function closeCard(){ document.getElementById('mask').classList.remove('on'); }
+
+function setTheme(t,el){
+  document.documentElement.setAttribute('data-theme',t);
+  document.querySelectorAll('.sw button').forEach(b=>b.classList.toggle('on',b===el));
+}
+renderTags();
+</script>
+</body>
+</html>

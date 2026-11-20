@@ -51,6 +51,8 @@
         <!-- SMS 配置 -->
         <aliyun.sms.version>2.0.23</aliyun.sms.version>
         <tencent.sms.version>3.1.687</tencent.sms.version>
+        <!-- 阿里云号码认证（H5 一键登录取号） -->
+        <aliyun.dypnsapi.version>2.0.0</aliyun.dypnsapi.version>
     </properties>
 
     <profiles>
@@ -207,6 +209,13 @@
                 <groupId>com.aliyun</groupId>
                 <artifactId>dysmsapi20170525</artifactId>
                 <version>${aliyun.sms.version}</version>
+            </dependency>
+
+            <!-- 阿里云号码认证服务（H5 一键登录 GetAuthToken/GetPhoneWithToken） -->
+            <dependency>
+                <groupId>com.aliyun</groupId>
+                <artifactId>dypnsapi20170525</artifactId>
+                <version>${aliyun.dypnsapi.version}</version>
             </dependency>
 
             <dependency>
@@ -419,6 +428,10 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <encoding>${project.build.sourceEncoding}</encoding>
+                    <!-- 保留方法参数名到 class 文件，供 Spring MVC 解析 @PathVariable/@RequestParam 等未显式命名的参数 -->
+                    <compilerArgs>
+                        <arg>-parameters</arg>
+                    </compilerArgs>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>com.github.therapi</groupId>

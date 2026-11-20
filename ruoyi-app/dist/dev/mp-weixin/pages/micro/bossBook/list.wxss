@@ -1,0 +1,234 @@
+
+/* ★ 页面整体 */
+.page.data-v-64100fb6 {
+    min-height: 100vh;
+    padding: 0 24rpx 140rpx;
+    background: var(--page-bg, #FFF9F0);
+    display: flex;
+    flex-direction: column;
+}
+
+/* ★ Tab 切换栏 */
+.tab-bar.data-v-64100fb6 {
+    display: flex;
+    align-items: center;
+    gap: 48rpx;
+    padding: 24rpx 0 20rpx;
+    border-bottom: 1rpx solid var(--border, rgba(58,58,58,.08));
+    margin-bottom: 24rpx;
+}
+.tab-item.data-v-64100fb6 {
+    position: relative;
+    padding: 8rpx 0 16rpx;
+}
+.tab-text.data-v-64100fb6 {
+    font-size: 30rpx;
+    color: var(--text-sub, #9E9E9E);
+    transition: color 0.2s;
+}
+.tab-item.active .tab-text.data-v-64100fb6 {
+    font-size: 32rpx;
+    font-weight: bold;
+    color: var(--brand, #FFB347);
+}
+.tab-indicator.data-v-64100fb6 {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 48rpx;
+    height: 6rpx;
+    border-radius: 3rpx;
+    background: var(--brand, #FFB347);
+}
+
+/* ★ 列表滚动区 */
+.list-scroll.data-v-64100fb6 {
+    flex: 1;
+    min-height: 0;
+}
+
+/* ★ 活动卡片 */
+.act-list.data-v-64100fb6 {
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+}
+.act-card.data-v-64100fb6 {
+    background: var(--card-bg, #FFFFFF);
+    border-radius: var(--radius-card, 18px);
+    overflow: hidden;
+    box-shadow: var(--shadow-card, 0 3px 10px rgba(255,179,71,.14));
+}
+
+/* ★ 封面 Banner */
+.card-banner.data-v-64100fb6 {
+    position: relative;
+    width: 100%;
+    height: 360rpx;
+}
+.banner-img.data-v-64100fb6 {
+    width: 100%;
+    height: 100%;
+}
+.banner-overlay.data-v-64100fb6 {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.35) 100%);
+}
+.banner-content.data-v-64100fb6 {
+    position: absolute;
+    top: 24rpx;
+    left: 24rpx;
+    right: 24rpx;
+}
+.banner-title.data-v-64100fb6 {
+    font-size: 40rpx;
+    font-weight: bold;
+    color: #D4843E;
+    text-shadow: 0 1px 4px rgba(255,255,255,0.8);
+    line-height: 1.3;
+}
+
+/* 纯玩无购物标签 */
+.badge-pure.data-v-64100fb6 {
+    position: absolute;
+    bottom: 20rpx;
+    left: 20rpx;
+    background: #C0392B;
+    border-radius: 12rpx;
+    padding: 6rpx 16rpx;
+    display: flex;
+    gap: 8rpx;
+}
+.badge-pure-text.data-v-64100fb6 {
+    font-size: 20rpx;
+    color: #FFFFFF;
+    font-weight: bold;
+}
+
+/* 无封面时的标题栏 */
+.card-title-bar.data-v-64100fb6 {
+    padding: 24rpx 28rpx 16rpx;
+}
+.card-title-text.data-v-64100fb6 {
+    font-size: 34rpx;
+    font-weight: bold;
+    color: var(--text, #3A3A3A);
+}
+
+/* ★ 内容区块 */
+.section-block.data-v-64100fb6 {
+    padding: 20rpx 28rpx;
+    border-top: 1rpx solid var(--border, rgba(58,58,58,.06));
+}
+.section-label.data-v-64100fb6 {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: var(--text, #3A3A3A);
+    display: block;
+    margin-bottom: 12rpx;
+}
+.section-count.data-v-64100fb6 {
+    font-size: 72rpx;
+    font-weight: bold;
+    color: var(--brand, #FFB347);
+    display: block;
+    line-height: 1.2;
+}
+.section-desc.data-v-64100fb6 {
+    font-size: 26rpx;
+    color: var(--text-sub, #9E9E9E);
+    display: block;
+    line-height: 1.6;
+}
+
+/* ★ 主持人行 */
+.host-row.data-v-64100fb6 {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+    margin-top: 8rpx;
+}
+.host-avatar.data-v-64100fb6 {
+    width: 72rpx;
+    height: 72rpx;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFB347, #FF8C42);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.host-avatar-text.data-v-64100fb6 {
+    font-size: 28rpx;
+    color: #FFFFFF;
+    font-weight: bold;
+}
+.host-info.data-v-64100fb6 {
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+}
+.host-role-tag.data-v-64100fb6 {
+    background: var(--brand, #FFB347);
+    border-radius: 8rpx;
+    padding: 2rpx 14rpx;
+    display: inline-flex;
+    align-self: flex-start;
+}
+.host-role-text.data-v-64100fb6 {
+    font-size: 20rpx;
+    color: #FFFFFF;
+    font-weight: bold;
+}
+.host-name.data-v-64100fb6 {
+    font-size: 26rpx;
+    color: var(--text, #3A3A3A);
+}
+
+/* ★ 名额信息 */
+.quota-line.data-v-64100fb6 {
+    display: flex;
+    align-items: center;
+    gap: 10rpx;
+    margin-bottom: 10rpx;
+}
+.quota-line.data-v-64100fb6:last-child {
+    margin-bottom: 0;
+}
+.quota-icon.data-v-64100fb6 {
+    font-size: 28rpx;
+}
+.quota-text.data-v-64100fb6 {
+    font-size: 26rpx;
+    color: var(--text, #3A3A3A);
+}
+
+/* ★ 关闭按钮 */
+.card-close-btn.data-v-64100fb6 {
+    margin: 16rpx 28rpx 28rpx;
+    background: linear-gradient(135deg, #F0A060, #E8905A);
+    border-radius: 40rpx;
+    padding: 22rpx 0;
+    text-align: center;
+}
+.close-btn-text.data-v-64100fb6 {
+    font-size: 32rpx;
+    color: #FFFFFF;
+    font-weight: 600;
+    letter-spacing: 8rpx;
+}
+
+/* ★ 加载 / 空状态 */
+.loading.data-v-64100fb6, .empty.data-v-64100fb6 {
+    text-align: center;
+    padding: 120rpx 0;
+}
+.loading-text.data-v-64100fb6, .empty-text.data-v-64100fb6 {
+    color: var(--text-sub, #9E9E9E);
+    font-size: 28rpx;
+}

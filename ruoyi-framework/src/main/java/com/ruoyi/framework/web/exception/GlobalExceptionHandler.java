@@ -19,6 +19,7 @@ import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.validation.BindException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -76,6 +77,18 @@ public class GlobalExceptionHandler {
         String requestURI = request.getRequestURI();
         log.error("请求地址'{}',不支持'{}'请求", requestURI, e.getMethod());
         return R.fail(e.getMessage());
+    }
+
+    /**
+     * 必传请求参数缺失（@RequestParam 必传项未传，多为前后端传参契约错配）
+     * ★兜底防线：Spring 英文原文不得透传终端用户（2026-10 生产事故：scan 归因契约错配弹窗英文报错）
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public R<Void> handleMissingServletRequestParameterException(MissingServletRequestParameterException e,
+                                                                 HttpServletRequest request) {
+        String requestURI = request.getRequestURI();
+        log.error("请求地址'{}',缺少必传参数'{}'", requestURI, e.getParameterName());
+        return R.fail("请求参数缺失：" + e.getParameterName());
     }
 
     /**

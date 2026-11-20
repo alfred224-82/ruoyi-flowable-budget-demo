@@ -1,0 +1,15 @@
+
+/* 20261016 四主题重设计：底部导航消费页面根节点注入的主题变量（沿 DOM 继承） */
+.micro-tabbar.data-v-30e0307a { position: fixed; left: 0; right: 0; bottom: 0; z-index: 900; display: flex; background: var(--card-bg, #fff); border-top: 1rpx solid var(--border, #e4e7ed); padding-bottom: env(safe-area-inset-bottom);
+}
+.tab-item.data-v-30e0307a { flex: 1; text-align: center; padding: 10rpx 0 12rpx;
+}
+.tab-icon.data-v-30e0307a { font-size: 40rpx; display: block; line-height: 1.2;
+}
+.tab-text.data-v-30e0307a { font-size: 22rpx; color: var(--text-sub, #909399); display: block; margin-top: 4rpx;
+}
+.tab-item.active .tab-text.data-v-30e0307a { color: var(--brand, #409eff); font-weight: bold;
+}
+/* 主题3：选中态用强调青色 */
+.theme-dark .tab-item.active .tab-text.data-v-30e0307a { color: var(--brand-2, #00E5FF);
+}

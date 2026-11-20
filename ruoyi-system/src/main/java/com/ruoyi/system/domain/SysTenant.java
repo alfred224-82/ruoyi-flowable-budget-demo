@@ -79,6 +79,11 @@ public class SysTenant extends BaseEntity {
     private String contactPhone;
 
     /**
+     * 门店客服微信号（T31.5，L1 门店信息，顾客端「联系我们」长按识别二维码）
+     */
+    private String contactWechat;
+
+    /**
      * 行业
      */
     private String industry;
@@ -102,8 +107,8 @@ public class SysTenant extends BaseEntity {
     private String versionType;
 
     /**
-     * 小程序全局主题key（T15.36 platform_admin 选定后全局换肤）：
-     * theme_default/theme_warm/theme_fresh/theme_elegant
+     * 小程序全局主题key（T15.36 platform_admin 选定后全局换肤；M27 T27.1 命名对齐 V3.9）：
+     * theme_fresh(清新简约风)/theme_vivid(活力渐变风)/theme_dark(暗黑科技风)/theme_handdrawn(温暖手绘风)
      */
     private String appThemeKey;
 
@@ -182,6 +187,11 @@ public class SysTenant extends BaseEntity {
      * 隔离模式：SHARED共享表/DEDICATED独立Schema（预留，FEAT_ISOLATED_SCHEMA）
      */
     private String isolationMode;
+
+    /**
+     * 租户级打卡开关（三级开关之租户级，T24.2 M24）
+     */
+    private Integer checkInEnabled;
 
     /**
      * 备注

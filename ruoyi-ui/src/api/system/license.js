@@ -36,6 +36,15 @@ export function generateLicense(data) {
   })
 }
 
+// ★运维迁移：对存量 License 用当前私钥重新签名（soft→hard 切换后的一次性修复）
+// 仅 hard 模式且已配置环境变量 LICENSE_PRIVATE_KEY 时可用，幂等可重复执行
+export function resignLicense() {
+  return request({
+    url: '/system/license/resign',
+    method: 'post'
+  })
+}
+
 // 获取试用剩余时长
 export function getTrialStatus() {
   return request({

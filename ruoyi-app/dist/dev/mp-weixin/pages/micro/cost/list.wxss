@@ -1,0 +1,31 @@
+
+.page.data-v-d16800bc { padding: 24rpx; min-height: 100vh; background: #f5f6f8;
+}
+.card.data-v-d16800bc { background: #fff; border-radius: 16rpx; padding: 28rpx; margin-bottom: 20rpx;
+}
+.summary.data-v-d16800bc { text-align: center;
+}
+.card-title.data-v-d16800bc { font-size: 28rpx; color: #909399; display: block;
+}
+.sum.data-v-d16800bc { font-size: 48rpx; font-weight: bold; color: #f56c6c; display: block; margin-top: 12rpx;
+}
+.item .row.data-v-d16800bc { display: flex; align-items: center; justify-content: space-between;
+}
+.name.data-v-d16800bc { font-size: 30rpx; font-weight: bold; flex: 1;
+}
+.amount.data-v-d16800bc { font-size: 30rpx; color: #f56c6c; font-weight: bold;
+}
+.sub.data-v-d16800bc { margin-top: 12rpx;
+}
+.category.data-v-d16800bc { font-size: 24rpx; color: #909399;
+}
+.month.data-v-d16800bc { font-size: 24rpx; color: #909399;
+}
+.tag.data-v-d16800bc { font-size: 22rpx; padding: 2rpx 12rpx; border-radius: 6rpx;
+}
+.tag.on.data-v-d16800bc { background: #f0f9eb; color: #67c23a;
+}
+.tag.off.data-v-d16800bc { background: #fef0f0; color: #f56c6c;
+}
+.loading.data-v-d16800bc, .empty.data-v-d16800bc { text-align: center; color: #909399; padding: 120rpx 0;
+}

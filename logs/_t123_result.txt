@@ -1,0 +1,25 @@
+===== T3: M8_01 一号双脚本拆号 -> M8_02 =====
+  renamed: D:/workspace/RuoYi-Flowable-Plus-0.8.X/docs/newrequest/sql/M8_02_portal_store_search_and_audit.sql
+  renamed: D:\workspace\RuoYi-Flowable-Plus-0.8.X\docs\最新整理好的需求\专业版\sql/M8_02_portal_store_search_and_audit.sql
+  renamed: D:\workspace\RuoYi-Flowable-Plus-0.8.X\docs\最新整理好的需求\高级版\sql/M8_02_portal_store_search_and_audit.sql
+  renamed: D:\workspace\RuoYi-Flowable-Plus-0.8.X\docs\最新整理好的需求\基础版\sql/M8_02_portal_store_search_and_audit.sql
+  renamed: D:\workspace\RuoYi-Flowable-Plus-0.8.X\docs\最新整理好的需求\小微版\sql/M8_02_portal_store_search_and_audit.sql
+
+===== T2: 母目录回填缺失脚本 + M5_02 stale 回写 =====
+  backfilled -> master: M5_12_fee_expense_bill_sync_columns.sql  (from 高级版, md5=c2e7eb5d)
+  backfilled -> master: M5_13_basic_category_subject_mapping.sql  (from 基础版, md5=d31b10d7)
+  backfilled -> master: M5_14_budget_subject_tenant_init.sql  (from 高级版, md5=7b522514)
+  backfilled -> master: M15_14_frontend_menu_gap_patch.sql  (from 小微版, md5=c44c195f)
+  M5_02 master rewritten (stale 8134edf9 -> 483c9621, 采用含 subject_type 限定去重修复的副本)
+
+===== T1: M15_12 + M10_01 补进各包 =====
+  copied -> 专业版/M15_12_fund_platform_menu_edition.sql (md5=5d32bff3)
+  copied -> 专业版/M10_01_biz_bundle_feature_flag_menu.sql (md5=75c2287a)
+  copied -> 高级版/M15_12_fund_platform_menu_edition.sql (md5=5d32bff3)
+  copied -> 高级版/M10_01_biz_bundle_feature_flag_menu.sql (md5=75c2287a)
+  copied -> 基础版/M15_12_fund_platform_menu_edition.sql (md5=5d32bff3)
+  copied -> 基础版/M10_01_biz_bundle_feature_flag_menu.sql (md5=75c2287a)
+  copied -> 小微版/M10_01_biz_bundle_feature_flag_menu.sql (md5=75c2287a)
+
+===== T1: 系统管理 新建 sql 自包含包 =====
+  系统管理/sql 已建，复制脚本 25/25

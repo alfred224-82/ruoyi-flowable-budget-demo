@@ -1,0 +1,69 @@
+===== T10.2 biz_bundle 引擎与缓存 =====
+--- BizBundleServiceImpl  (ruoyi-system/src/main/java/com/ruoyi/system/service/impl/BizBundleServiceImpl.java)
+      行数 = 154
+      ✗ @Cacheable                         = 0
+      ✗ @CacheEvict                        = 0
+      ✓ ConcurrentHashMap 本地缓存             = 7
+      ✗ Caffeine                           = 0
+      ✓ refresh/clear/evict 方法             = 5
+      ✓ getBundle                          = 3
+      ✓ getFeatureFlags                    = 2
+      ✗ schema_blocks 读取                   = 0
+      ✗ engine_strategy 读取                 = 0
+      ✓ copy 文案读取                          = 8
+--- BizBundleController  (ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/BizBundleController.java)
+      行数 = 77
+      ✓ @RequireFeature/@SaCheckPermission = 4
+      ✓ system:bizBundle perms             = 4
+      ✓ 刷新缓存端点                             = 2
+      ✓ 端点数(@*Mapping)                     = 4
+
+===== T10.3 feature_flag 表驱动 + 常量兜底告警 =====
+--- FeatureFlagServiceImpl  (ruoyi-system/src/main/java/com/ruoyi/system/service/impl/FeatureFlagServiceImpl.java)
+      行数 = 144
+      ✓ 引用 EditionFeatureConfig            = 8
+      ✓ 不一致告警 log.warn                     = 1
+      ✗ @Cacheable/@CacheEvict             = 0
+      ✗ 按 edition 读默认开启集                   = 0
+--- EditionFeatureConfig  (ruoyi-common/src/main/java/com/ruoyi/common/constant/EditionFeatureConfig.java)  行数 249
+      normalizeEdition = 5
+      @Deprecated = 2
+      引用 featureFlagService（表驱动）= 0
+      ★被多少类引用（主用常量集？）= 
+        11 个类: SysEditionController, FeatureFlag, IFeatureFlagService, EmployeeCreditServiceImpl, FeatureFlagServiceImpl, LicenseServiceImpl, SysTenantServiceImpl, ITenantFeatureGuard, LicenseGenerateTool, LicenseServiceTest, VersionIsolationTest
+--- FeatureFlagController  (ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/FeatureFlagController.java)
+      行数 = 72
+      ✓ system:featureFlag perms           = 4
+      ✓ 端点数                                = 4
+
+===== T10.4 tenant_biz_config 覆盖 + Schema 校验 =====
+  文件名含 TenantBizConfig 的 .java = 6
+      ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/TenantBizConfigController.java
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/TenantBizConfig.java
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/vo/TenantBizConfigVo.java
+      ruoyi-system/src/main/java/com/ruoyi/system/mapper/TenantBizConfigMapper.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/TenantBizConfigServiceImpl.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/ITenantBizConfigService.java
+  引用 module_overrides/moduleOverrides 的类 = 11: MicroNotifyController, MicroShopController, TenantBizConfigController, MicroShopConfigBo, TenantBizConfig, MicroShopConfigVo, TenantBizConfigVo, IMicroShopConfigService, MicroShopConfigServiceImpl, TenantBizConfigServiceImpl, ITenantBizConfigService
+  JSON Schema 校验实现命中 = 6: BudgetValidationRule, BudgetValidationRuleVo, ValidationResultVo, BudgetPreparationServiceImpl, BudgetValidationRuleServiceImpl, BudgetValidationServiceTest
+  views/system/bizBundle = 1 -> index.vue
+  views/system/featureFlag = 1 -> index.vue
+  views/system/edition = 1 -> index.vue
+  views/system/tenantBizConfig = 0
+  views/system/bizConfig = 0
+
+===== T10.7 normalizeEdition 覆盖面 =====
+  调用 normalizeEdition 的类 = 4
+      ruoyi-common/src/main/java/com/ruoyi/common/constant/EditionFeatureConfig.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/FeatureFlagServiceImpl.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/SysTenantServiceImpl.java
+      ruoyi-test/src/test/java/com/ruoyi/test/VersionIsolationTest.java
+  src/test 下 .java 总数 = 10
+  覆盖 normalizeEdition 的测试类 = 2: LicenseServiceTest.java, VersionIsolationTest.java
+  LicenseGenerateTool = 1 -> ruoyi-system/src/main/java/com/ruoyi/system/utils/LicenseGenerateTool.java
+      含 normalizeEdition = false；含 ENTERPRISE = true；含 PROFESSIONAL = true
+  views/system/edition/index.vue 行数 = 327
+      含 ENTERPRISE = 0
+      含 PROFESSIONAL = 0
+      含 professional = 0
+      含 normalize = 0

@@ -1,0 +1,70 @@
+===== F1) ruoyi-ui/src/views/system 子目录 =====
+  ai/  (2 vue) chat.vue,report.vue
+  bizBundle/  (1 vue) index.vue
+  config/  (1 vue) index.vue
+  dept/  (1 vue) index.vue
+  dict/  (2 vue) data.vue,index.vue
+  edition/  (1 vue) index.vue
+  featureFlag/  (1 vue) index.vue
+  fee/  (0 vue) 
+  license/  (1 vue) index.vue
+  menu/  (1 vue) index.vue
+  message/  (1 vue) index.vue
+  notice/  (1 vue) index.vue
+  oss/  (2 vue) config.vue,index.vue
+  post/  (1 vue) index.vue
+  preparation/  (5 vue) approval.vue,approvalDetail.vue,categoryQuota.vue,index.vue,wizard.vue
+  role/  (3 vue) authUser.vue,index.vue,selectUser.vue
+  subject/  (1 vue) index.vue
+  tenant/  (1 vue) index.vue
+  user/  (2 vue) authRole.vue,index.vue
+  ★ views/system/bizBundle : 存在 -> index.vue
+  ★ views/system/featureFlag : 存在 -> index.vue
+  ★ views/system/edition : 存在 -> index.vue
+
+===== F2) ruoyi-ui/src/api/system 相关文件 =====
+  命中: bizBundle.js, edition.js, featureFlag.js
+
+===== F3) ruoyi-app 小程序页面实况（MP 赛道）=====
+  pages 全量 .vue = 34
+  pages/micro/*.vue = 18
+      ruoyi-app/pages/micro/activity/browse.vue
+      ruoyi-app/pages/micro/booking/add.vue
+      ruoyi-app/pages/micro/booking/detail.vue
+      ruoyi-app/pages/micro/booking/list.vue
+      ruoyi-app/pages/micro/bossHome/index.vue
+      ruoyi-app/pages/micro/customerBook/detail.vue
+      ruoyi-app/pages/micro/customerBook/list.vue
+      ruoyi-app/pages/micro/customerBook/submit.vue
+      ruoyi-app/pages/micro/customerHome/index.vue
+      ruoyi-app/pages/micro/customerMine/index.vue
+      ruoyi-app/pages/micro/mine/index.vue
+      ruoyi-app/pages/micro/report/index.vue
+      ruoyi-app/pages/micro/report/trend.vue
+      ruoyi-app/pages/micro/shop/config.vue
+      ruoyi-app/pages/micro/staffHome/index.vue
+      ruoyi-app/pages/micro/staffIncome/detail.vue
+      ruoyi-app/pages/micro/staffIncome/index.vue
+      ruoyi-app/pages/micro/staffMine/index.vue
+  按一级目录分布: approval=2, dashboard=1, expense=3, login=1, micro=18, project=4, store=1, tab-approve=1, tab-home=1, tab-mine=1, tab-work=1
+  pages.json 注册总数 = 0，其中 pages/micro/ = 0
+
+===== F4) @RequireFeature 标注实况（T5.16 / T5.18）=====
+  扫描 .java 文件数 = 1352（已排除 target）
+  FEAT_SUBJECT_3LAYER        -> 5 个类: FeeExpenseCategoryController, FeeFinanceSubjectController, FeeTenantCategoryController, MappingRuleController, BudgetSubjectController
+  FEAT_INVOICE_VERIFY        -> 1 个类: InvoiceVerifyController
+  FEAT_EXPENSE_CONTROL       -> 3 个类: ExpenseBillController, FeeOperationLogController, TrackControlController
+  FEAT_BUDGET_PREPARE        -> 3 个类: BudgetAdjustmentAppController, OverBudgetApprovalController, BudgetPreparationController
+  FEAT_RULE_ENGINE_BASE      -> 1 个类: FeeRuleVersionController
+  FEAT_BAD_DEBT              -> 1 个类: FeeBadDebtController
+  FEAT_HIDDEN_COST           -> 4 个类: FeeAssetController, FeeLoanController, FeeProjectSharingController, FeeStaffSalaryController
+  FEAT_BOSS_DASHBOARD        -> 2 个类: FeeBossDashboardController, FeeLightOverviewController
+  FEAT_VOUCHER_EXPORT        -> 1 个类: FeeVoucherExportController
+  FEAT_LINK_RULE             -> 1 个类: FeeProjectLinkRuleController
+  FEAT_INVOICE_SUPPLEMENT    -> 1 个类: FeeInvoiceSupplementController
+
+===== F5) ruoyi-ui/src/views/micro（M15 PC 赛道）=====
+  views/micro/*.vue = 28
+===== F6) micro Controller（M15 BE 赛道）=====
+  micro/*Controller.java = 22
+  全仓 Controller 总数 = 158

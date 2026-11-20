@@ -1,0 +1,110 @@
+/* ============================================================
+   第二层：贴纸 & 图标 · 独立 SVG 文件接入
+   依赖：stickers/*.svg（23 个文件，合计 4.38 KB）
+   配套：svg_assets.js
+   ============================================================ */
+
+/* ---------- 1. 图标：CSS mask 方案（可变色） ----------
+   原理：SVG 文件里写 fill="currentColor"，但 <img> 加载时无法继承外部颜色。
+   改用 mask：把 SVG 当作"镂空模板"，颜色由 background 决定。
+   好处：文件仍是独立 SVG（0.19 KB/个），但颜色可被 CSS 变量控制。
+------------------------------------------------------------ */
+.ico-svg {
+  display: inline-block;
+  width: 22px; height: 22px;
+  vertical-align: -4px;
+  /* 颜色跟随主题主色 */
+  background: var(--icon-color, var(--brand));
+  -webkit-mask: var(--ico) center / contain no-repeat;
+          mask: var(--ico) center / contain no-repeat;
+  /* 尺寸变体 */
+}
+.ico-svg.sm { width: 16px; height: 16px; vertical-align: -3px; }
+.ico-svg.lg { width: 32px; height: 32px; vertical-align: -8px; }
+.ico-svg.xl { width: 44px; height: 44px; }
+
+/* 次要图标用辅助文字色 */
+.ico-svg.muted { background: var(--text-sub); }
+
+/* 各主题下图标的默认取色 */
+:root[data-theme="t1"] { --icon-color: #4F8FF7; }
+:root[data-theme="t2"] { --icon-color: #F5455C; }
+:root[data-theme="t3"] { --icon-color: #00E5FF; }
+:root[data-theme="t4"] { --icon-color: #F08A24; }
+
+/* 主题3 图标发光 */
+:root[data-theme="t3"] .ico-svg {
+  filter: drop-shadow(0 0 6px rgba(0, 229, 255, .55));
+}
+
+/* ---------- 2. 手绘贴纸：<img> 直引（自带颜色） ----------
+   贴纸本身已写好填充色 + 描边，不需要变色，直接 <img> 最省事。
+------------------------------------------------------------ */
+.sticker {
+  width: 40px; height: 40px;
+  display: inline-block;
+  object-fit: contain;
+  /* 主题4 手绘风：轻微倾斜，像随手贴上去 */
+  transition: transform 200ms var(--ease);
+}
+:root[data-theme="t4"] .sticker:nth-child(odd)  { transform: rotate(-6deg); }
+:root[data-theme="t4"] .sticker:nth-child(even) { transform: rotate(6deg); }
+.sticker:hover { transform: scale(1.12) rotate(0deg); }
+
+/* 非手绘主题下贴纸恢复正常角度并降低饱和，避免风格冲突 */
+:root:not([data-theme="t4"]) .sticker {
+  filter: saturate(.85);
+  transform: none;
+}
+
+/* ---------- 3. 装饰展示容器 ---------- */
+.deco-panel {
+  background: var(--card-bg);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.deco-panel .cap {
+  font-size: 12px; color: var(--text-sub); margin-bottom: 12px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.deco-panel .cap b { color: var(--text); font-weight: 600; }
+
+.deco-row {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  align-items: center; gap: 16px;
+  padding: 14px 0;
+  border-radius: var(--radius-card);
+  background: var(--brand-weak);
+}
+
+/* 图标网格 */
+.ico-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px 8px;
+  margin-top: 14px; padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.ico-grid > div { text-align: center; }
+.ico-grid .nm {
+  display: block; font-size: 9px; color: var(--text-sub); margin-top: 4px;
+}
+
+/* 四主题取色演示行 */
+.tone-row {
+  display: flex; gap: 20px; align-items: center;
+  margin-top: 14px; padding-top: 14px;
+  border-top: 1px solid var(--border);
+  justify-content: center;
+}
+.tone-row > div { text-align: center; }
+.tone-row .lb { font-size: 10px; color: var(--text-sub); margin-top: 4px; }
+
+.deco-panel .hint {
+  font-size: 11px; color: var(--text-sub);
+  margin-top: 12px; padding-top: 10px;
+  border-top: 1px solid var(--border);
+  line-height: 1.6;
+}

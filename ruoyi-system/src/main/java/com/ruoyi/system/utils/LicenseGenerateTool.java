@@ -2,8 +2,15 @@ package com.ruoyi.system.utils;
 
 import com.ruoyi.common.constant.EditionFeatureConfig;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
@@ -11,6 +18,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * License 签发工具（独立运行）
@@ -25,6 +33,8 @@ import java.util.Set;
  *   <li>命令行签发（T3.15 v1.28 新增，脚本化批量签发）：
  *       {@code java -cp ... LicenseGenerateTool sign --private-key=<base64> --edition=pro
  *       --biz-code=fund_control --plan=yearly --tenant-id=1001 --customer=某某公司}</li>
+ *   <li>密文交付（v1.29 新增）：{@code encrypt}/{@code decrypt} 子命令做明文 JSON ⇄ LIC1- 密文串互转；
+ *       Admin 侧「导出 License」复用本类 {@link #encrypt(String)} 下发密文（导入端按前缀自动识别解密后走 RSA 验签）</li>
  * </ol>
  *
  * <p><b>T3.15 v1.28 缺口封闭</b>：
@@ -50,6 +60,18 @@ public class LicenseGenerateTool {
     private static final int PLAN_DAYS_MONTHLY = 30;
     private static final int PLAN_DAYS_YEARLY = 365;
 
+    /** 密文前缀：导入端据此自动识别是否需要先解密（无前缀视为存量明文 JSON，保持兼容） */
+    public static final String CIPHER_PREFIX = "LIC1-";
+
+    /** 内置密钥种子（SHA-256 派生 AES-256 密钥；仅应用内部使用，勿对外暴露） */
+    private static final String KEY_SEED = "RuoYi-Flowable-Plus::LicenseCipher::2026";
+
+    private static final String AES_TRANSFORMATION = "AES/CBC/PKCS5Padding";
+    private static final int IV_LENGTH = 16;
+
+    /** Base64 密文正文特征（兼容复制丢失 LIC1- 前缀的密文；排除 { 开头的 JSON 明文） */
+    private static final Pattern BASE64_BODY = Pattern.compile("[A-Za-z0-9+/=\\s]{64,}");
+
     public static void main(String[] args) {
         if (args.length == 0) {
             printUsage();
@@ -62,6 +84,12 @@ public class LicenseGenerateTool {
                 break;
             case "sign":
                 signLicense(args);
+                break;
+            case "encrypt":
+                cipherConvert(args, true);
+                break;
+            case "decrypt":
+                cipherConvert(args, false);
                 break;
             default:
                 printUsage();
@@ -319,6 +347,133 @@ public class LicenseGenerateTool {
         }
     }
 
+    /**
+     * 密文互转子命令：encrypt 把明文 License JSON 加密为 LIC1- 单行密文串用于交付；decrypt 反向（仅供核对/排障）
+     */
+    private static void cipherConvert(String[] args, boolean encryptMode) {
+        String input = args.length >= 2 && !args[1].startsWith("--") ? args[1].trim() : "";
+        if (input.isEmpty()) {
+            System.err.println("[错误] 缺少参数，示例: LicenseGenerateTool " + (encryptMode ? "encrypt <licenseJson>" : "decrypt <cipherToken>"));
+            return;
+        }
+        try {
+            System.out.println(encryptMode ? encrypt(input) : decrypt(input));
+        } catch (RuntimeException e) {
+            System.err.println("[错误] " + e.getMessage());
+        }
+    }
+
+    /**
+     * 判断输入是否为 License 密文串（LIC1- 前缀）
+     */
+    public static boolean isCipherToken(String input) {
+        return input != null && input.trim().startsWith(CIPHER_PREFIX);
+    }
+
+    /**
+     * 加密：License JSON → 单行密文串（LIC1- + Base64(IV||密文)）
+     *
+     * @param plainJson 已签名的 License JSON 明文
+     * @return 单行密文串
+     */
+    public static String encrypt(String plainJson) {
+        try {
+            byte[] iv = new byte[IV_LENGTH];
+            new SecureRandom().nextBytes(iv);
+            Cipher cipher = Cipher.getInstance(AES_TRANSFORMATION);
+            cipher.init(Cipher.ENCRYPT_MODE, key(), new IvParameterSpec(iv));
+            byte[] encrypted = cipher.doFinal(plainJson.getBytes(StandardCharsets.UTF_8));
+            byte[] out = new byte[IV_LENGTH + encrypted.length];
+            System.arraycopy(iv, 0, out, 0, IV_LENGTH);
+            System.arraycopy(encrypted, 0, out, IV_LENGTH, encrypted.length);
+            return CIPHER_PREFIX + Base64.getEncoder().encodeToString(out);
+        } catch (Exception e) {
+            throw new IllegalStateException("License 加密失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 解密：密文串 → License JSON 明文
+     *
+     * @param token LIC1- 前缀密文串（容忍首尾空白/换行）
+     * @return License JSON 明文
+     * @throws IllegalArgumentException 前缀不符 / Base64 非法 / 解密失败（视为损坏或篡改）
+     */
+    public static String decrypt(String token) {
+        if (!isCipherToken(token)) {
+            throw new IllegalArgumentException("License 密文格式不正确（缺少 " + CIPHER_PREFIX + " 前缀）");
+        }
+        try {
+            byte[] raw = Base64.getDecoder().decode(token.trim().substring(CIPHER_PREFIX.length()).replaceAll("\\s+", ""));
+            if (raw.length <= IV_LENGTH) {
+                throw new IllegalArgumentException("License 密文长度非法");
+            }
+            byte[] iv = new byte[IV_LENGTH];
+            System.arraycopy(raw, 0, iv, 0, IV_LENGTH);
+            byte[] encrypted = new byte[raw.length - IV_LENGTH];
+            System.arraycopy(raw, IV_LENGTH, encrypted, 0, encrypted.length);
+            Cipher cipher = Cipher.getInstance(AES_TRANSFORMATION);
+            cipher.init(Cipher.DECRYPT_MODE, key(), new IvParameterSpec(iv));
+            return new String(cipher.doFinal(encrypted), StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("License 密文无效或已被篡改", e);
+        }
+    }
+
+    /**
+     * 内置种子 SHA-256 派生 AES-256 密钥
+     */
+    private static SecretKeySpec key() throws Exception {
+        byte[] keyBytes = MessageDigest.getInstance("SHA-256")
+            .digest(KEY_SEED.getBytes(StandardCharsets.UTF_8));
+        return new SecretKeySpec(keyBytes, "AES");
+    }
+
+    /**
+     * 尝试解密丢失 LIC1- 前缀的密文（如复制粘贴时漏选前缀）：自动补前缀后解密。
+     *
+     * @param body 不含前缀的输入
+     * @return 明文 JSON；非密文特征或解密失败返回 null（由调用方回退明文流程）
+     */
+    public static String tryDecryptUnprefixed(String body) {
+        if (body == null) {
+            return null;
+        }
+        String t = body.trim();
+        if (t.isEmpty() || t.startsWith(CIPHER_PREFIX) || t.startsWith("{")) {
+            return null;
+        }
+        if (!BASE64_BODY.matcher(t).matches()) {
+            return null;
+        }
+        try {
+            return decrypt(CIPHER_PREFIX + t);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * License 导入输入统一解包入口：LIC1- 密文直接解密（失败抛异常视为篡改）；
+     * 复制丢前缀的密文自动补前缀尝试解密（失败静默回退）；明文 JSON 原样透传。
+     * <p>Controller 层预解析与 Service 层导入共用本方法，保证各入口密文兼容口径一致。
+     *
+     * @throws IllegalArgumentException 带前缀密文解密失败（损坏或篡改）
+     */
+    public static String toPlainJson(String input) {
+        if (input == null) {
+            return null;
+        }
+        String t = input.trim();
+        if (isCipherToken(t)) {
+            return decrypt(t);
+        }
+        String salvaged = tryDecryptUnprefixed(t);
+        return salvaged != null ? salvaged : input;
+    }
+
     private static String escapeJson(String val) {
         return val == null ? "" : val.replace("\"", "\\\"");
     }
@@ -329,6 +484,8 @@ public class LicenseGenerateTool {
         System.out.println("  keygen                                       - 生成RSA-2048密钥对");
         System.out.println("  sign                                         - 交互式签发License（含业态包绑定）");
         System.out.println("  sign --private-key=<base64> [选项]           - 命令行签发（脚本化，T3.15）");
+        System.out.println("  encrypt <licenseJson>                        - 明文 License JSON 加密为单行密文串（LIC1- 前缀）用于交付");
+        System.out.println("  decrypt <cipherToken>                        - 密文串还原为明文 JSON（仅供核对/排障，交付仍用密文）");
         System.out.println();
         System.out.println("命令行选项（sign 子命令，均可选，缺项走默认值）:");
         System.out.println("  --private-key=<base64>       私钥（脚本化必填）");
@@ -355,6 +512,8 @@ public class LicenseGenerateTool {
         System.out.println("v1.16：签发时可绑定业态包(bizCode)，导入时校验租户业态匹配");
         System.out.println("v1.28：T3.15 缺口封闭——新增 --biz-code / --plan 命令行参数；getDefaultFeatures 改为引用 EditionFeatureConfig；");
         System.out.println("       edition 走 normalizeEdition 归一化，兼容 pro/adv/base/ENTERPRISE 全部别名。");
+        System.out.println("v1.29：License 交付密文化——新增 encrypt/decrypt 子命令与 encrypt()/decrypt() 静态方法；");
+        System.out.println("       Admin 侧「导出 License」不再下发明文 JSON，改为 AES-256-CBC 单行密文串，导入端按 LIC1- 前缀自动识别解密后走 RSA 验签。");
     }
 
     /**

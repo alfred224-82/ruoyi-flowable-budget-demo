@@ -1,0 +1,88 @@
+===== Q1) T5.9 隐形成本 =====
+  salaryAccrualJob -> 2 个类
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/FeeSalaryRecord.java
+      ruoyi-job/src/main/java/com/ruoyi/job/service/FeeAccrualJob.java
+  assetDepreciationJob -> 2 个类
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/FeeAssetDepreciation.java
+      ruoyi-job/src/main/java/com/ruoyi/job/service/FeeAccrualJob.java
+  loanInterestJob -> 2 个类
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/FeeLoanInterest.java
+      ruoyi-job/src/main/java/com/ruoyi/job/service/FeeAccrualJob.java
+  projectSharing -> 0 个类
+  FEAT_HIDDEN_COST 标注类 = 9
+      ruoyi-admin/src/main/java/com/ruoyi/web/controller/fee/FeeAssetController.java L35| @RequireFeature("FEAT_HIDDEN_COST")
+      ruoyi-admin/src/main/java/com/ruoyi/web/controller/fee/FeeLoanController.java L31| @RequireFeature("FEAT_HIDDEN_COST")
+      ruoyi-admin/src/main/java/com/ruoyi/web/controller/fee/FeeProjectSharingController.java L31| @RequireFeature("FEAT_HIDDEN_COST")
+      ruoyi-admin/src/main/java/com/ruoyi/web/controller/fee/FeeStaffSalaryController.java L30| @RequireFeature("FEAT_HIDDEN_COST")
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/FeeAssetServiceImpl.java L52| private static final String FEATURE_HIDDEN_COST = "FEAT_HIDDEN_COST";
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/FeeAssetServiceImpl.java L157| // T6.8 ③：仅对开通隐形成本(FEAT_HIDDEN_COST)的租户计提，基础版租户跳过（无执行记录）
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/FeeLoanServiceImpl.java L49| private static final String FEATURE_HIDDEN_COST = "FEAT_HIDDEN_COST";
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/FeeLoanServiceImpl.java L112| // T6.8 ③：仅对开通隐形成本(FEAT_HIDDEN_COST)的租户计提，基础版租户跳过（无执行记录）
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/FeeStaffSalaryServiceImpl.java L49| private static final String FEATURE_HIDDEN_COST = "FEAT_HIDDEN_COST";
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/FeeStaffSalaryServiceImpl.java L117| // T6.8 ③：仅对开通隐形成本(FEAT_HIDDEN_COST)的租户计提，基础版租户跳过（无执行记录）
+      ruoyi-system/src/main/java/com/ruoyi/system/service/ITenantFeatureGuard.java L19| * @param featureCode 开关编码（如 FEAT_HIDDEN_COST）
+      ruoyi-common/src/main/java/com/ruoyi/common/constant/EditionFeatureConfig.java L68| "FEAT_HIDDEN_COST",          // 隐形成本四项(薪资/折旧/分成/利息)（T5.9）
+      ruoyi-common/src/main/java/com/ruoyi/common/constant/EditionFeatureConfig.java L131| "FEAT_HIDDEN_COST",          // 隐形成本四项
+  SalaryAccrual 类 = 0: 
+  AssetDepreciation 类 = 3: FeeAssetDepreciation.java(56行), FeeAssetDepreciationVo.java(37行), FeeAssetDepreciationMapper.java(15行)
+  LoanInterest 类 = 4: FeeLoanInterest.java(46行), FeeLoanInterestVo.java(33行), FeeLoanInterestMapper.java(15行), LoanInterestTask.java(55行)
+  ProjectSharing 类 = 6: FeeProjectSharingController.java(99行), FeeProjectSharing.java(81行), FeeProjectSharingVo.java(47行), FeeProjectSharingMapper.java(15行), IFeeProjectSharingService.java(47行), FeeProjectSharingServiceImpl.java(208行)
+
+===== Q2) T5.18 规则引擎匹配链 + 发票验真 =====
+  发票验真相关类 = 3
+      ruoyi-admin/src/main/java/com/ruoyi/web/controller/fee/InvoiceVerifyController.java (87 行)
+      ruoyi-system/src/main/java/com/ruoyi/system/service/IInvoiceVerifyService.java (46 行)
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/InvoiceVerifyServiceImpl.java (81 行)
+  FEAT_INVOICE_VERIFY 标注类 = 3
+      ruoyi-admin/src/main/java/com/ruoyi/web/controller/fee/InvoiceVerifyController.java L24| * 功能开关：FEAT_INVOICE_VERIFY（高级版+），类级 @RequireFeature 拦截。
+      ruoyi-admin/src/main/java/com/ruoyi/web/controller/fee/InvoiceVerifyController.java L34| @RequireFeature("FEAT_INVOICE_VERIFY")
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/ExpenseBillServiceImpl.java L218| if (featureChecker.isFeatureEnabled("FEAT_INVOICE_VERIFY")) {
+      ruoyi-common/src/main/java/com/ruoyi/common/constant/EditionFeatureConfig.java L64| "FEAT_INVOICE_VERIFY",       // 发票 OCR+验真+金额比对（T5.18）
+      ruoyi-common/src/main/java/com/ruoyi/common/constant/EditionFeatureConfig.java L127| "FEAT_INVOICE_VERIFY",       // 发票 OCR+验真+金额比对
+  --- 规则反哺（财务确认/纠偏写回规则库）---
+      ruoyi-admin/src/main/java/com/ruoyi/web/controller/fee/MappingRuleController.java (138 行) 反哺信号=无
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/bo/MappingRuleBo.java (83 行) 反哺信号=无
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/MappingRule.java (90 行) 反哺信号=无
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/vo/MappingRuleVo.java (121 行) 反哺信号=无
+      ruoyi-system/src/main/java/com/ruoyi/system/mapper/MappingRuleMapper.java (32 行) 反哺信号=无
+      ruoyi-system/src/main/java/com/ruoyi/system/service/IMappingRuleService.java (118 行) 反哺信号=无
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/MappingRuleServiceImpl.java (346 行) 反哺信号=无
+  --- 匹配链路五级（发票号精确/关键字/模糊/金额区间/人工兜底）---
+
+===== Q3) T5.17 报销管控三级预警 + 追溯时间线 =====
+      ruoyi-admin/src/main/java/com/ruoyi/web/controller/fee/ExpenseBillController.java (192 行) FEAT_EXPENSE_CONTROL=1 85/95/100阈值=0 时间线=0
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/bo/ExpenseBillBo.java (154 行) FEAT_EXPENSE_CONTROL=0 85/95/100阈值=0 时间线=0
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/ExpenseBill.java (241 行) FEAT_EXPENSE_CONTROL=0 85/95/100阈值=0 时间线=0
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/vo/ExpenseBillImportVo.java (98 行) FEAT_EXPENSE_CONTROL=0 85/95/100阈值=0 时间线=0
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/vo/ExpenseBillVo.java (298 行) FEAT_EXPENSE_CONTROL=0 85/95/100阈值=0 时间线=0
+      ruoyi-system/src/main/java/com/ruoyi/system/mapper/ExpenseBillMapper.java (131 行) FEAT_EXPENSE_CONTROL=0 85/95/100阈值=0 时间线=0
+      ruoyi-system/src/main/java/com/ruoyi/system/service/IExpenseBillService.java (84 行) FEAT_EXPENSE_CONTROL=0 85/95/100阈值=0 时间线=0
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/ExpenseBillServiceImpl.java (465 行) FEAT_EXPENSE_CONTROL=0 85/95/100阈值=0 时间线=2
+  FEAT_EXPENSE_CONTROL 标注类 = 4: ExpenseBillController.java, FeeOperationLogController.java, TrackControlController.java, EditionFeatureConfig.java
+
+===== Q4) T14.2 续费入口（PC + 小程序）=====
+  ruoyi-ui 含「续费/renew」的文件 = 0
+  ruoyi-ui views 下 billing 相关 = 0
+  ruoyi-app 含「续费/renew」的文件 = 0
+  计费后端类 = 14: BillingOrderController.java(84行), BillingPlanController.java(85行), BillingOrderCreateBo.java(40行), SysBillingPlanBo.java(60行), SysBillingOrder.java(70行), SysBillingPlan.java(64行), SysBillingOrderVo.java(76行), SysBillingPlanVo.java(52行), SysBillingOrderMapper.java(15行), SysBillingPlanMapper.java(15行), IBillingOrderService.java(58行), IBillingPlanService.java(47行), BillingOrderServiceImpl.java(218行), BillingPlanServiceImpl.java(79行)
+      BillingOrderController.java L20| * <p>平台代下单/离线收款开通/续费；【严禁自动扣款】——付费套餐须显式确认收款（markPaid）方激活。
+      BillingOrderCreateBo.java L12| * <p>平台代下单/租户续费下单入参：指定租户 + 套餐；服务层据套餐换算金额/天数并回写 sys_tenant.expire_date。
+      BillingOrderCreateBo.java L23| /** 目标租户ID（平台代下单必填；租户自助续费取当前登录租户，忽略此值） */
+      IBillingOrderService.java L9| * 计费订单服务接口（T14.1 下单/开通/续费）
+      IBillingOrderService.java L35| * 下单（平台代下单/续费）：校验套餐与首月特惠资格，生成订单；
+      BillingOrderServiceImpl.java L40| * <p>续费到期日顺延（现到期未过则从其起算）；首月特惠 first_only 同租户仅一次；【严禁自动扣款】。
+      BillingOrderServiceImpl.java L105| // 续费叠加：现有到期未过则从其顺延，否则从当前时间起算
+      BillingOrderServiceImpl.java L184| * 开通/续费回写租户：license_type/edition/expire_date/status=NORMAL
+      BillingOrderServiceImpl.java L201| log.info("[Billing] 租户 {} 开通/续费至 {}（licenseType={} edition={} versionType={}）",
+
+===== Q5) T14.4 订阅消息剩余授权次数校验 =====
+  候选类 = 3
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/MessageLog.java (65 行)
+      ruoyi-system/src/main/java/com/ruoyi/system/service/message/impl/WechatTemplateMessageProvider.java (131 行)
+      ruoyi-system/src/main/java/com/ruoyi/system/service/message/MessageResult.java (59 行)
+  含剩余授权次数信号的消息类 = 5
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/SysSubscribeQuota.java
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/vo/SysSubscribeQuotaVo.java
+      ruoyi-system/src/main/java/com/ruoyi/system/mapper/SysSubscribeQuotaMapper.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/SubscribeQuotaServiceImpl.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/ISubscribeQuotaService.java

@@ -1,0 +1,6 @@
+{
+  "disableScroll": true,
+  "usingComponents": {
+    "micro-tabbar": "../../../components/micro-tabbar/micro-tabbar"
+  }
+}

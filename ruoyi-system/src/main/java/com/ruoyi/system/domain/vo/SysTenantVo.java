@@ -59,7 +59,7 @@ public class SysTenantVo implements Serializable {
     private String versionType;
 
     /**
-     * 小程序全局主题key（T15.36）：theme_default/theme_warm/theme_fresh/theme_elegant
+     * 小程序全局主题key（T15.36；M27 T27.1 命名对齐）：theme_fresh/theme_vivid/theme_dark/theme_handdrawn
      */
     private String appThemeKey;
 

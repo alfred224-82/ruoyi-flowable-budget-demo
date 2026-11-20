@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <link rel="stylesheet" href="/h5/assets/uni.dac92955.css">
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover" />
+  <!-- PWA 元信息：主题色 / iOS 全屏 / 桌面标题（无论 PWA_ENABLED 开关状态都保留，避免启用后重复声明） -->
+  <meta name="theme-color" content="#1565C0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="资金管控" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <!-- PWA 占位符：由 vite.config.js 的 pwaAssetsPlugin.transformIndexHtml 按 PWA_ENABLED 开关注入
+       - 开关打开（构建设 VITE_PWA_ENABLED=true）：注入 <link rel="manifest"> + SW 注册脚本
+       - 开关关闭（当前默认）：manifest 替换为空；SW 占位符注入「注销残留 SW + 清 caches」清理脚本 -->
+  
+  <!-- PWA: 图标（多尺寸兼容，非 PWA 场景下也用作 favicon / apple-touch-icon） -->
+  <link rel="icon" type="image/png" sizes="192x192" href="/h5/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="/h5/icon-152.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/h5/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="167x167" href="/h5/icon-152.png" />
+  <title>阿杰小账本</title>
+  <!-- ★html-to-image（19KB gzip）+ html2canvas（45KB gzip）：share-image-generator / activity-poster 截图分享库 -->
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <!--preload-links-->
+  <!--app-context-->
+  <script type="module" crossorigin src="/h5/assets/index-DQC0ZMjr.js"></script>
+  <link rel="stylesheet" crossorigin href="/h5/assets/index-CqQs1OT2.css">
+</head>
+<body>
+  <div id="app"><!--app-html--></div>
+  <!-- PWA 占位符：见 head 中说明，由 vite.config.js 按 PWA_ENABLED 开关注入 SW 注册脚本或清理脚本 -->
+  <script>
+    // PWA 已关闭：注销任何残留 Service Worker 并清空全部 caches，回退纯浏览器 HTTP 行为。
+    // 当前页仍被旧 SW 控制时自动重载一次（sessionStorage 防循环），重载后即为无 SW 干净环境。
+    (function() {
+      if (!('serviceWorker' in navigator)) return;
+      var clean = function() {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          regs.forEach(function(r) { r.unregister(); });
+        });
+        if (window.caches) caches.keys().then(function(ks) { ks.forEach(function(k) { caches.delete(k); }); });
+      };
+      if (navigator.serviceWorker.controller && !sessionStorage.getItem('sw-killed')) {
+        sessionStorage.setItem('sw-killed', '1');
+        clean();
+        window.location.reload();
+        return;
+      }
+      clean();
+    })();
+  </script>
+
+</body>
+</html>

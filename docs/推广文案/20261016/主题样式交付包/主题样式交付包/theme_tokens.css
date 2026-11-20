@@ -1,0 +1,218 @@
+/* ============================================================
+   小账本 H5 · 四主题设计 Token
+   用法：<html data-theme="t1|t2|t3|t4">，切主题只改一个属性
+   说明：主题差异全部由 CSS 变量表达，零图片请求
+   ============================================================ */
+
+/* ---------- 主题 1：清新简约风 ---------- */
+:root,
+:root[data-theme="t1"] {
+  /* 配色 */
+  --page-bg:      #F6F8FC;
+  --card-bg:      #FFFFFF;
+  --text:         #1D2129;
+  --text-sub:     #86909C;
+  --brand:        #4F8FF7;
+  --brand-2:      #7AB8FF;
+  --brand-weak:   rgba(79,143,247,.10);
+  --danger:       #E54545;          /* 退出登录等危险操作 */
+  --border:       rgba(29,33,41,.08);
+
+  /* 圆角 */
+  --radius-card:  12px;
+  --radius-btn:   24px;
+  --radius-img:   12px;
+  --radius-tag:   10px;
+
+  /* 阴影 */
+  --shadow-card:  0 2px 8px rgba(29,33,41,.06);
+  --shadow-btn:   0 6px 16px rgba(79,143,247,.18);
+
+  /* 排版（四主题共用骨架，不随主题变） */
+  --font-title:   28px;
+  --font-sub:     18px;
+  --font-body:    15px;
+  --lh-body:      1.6;
+  --gutter:       16px;
+
+  /* 动效 */
+  --ease:         cubic-bezier(.22,.61,.36,1);
+  --dur-title:    300ms;
+  --dur-card:     260ms;
+  --scale-press:  .96;
+
+  /* 图标风格：线性 → 用 stroke 图标 */
+  --icon-style:   line;
+}
+
+/* ---------- 主题 2：活力渐变风（偏红） ---------- */
+:root[data-theme="t2"] {
+  --page-bg:      #FFF1F0;
+  --card-bg:      #FFFFFF;
+  --text:         #2B2B2B;
+  --text-sub:     #8A6E6E;
+  --brand:        linear-gradient(135deg, #F5455C 0%, #FF7A45 100%);
+  --brand-solid:  #F5455C;          /* 渐变不支持时兜底 */
+  --brand-2:      #FFD166;
+  --brand-weak:   rgba(245,69,92,.10);
+  --danger:       #E54545;
+  --border:       rgba(43,43,43,.08);
+
+  --radius-card:  16px;
+  --radius-btn:   28px;
+  --radius-img:   16px;
+  --radius-tag:   12px;
+
+  --shadow-card:  0 2px 10px rgba(245,69,92,.10);
+  --shadow-btn:   0 6px 18px rgba(245,69,92,.28);
+
+  --font-title:   28px;
+  --font-sub:     18px;
+  --font-body:    15px;
+  --lh-body:      1.6;
+  --gutter:       16px;
+
+  --ease:         cubic-bezier(.34,1.56,.64,1);   /* 弹性更强 */
+  --dur-title:    360ms;
+  --dur-card:     280ms;
+  --scale-press:  .95;
+
+  --icon-style:   solid-round;      /* 圆润面状 */
+}
+
+/* ---------- 主题 3：暗黑科技风 ---------- */
+:root[data-theme="t3"] {
+  --page-bg:      #0B0F19;
+  --card-bg:      #151A26;
+  --text:         #E8ECF4;
+  --text-sub:     #8B95A5;
+  --brand:        #5B8FFF;
+  --brand-2:      #00E5FF;          /* 强调色，用于数字/选中态 */
+  --brand-weak:   rgba(91,143,255,.14);
+  --danger:       #FF5C5C;
+  --border:       rgba(91,143,255,.25);
+  --border-hi:    rgba(0,229,255,.55);
+
+  --radius-card:  10px;
+  --radius-btn:   24px;
+  --radius-img:   10px;
+  --radius-tag:   8px;
+
+  --shadow-card:  0 2px 10px rgba(0,0,0,.40);
+  --shadow-btn:   0 0 12px rgba(91,143,255,.45);
+
+  --font-title:   28px;
+  --font-sub:     18px;
+  --font-body:    15px;
+  --lh-body:      1.6;
+  --gutter:       16px;
+
+  --ease:         cubic-bezier(.22,.61,.36,1);
+  --dur-title:    320ms;
+  --dur-card:     240ms;
+  --scale-press:  .97;
+
+  --icon-style:   solid-glow;       /* 面状发光 */
+}
+
+/* ---------- 主题 4：温暖手绘风 ---------- */
+:root[data-theme="t4"] {
+  --page-bg:      #FFF9F0;
+  --card-bg:      #FFFFFF;
+  --text:         #3A3A3A;
+  --text-sub:     #9E9E9E;
+  --brand:        #FFB347;
+  --brand-2:      #FF8A8A;
+  --brand-weak:   rgba(255,179,71,.14);
+  --danger:       #E5544B;
+  --border:       rgba(58,58,58,.08);
+
+  --radius-card:  18px;
+  --radius-btn:   22px;
+  --radius-img:   16px;
+  --radius-tag:   14px;             /* 贴纸感，圆角更大 */
+
+  --shadow-card:  0 3px 10px rgba(255,179,71,.14);
+  --shadow-btn:   0 6px 16px rgba(255,179,71,.22);
+
+  --font-title:   28px;             /* 圆润字体，字号不变 */
+  --font-sub:     18px;
+  --font-body:    15px;
+  --lh-body:      1.7;              /* 手绘风行距略大 */
+  --gutter:       16px;
+  --font-family:  "HYQiHei- rounded", "PingFang SC", sans-serif;
+
+  --ease:         cubic-bezier(.34,1.4,.64,1);     /* 弹性回弹 */
+  --dur-title:    340ms;
+  --dur-card:     300ms;
+  --scale-press:  .94;              /* 回弹更明显 */
+
+  --icon-style:   hand-drawn;
+}
+
+/* ============================================================
+   通用组件：只写一次，四主题自动生效
+   ============================================================ */
+.page {
+  background: var(--page-bg);
+  color: var(--text);
+  padding: 0 var(--gutter);
+  font-size: var(--font-body);
+  line-height: var(--lh-body);
+}
+.title { font-size: var(--font-title); font-weight: 700; }
+.sub   { font-size: var(--font-sub);   font-weight: 500; color: var(--text-sub); }
+
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  animation: card-in var(--dur-card) var(--ease) both;
+}
+
+.btn-primary {
+  background: var(--brand);
+  background-color: var(--brand-solid, transparent);
+  color: #fff;
+  border-radius: var(--radius-btn);
+  box-shadow: var(--shadow-btn);
+  transition: transform 120ms var(--ease);
+}
+.btn-primary:active { transform: scale(var(--scale-press)); }
+
+/* 危险操作：四主题统一红色描边 */
+.btn-danger {
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  background: transparent;
+  border-radius: var(--radius-btn);
+}
+
+/* 主题 3 额外：卡片描边 */
+:root[data-theme="t3"] .card { border: 1px solid var(--border); }
+
+/* 入场动效 */
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes title-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.title { animation: title-in var(--dur-title) var(--ease) both; }
+
+/* 主题 2：按钮呼吸光 */
+:root[data-theme="t2"] .btn-primary { animation: breathe 2.4s ease-in-out infinite; }
+@keyframes breathe {
+  0%,100% { box-shadow: 0 6px 18px rgba(245,69,92,.28); }
+  50%     { box-shadow: 0 6px 26px rgba(245,69,92,.48); }
+}
+
+/* 主题 4：标题轻微摇摆入场 */
+:root[data-theme="t4"] .title { animation: sway 600ms var(--ease) both; }
+@keyframes sway {
+  0%   { opacity:0; transform: translateY(10px) rotate(-2deg); }
+  60%  { transform: translateY(0) rotate(1deg); }
+  100% { opacity:1; transform: none; }
+}

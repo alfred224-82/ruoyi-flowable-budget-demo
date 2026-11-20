@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="t1">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>小账本 H5 · 四主题 + 贴纸图标演示</title>
+
+<!-- 第一层：主题变量 + 通用组件（gzip 后约 5.9 KB） -->
+<link rel="stylesheet" href="theme_tokens.css">
+<link rel="stylesheet" href="components.css">
+<!-- 第二层：贴纸 & 图标接入样式 -->
+<link rel="stylesheet" href="svg_assets.css">
+
+<style>
+  /* 本页专用：主题切换器 */
+  .switcher{position:fixed;top:10px;right:10px;z-index:99;display:flex;gap:6px;
+    background:var(--card-bg);padding:5px;border-radius:999px;box-shadow:var(--shadow-card)}
+  .switcher button{width:28px;height:28px;border-radius:50%;border:2px solid transparent;
+    font-size:11px;color:#fff;font-weight:700;transition:transform 160ms}
+  .switcher button.on{border-color:var(--brand);transform:scale(1.12)}
+  .sw1{background:#4F8FF7}.sw2{background:#F5455C}.sw3{background:#0B0F19}.sw4{background:#FFB347}
+  .demo{max-width:430px;margin:0 auto;padding:66px 16px 20px}
+  .sec{margin-top:22px}
+  .btn-disabled{background:var(--border);color:var(--text-sub);
+    border-radius:var(--radius-btn);height:46px;width:100%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;font-weight:600;cursor:not-allowed}
+</style>
+</head>
+<body>
+
+<!-- 主题切换：1 清新简约 / 2 活力渐变 / 3 暗黑科技 / 4 温暖手绘 -->
+<div class="switcher">
+  <button class="sw1" data-theme="t1" onclick="setTheme('t1',this)">1</button>
+  <button class="sw2" data-theme="t2" onclick="setTheme('t2',this)">2</button>
+  <button class="sw3" data-theme="t3" onclick="setTheme('t3',this)">3</button>
+  <button class="sw4" data-theme="t4" onclick="setTheme('t4',this)">4</button>
+</div>
+
+<div class="page"><div class="demo">
+
+  <!-- ===== 第二层展示区：手绘贴纸（<img> 直引） ===== -->
+  <div class="deco-panel">
+    <div class="cap"><b>手绘贴纸 · 8 个独立 SVG</b><span>合计 1.52 KB</span></div>
+    <div class="deco-row" id="stickerBox"></div>
+
+    <!-- 图标网格（CSS mask，可变色） -->
+    <div class="ico-grid" id="iconBox"></div>
+
+    <!-- 同一图标在四主题下的取色 -->
+    <div class="tone-row" id="toneBox"></div>
+
+    <div class="hint">
+      贴纸用 <code>&lt;img src="stickers/hand-star.svg"&gt;</code> 直引，自带填充与描边；<br>
+      图标用 CSS <code>mask</code> 方案——文件仍是独立 SVG，但颜色由 <code>--icon-color</code> 控制，切主题自动换色，不用换图。
+    </div>
+  </div>
+
+  <!-- ===== 登录表单（图标已挂在标签上） ===== -->
+  <div class="navbar-sys">杰杰旅游社</div>
+  <div class="title" style="margin-bottom:4px">上海市</div>
+
+  <div class="sec">
+    <div class="field">
+      <div class="field-label">账号</div>
+      <input class="input" placeholder="请输入账号">
+    </div>
+    <div class="field">
+      <div class="field-label">密码</div>
+      <input class="input" type="password" placeholder="请输入密码">
+    </div>
+    <div class="check-row">
+      <input type="checkbox" checked><span>记住账号</span>
+    </div>
+    <div style="height:14px"></div>
+    <div class="btn-disabled">登 录</div>
+    <div style="height:10px"></div>
+    <button class="btn btn-danger">
+      <i data-ico="ico-logout" class="sm" style="margin-right:6px"></i>退出登录
+    </button>
+  </div>
+
+  <!-- ===== 选择门店 ===== -->
+  <div class="sec">
+    <div class="card-title">
+      <span><i data-ico="ico-location" class="sm" style="margin-right:5px"></i>选择门店</span>
+      <span class="link">开启定位</span>
+    </div>
+
+    <div class="store-card on" style="margin-top:8px">
+      <div class="store-logo">杰</div>
+      <div class="store-meta">
+        <div class="store-name">杰杰旅游社</div>
+        <div class="store-sub">上海市 · 徐汇区</div>
+      </div>
+      <div class="store-check">
+        <i data-ico="ico-check" class="sm" style="background:#fff"></i>
+      </div>
+    </div>
+
+    <div class="store-card">
+      <div class="store-logo" style="background:var(--brand-2)">A</div>
+      <div class="store-meta">
+        <div class="store-name">AIA桌游店</div>
+        <div class="store-sub">上海市 · 静安区</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 今日业绩 ===== -->
+  <div class="sec">
+    <div class="card">
+      <div class="card-title">
+        今日业绩
+        <span class="link"><i data-ico="ico-refresh" class="sm" style="margin-right:4px"></i>刷新</span>
+      </div>
+      <div class="stat-group" style="margin-top:8px">
+        <div class="stat"><div class="stat-num">0</div><div class="stat-label">接单数</div></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><div class="stat-num">¥0.00</div><div class="stat-label">营收</div></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><div class="stat-num">-</div><div class="stat-label">平均评分</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 列表项（图标挂在左侧） ===== -->
+  <div class="sec" style="border-radius:var(--radius-card);overflow:hidden">
+    <div class="list-item">
+      <span><i data-ico="ico-booking"></i></span>
+      <span class="txt">我的预约</span><span class="arrow">›</span>
+    </div>
+    <div class="list-item">
+      <span><i data-ico="ico-setting"></i></span>
+      <span class="txt">账号设置</span><span class="arrow">›</span>
+    </div>
+    <div class="list-item">
+      <span><i data-ico="ico-feedback"></i></span>
+      <span class="txt">投诉 / 反馈</span><span class="arrow">›</span>
+    </div>
+  </div>
+
+  <!-- ===== 底部 tab 图标 ===== -->
+  <div class="sec">
+    <div class="card" style="padding:12px">
+      <div class="cap" style="font-size:12px;color:var(--text-sub);margin-bottom:10px">底部导航图标（mask 方案）</div>
+      <div style="display:flex;justify-content:space-around">
+        <div style="text-align:center"><i data-ico="ico-home" class="lg"></i><div style="font-size:10px;color:var(--text-sub);margin-top:4px">工作台</div></div>
+        <div style="text-align:center"><i data-ico="ico-qrcode" class="lg"></i><div style="font-size:10px;color:var(--text-sub);margin-top:4px">推广码</div></div>
+        <div style="text-align:center"><i data-ico="ico-mine" class="lg"></i><div style="font-size:10px;color:var(--text-sub);margin-top:4px">我的</div></div>
+      </div>
+    </div>
+  </div>
+
+</div></div>
+
+<!-- 底部 tab 实物 -->
+<div class="tabbar">
+  <div class="tabbar-item on"><span><i data-ico="ico-home" class="lg"></i></span>工作台</div>
+  <div class="tabbar-item"><span><i data-ico="ico-qrcode" class="lg"></i></span>我的推广码</div>
+  <div class="tabbar-item"><span><i data-ico="ico-mine" class="lg"></i></span>我的</div>
+</div>
+
+<script src="icons_datauri.js"></script>
+<script src="svg_assets.js"></script>
+<script>
+  // 渲染贴纸、图标网格、四主题取色
+  renderStickers(document.getElementById('stickerBox'));
+  renderIcons(document.getElementById('iconBox'));
+  renderTones(document.getElementById('toneBox'));
+  // 给 HTML 里所有 data-ico 元素自动挂上图标
+  bindIcons(document);
+</script>
+
+</body>
+</html>

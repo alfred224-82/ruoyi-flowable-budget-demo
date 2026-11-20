@@ -17,7 +17,9 @@ import com.ruoyi.system.domain.vo.UserTenantRoleVo;
 import com.ruoyi.system.service.ISysOssService;
 import com.ruoyi.system.service.ISysUserService;
 import com.ruoyi.system.service.IUserTenantRoleService;
+import com.ruoyi.system.service.image.AvatarImageProcessor;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +37,7 @@ import java.util.Map;
  */
 @Validated
 @RequiredArgsConstructor
+@Slf4j
 @RestController
 @RequestMapping("/system/user/profile")
 public class SysProfileController extends BaseController {
@@ -42,6 +45,7 @@ public class SysProfileController extends BaseController {
     private final ISysUserService userService;
     private final ISysOssService iSysOssService;
     private final IUserTenantRoleService userTenantRoleService;
+    private final AvatarImageProcessor avatarImageProcessor;
 
     /**
      * 个人信息
@@ -136,6 +140,8 @@ public class SysProfileController extends BaseController {
 
     /**
      * 头像上传
+     * <p>★T26 头像优化：上传后自动生成 sm(80px)/md(120px)/lg(200px) 三档 JPEG 缩略图，
+     *   sys_user.avatar 存储 md 档 URL；小程序通过 avatarSize() 工具函数切换档位。
      *
      * @param avatarfile 用户头像
      */
@@ -149,9 +155,20 @@ public class SysProfileController extends BaseController {
                 return R.fail("文件格式不正确，请上传" + Arrays.toString(MimeTypeUtils.IMAGE_EXTENSION) + "格式");
             }
             SysOssVo oss = iSysOssService.upload(avatarfile);
-            String avatar = oss.getUrl();
-            if (userService.updateUserAvatar(getUsername(), avatar)) {
-                ajax.put("imgUrl", avatar);
+            String originalUrl = oss.getUrl();
+            String originalPath = oss.getFileName();
+            // ★T26 头像优化：生成三档缩略图，md 档存入 sys_user.avatar
+            String mdUrl = originalUrl;
+            try {
+                Map<String, String> variants = avatarImageProcessor.processAndUpload(originalUrl, originalPath);
+                mdUrl = variants.getOrDefault("md", originalUrl);
+                ajax.put("smUrl", variants.getOrDefault("sm", originalUrl));
+                ajax.put("lgUrl", variants.getOrDefault("lg", originalUrl));
+            } catch (Exception e) {
+                log.warn("[Profile] 头像三档生成失败，降级使用原图: {}", e.getMessage());
+            }
+            if (userService.updateUserAvatar(getUsername(), mdUrl)) {
+                ajax.put("imgUrl", mdUrl);
                 return R.ok(ajax);
             }
         }

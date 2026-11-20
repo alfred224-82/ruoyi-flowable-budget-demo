@@ -1,0 +1,59 @@
+===== A) pages.json 注册实况 =====
+  pages 注册总数 = 0
+  其中 pages/micro/ = 0
+  subPackages root = (无)
+  tabBar pagePath = pages/tab-home/index, pages/tab-work/index, pages/tab-approve/index, pages/tab-mine/index
+  pages.json 含 "MICRO_TAB_CONFIG" = false
+  pages.json 含 "isMicroVersion" = false
+  pages.json 含 "microRoles" = false
+  pages.json 含 "conditional" = false
+
+===== B) 落盘 vs 注册 差集 =====
+  落盘 .vue = 34 / 注册 = 0
+  落盘但未注册 (34) = pages/approval/detail, pages/approval/list, pages/dashboard/category, pages/expense/create, pages/expense/mine, pages/expense/supplement, pages/login/index, pages/micro/activity/browse, pages/micro/booking/add, pages/micro/booking/detail, pages/micro/booking/list, pages/micro/bossHome/index, pages/micro/customerBook/detail, pages/micro/customerBook/list, pages/micro/customerBook/submit, pages/micro/customerHome/index, pages/micro/customerMine/index, pages/micro/mine/index, pages/micro/report/index, pages/micro/report/trend, pages/micro/shop/config, pages/micro/staffHome/index, pages/micro/staffIncome/detail, pages/micro/staffIncome/index, pages/micro/staffMine/index, pages/project/detail, pages/project/income, pages/project/incomeCreate, pages/project/list, pages/store/select, pages/tab-approve/index, pages/tab-home/index, pages/tab-mine/index, pages/tab-work/index
+  注册但未落盘 (0) = 无
+
+===== C) micro 页面实质性（行数/UI元素/API调用/生命周期/TODO）=====
+  config/index.js 中 /micro/* API 键名 = 31
+  ✓ micro/activity/browse.vue            行 165 UI 28 API 0 生命周期1 TODO0
+  ✓ micro/booking/add.vue                行 103 UI 25 API 0 生命周期1 TODO0
+  ✓ micro/booking/detail.vue             行  84 UI 32 API 0 生命周期1 TODO0
+  ✓ micro/booking/list.vue               行 158 UI 21 API 0 生命周期1 TODO0
+  ✓ micro/bossHome/index.vue             行 145 UI 43 API 0 生命周期1 TODO0
+  ✓ micro/customerBook/detail.vue        行  83 UI 24 API 0 生命周期1 TODO0
+  ✓ micro/customerBook/list.vue          行  77 UI 13 API 0 生命周期1 TODO0
+  ✓ micro/customerBook/submit.vue        行  90 UI 23 API 0 生命周期1 TODO0
+  ✓ micro/customerHome/index.vue         行  68 UI 14 API 0 生命周期1 TODO0
+  ✓ micro/customerMine/index.vue         行  61 UI 12 API 0 生命周期1 TODO0
+  ✓ micro/mine/index.vue                 行  92 UI 17 API 0 生命周期1 TODO0
+  ✓ micro/report/index.vue               行  78 UI 22 API 0 生命周期1 TODO0
+  ✓ micro/report/trend.vue               行  66 UI 12 API 0 生命周期1 TODO0
+  ✓ micro/shop/config.vue                行  61 UI 14 API 0 生命周期1 TODO0
+  ✓ micro/staffHome/index.vue            行  80 UI 14 API 0 生命周期1 TODO0
+  ✓ micro/staffIncome/detail.vue         行  49 UI 22 API 0 生命周期1 TODO0
+  ✓ micro/staffIncome/index.vue          行  91 UI 27 API 0 生命周期1 TODO0
+  ✓ micro/staffMine/index.vue            行  46 UI 11 API 0 生命周期1 TODO0
+  实质实现 = 18 / 轻量或空壳 = 0
+
+===== D) 基础设施（T15.15 判定）=====
+  utils/roles.js 含 MICRO_TAB_CONFIG = true
+  utils/roles.js 含 isMicroVersion = true
+  utils/roles.js 含 SALESMAN = true
+  utils/roles.js 含 CUSTOMER = true
+  utils/roles.js 含 BOSS = true
+  App.vue 含 micro 分流 = true (命中 4 次)
+  pages/login/index.vue 含 micro 重定向 = true (命中 4 次)
+  utils/format.js 含 BOOKING_STATUS = true
+  utils/format.js 含 PAY_STATUS = true
+
+===== E) M16 推广分销（T16.1~T16.12）=====
+  ruoyi-app/pages/promotion 存在 = false
+  文件名含 promotion 的 .java = 7
+      ruoyi-admin/src/main/java/com/ruoyi/web/controller/micro/PromotionActivityController.java
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/bo/PromotionActivityBo.java
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/PromotionActivity.java
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/vo/PromotionActivityVo.java
+      ruoyi-system/src/main/java/com/ruoyi/system/mapper/PromotionActivityMapper.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/PromotionActivityServiceImpl.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/IPromotionActivityService.java
+  ruoyi-ui/src 下含 promotion 的文件 = 0

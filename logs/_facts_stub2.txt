@@ -1,0 +1,88 @@
+===== A) message 包全貌 =====
+  ruoyi-system/src/main/java/com/ruoyi/system/service/message/IMessageProvider.java  (31 行)
+  ruoyi-system/src/main/java/com/ruoyi/system/service/message/impl/WechatKfMessageProvider.java  (118 行)
+  ruoyi-system/src/main/java/com/ruoyi/system/service/message/impl/WechatTemplateMessageProvider.java  (131 行)
+  ruoyi-system/src/main/java/com/ruoyi/system/service/message/impl/WecomAppMessageProvider.java  (122 行)
+  ruoyi-system/src/main/java/com/ruoyi/system/service/message/MessageContext.java  (45 行)
+  ruoyi-system/src/main/java/com/ruoyi/system/service/message/MessageProviderDispatcher.java  (90 行)
+  ruoyi-system/src/main/java/com/ruoyi/system/service/message/MessageResult.java  (59 行)
+
+===== B) 三个 Provider 是真发送还是桩 =====
+--- WechatTemplateMessageProvider  (ruoyi-system/src/main/java/com/ruoyi/system/service/message/impl/WechatTemplateMessageProvider.java)  行数 131
+      ✓ 真实 HTTP 调用                   = 7
+      ✗ TODO/未实现/模拟                  = 0
+      ✓ 仅记日志/直接 return true          = 3
+      ✓ 配置项读取 @Value                 = 2
+--- WechatKfMessageProvider  (ruoyi-system/src/main/java/com/ruoyi/system/service/message/impl/WechatKfMessageProvider.java)  行数 118
+      ✓ 真实 HTTP 调用                   = 7
+      ✗ TODO/未实现/模拟                  = 0
+      ✓ 仅记日志/直接 return true          = 3
+      ✓ 配置项读取 @Value                 = 2
+--- WecomAppMessageProvider  (ruoyi-system/src/main/java/com/ruoyi/system/service/message/impl/WecomAppMessageProvider.java)  行数 122
+      ✓ 真实 HTTP 调用                   = 7
+      ✗ TODO/未实现/模拟                  = 0
+      ✓ 仅记日志/直接 return true          = 3
+      ✓ 配置项读取 @Value                 = 3
+
+===== C) 内容安全真身（imgSecCheck / msgSecCheck）=====
+  命中文本的类 = 10
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/ContentSecurityLog.java
+      ruoyi-system/src/main/java/com/ruoyi/system/domain/vo/ContentSecurityLogVo.java
+      ruoyi-system/src/main/java/com/ruoyi/system/mapper/ContentSecurityLogMapper.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/IContentSecurityService.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/ContentSecurityServiceImpl.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/ThemeDecorationServiceImpl.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/IThemeDecorationService.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/security/ContentCheckResult.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/security/IContentSecurity.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/security/impl/ContentSecurityBlacklistChecker.java
+  文件名含 ContentSec/SecCheck 的类 = 7: ruoyi-system/src/main/java/com/ruoyi/system/domain/ContentSecurityLog.java, ruoyi-system/src/main/java/com/ruoyi/system/domain/vo/ContentSecurityLogVo.java, ruoyi-system/src/main/java/com/ruoyi/system/mapper/ContentSecurityLogMapper.java, ruoyi-system/src/main/java/com/ruoyi/system/service/IContentSecurityService.java, ruoyi-system/src/main/java/com/ruoyi/system/service/impl/ContentSecurityServiceImpl.java, ruoyi-system/src/main/java/com/ruoyi/system/service/security/IContentSecurity.java, ruoyi-system/src/main/java/com/ruoyi/system/service/security/impl/ContentSecurityBlacklistChecker.java
+
+===== D) 通知漏斗：谁调 MessageServiceImpl / ISysMessageService =====
+--- MessageServiceImpl  (ruoyi-system/src/main/java/com/ruoyi/system/service/impl/MessageServiceImpl.java)  行数 103
+      ✓ 调 Dispatcher             = 5
+      ✓ access_channel 分发        = 2
+      ✓ MessageLog 留痕            = 14
+      ✓ 降级不阻塞                    = 2
+      implements = IMessageService
+  消息服务接口 = IMessageService, ISysMessageService
+  引用消息服务接口的类 = 16
+      ruoyi-admin/src/main/java/com/ruoyi/web/controller/biz/MessageController.java
+      ruoyi-admin/src/main/java/com/ruoyi/web/controller/micro/MicroNotifyController.java
+      ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/SysMessageController.java
+      ruoyi-job/src/main/java/com/ruoyi/job/service/BillingRemindJob.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/IMessageService.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/BudgetAdjustmentAppServiceImpl.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/BudgetPreparationServiceImpl.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/CategoryBudgetServiceImpl.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/ExpenseApprovalServiceImpl.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/FeeIncomeConfirmationServiceImpl.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/FeeNotificationServiceImpl.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/FeeProjectServiceImpl.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/OverBudgetApprovalServiceImpl.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/impl/ReservedBudgetServiceImpl.java
+      ruoyi-system/src/main/java/com/ruoyi/system/service/ISysMessageService.java
+      ruoyi-test/src/test/java/com/ruoyi/test/BudgetPreparationServiceTest.java
+
+===== E) T14.2 到期提醒：BillingRemindJob =====
+--- BillingRemindJob  (ruoyi-job/src/main/java/com/ruoyi/job/service/BillingRemindJob.java)  行数 102
+      ✓ 7/3/1 天档位                    = 10
+      ✓ REMIND_DAYS 常量               = 4
+      ✓ 走 Provider/MessageService    = 5
+      ✗ SysNotice 站内信                = 0
+      ✗ @TenantJob                   = 0
+      ✓ @XxlJob                      = 1
+      L8| import com.ruoyi.system.service.IMessageService;
+      L26| * 执行逻辑：扫描到期前 7/3/1 天的正常租户，经 {@link IMessageService} 走对应通道发送续费提醒。
+      L42| private static final int[] REMIND_DAYS = {7, 3, 1};
+      L45| private final IMessageService messageService;
+      L52| for (int days : REMIND_DAYS) {
+      L82| context.setBizType("expire_remind");
+      L91| MessageResult result = messageService.send(context);
+
+===== F) 宽限期只读拦截（T14.2 ③）=====
+--- TenantWriteBlockInterceptor  (ruoyi-framework/src/main/java/com/ruoyi/framework/interceptor/TenantWriteBlockInterceptor.java)  行数 54
+      ✓ GRACE 宽限常量                   = 7
+      ✓ 写方法拦截 POST/PUT/DELETE        = 3
+      ✗ 注册到 WebMvcConfig             = 0
+  注册/引用 TenantWriteBlockInterceptor 的类 = 2: ResourcesConfig, TenantStatusChecker

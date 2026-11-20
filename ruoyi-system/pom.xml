@@ -23,6 +23,12 @@
             <artifactId>ruoyi-common</artifactId>
         </dependency>
 
+        <!-- SpringBoot AOP（M28 T28.4 座位编排操作日志切面 SeatOperationLogAspect 依赖 aspectjweaver） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
         <!-- Flowable功能模块 -->
         <dependency>
             <groupId>com.ruoyi</groupId>

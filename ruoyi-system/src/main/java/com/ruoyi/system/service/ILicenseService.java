@@ -130,6 +130,17 @@ public interface ILicenseService {
     String generateLicenseForTenant(Long tenantId, String payloadJson);
 
     /**
+     * ★运维迁移：用当前配置的 RSA 私钥对存量 License 重新签名（soft→hard 切换时的一次性修复）。
+     * <p>遍历 sys_license 中状态为 ACTIVE / TAMPERED / EXPIRED 的记录，按存量字段重算签名内容并用私钥签名后回写；
+     * 对因更换公钥而被误判为 TAMPERED 的记录复位为 ACTIVE（EXPIRED 等真实业务状态保持不变）。
+     * 执行后清除相关租户缓存并重载系统级 License。幂等，可重复执行。
+     * <p>仅在 hard 模式且已配置 {@code license.private-key} 时可用。
+     *
+     * @return 本次成功重签的 License 条数
+     */
+    int resignAllLicenses();
+
+    /**
      * 获取按版本分组的租户选择器数据（T3.17）
      *
      * @param name 企业名称模糊搜索（可为 null）

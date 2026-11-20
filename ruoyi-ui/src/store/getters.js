@@ -30,6 +30,10 @@ const getters = {
   bizCode: state => state.bizCopy.bizCode,
   bizLang: state => state.bizCopy.lang,
   bizCopyMap: state => state.bizCopy.copyMap,
-  bizCopyLoaded: state => state.bizCopy.loaded
+  bizCopyLoaded: state => state.bizCopy.loaded,
+  // M27 T27.4：小微版主题下发（PC Boss 端与三端共用 /micro/platform/theme/current）
+  microTheme: state => state.theme.theme,
+  microThemeKey: state => state.theme.themeKey,
+  microThemePrimary: state => state.theme.theme.primaryColor
 }
 export default getters

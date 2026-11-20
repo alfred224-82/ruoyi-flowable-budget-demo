@@ -1,0 +1,81 @@
+
+.page.data-v-6b889fb9 { padding: 24rpx; padding-bottom: 140rpx; min-height: 100vh; background: var(--page-bg, #f5f6f8);
+}
+.card.data-v-6b889fb9 { background: var(--card-bg, #fff); border-radius: var(--radius-card, 16rpx); padding: 28rpx; margin-bottom: 20rpx; box-shadow: var(--shadow-card, none);
+}
+.card-title.data-v-6b889fb9 { font-size: 30rpx; font-weight: bold; display: block; margin-bottom: 20rpx; color: var(--text, #303133);
+}
+.stat-grid.data-v-6b889fb9 { display: flex; justify-content: space-around;
+}
+.stat-item.data-v-6b889fb9 { text-align: center;
+}
+.stat-num.data-v-6b889fb9 { font-size: 40rpx; font-weight: bold; color: var(--brand, #409eff); display: block;
+}
+.stat-label.data-v-6b889fb9 { font-size: 24rpx; color: var(--text-sub, #909399); display: block; margin-top: 8rpx;
+}
+
+/* ★T18.18 今日待办 */
+.todo-item.data-v-6b889fb9 { display: flex; justify-content: space-between; align-items: center; padding: 20rpx 0; border-bottom: 1rpx solid var(--border, #f0f2f5);
+}
+.todo-item.data-v-6b889fb9:last-child { border-bottom: none;
+}
+.todo-info.data-v-6b889fb9 { flex: 1;
+}
+.todo-customer.data-v-6b889fb9 { font-size: 28rpx; font-weight: bold; display: block; color: var(--text, #303133);
+}
+.todo-service.data-v-6b889fb9 { font-size: 24rpx; color: var(--text-sub, #606266); margin-top: 6rpx; display: block;
+}
+.todo-time.data-v-6b889fb9 { font-size: 24rpx; color: var(--text-sub, #909399); margin-top: 4rpx; display: block;
+}
+.todo-action.data-v-6b889fb9 { text-align: right;
+}
+.status.data-v-6b889fb9 { font-size: 24rpx; display: block; margin-bottom: 8rpx;
+}
+.btn-checkin-nav.data-v-6b889fb9 { font-size: 24rpx; background: var(--brand, #409eff); color: #fff; border-radius: 8rpx; padding: 8rpx 24rpx; border: none; margin-bottom: 8rpx;
+}
+.btn-checkin.data-v-6b889fb9 { font-size: 24rpx; background: #67c23a; color: #fff; border-radius: 8rpx; padding: 8rpx 24rpx; border: none;
+}
+
+/* ★T18.18 任务清单 */
+.todo-list.data-v-6b889fb9 { margin-top: 8rpx;
+}
+.task-summary.data-v-6b889fb9 { display: flex; justify-content: space-around; text-align: center; padding-bottom: 16rpx; border-bottom: 1rpx solid var(--border, #f0f2f5);
+}
+.task-item.data-v-6b889fb9 {
+}
+.task-label.data-v-6b889fb9 { font-size: 26rpx; color: var(--text-sub, #606266); display: block;
+}
+.task-count.data-v-6b889fb9 { font-size: 48rpx; font-weight: bold; display: block; margin-top: 8rpx;
+}
+
+/* ★T22.4 我的排班 */
+.card-title-row.data-v-6b889fb9 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20rpx;
+}
+.card-title-row .card-title.data-v-6b889fb9 { margin-bottom: 0;
+}
+.card-extra.data-v-6b889fb9 { font-size: 24rpx; color: var(--brand, #409eff);
+}
+.schedule-list.data-v-6b889fb9 {
+}
+.schedule-group.data-v-6b889fb9 { padding: 16rpx 0; border-bottom: 1rpx solid var(--border, #f0f2f5);
+}
+.schedule-group.data-v-6b889fb9:last-child { border-bottom: none;
+}
+.schedule-date.data-v-6b889fb9 { font-size: 26rpx; color: var(--text-sub, #606266); font-weight: bold; display: block; margin-bottom: 12rpx;
+}
+.schedule-items.data-v-6b889fb9 { display: flex; flex-direction: column; gap: 8rpx;
+}
+.schedule-item.data-v-6b889fb9 { display: flex; align-items: center; padding: 12rpx 16rpx; background: var(--brand-weak, #f5f7fa); border-radius: 8rpx; gap: 16rpx;
+}
+.shift-tag.data-v-6b889fb9 { font-size: 22rpx; padding: 4rpx 12rpx; border-radius: 4rpx; color: #fff;
+}
+.shift-morning.data-v-6b889fb9 { background: var(--brand, #409eff);
+}
+.shift-evening.data-v-6b889fb9 { background: #e6a23c;
+}
+.shift-time.data-v-6b889fb9 { font-size: 26rpx; color: var(--text, #303133); font-weight: 500;
+}
+.shift-remark.data-v-6b889fb9 { font-size: 22rpx; color: var(--text-sub, #909399); margin-left: auto;
+}
+.loading.data-v-6b889fb9, .empty.data-v-6b889fb9 { text-align: center; color: var(--text-sub, #909399); padding: 60rpx 0;
+}

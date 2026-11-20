@@ -146,10 +146,14 @@ public class MybatisPlusConfig {
         "role_template",
         // M15 小微版：行业模板 / 行业角色映射（系统级共享，admin 维护，不含 tenant_id，T15.2/T15.10）
         "industry_template", "industry_role_map",
+        // M36 活动结算单：行业结算模板（系统级共享，admin 维护，不含 tenant_id，T36.2）
+        "industry_settlement_template",
         // AI报表
         "ai_report_record",
         // M18 图片合规与全局敏感词：全局底库 tenant_id=0 需跨租户读取，服务层手工隔离（T18.1）
-        "sensitive_word", "image_compliance_config"
+        "sensitive_word", "image_compliance_config",
+        // M26 房间座位布局模板：平台行业默认模板 tenant_id=1 需跨租户可见，服务层手工隔离（T26.1/T26.6）
+        "room_seat_layout_template"
     );
 
     /**

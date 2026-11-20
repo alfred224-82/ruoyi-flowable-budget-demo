@@ -1,0 +1,273 @@
+
+.page.data-v-3554e5f0 {
+  padding-bottom: 140rpx;
+  background: #f0f2f5;
+  min-height: 100vh;
+}
+
+/* ═══ 已选服务卡片 ═══ */
+.service-card.data-v-3554e5f0 {
+  margin: 20rpx 24rpx 0;
+  border-radius: 16rpx;
+  overflow: hidden;
+  background: #fff;
+}
+.service-header.data-v-3554e5f0 {
+  background: linear-gradient(135deg, #2b7de9 0%, #4a9af5 100%);
+  padding: 24rpx 28rpx;
+}
+.service-header-title.data-v-3554e5f0 {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #fff;
+}
+.service-body.data-v-3554e5f0 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx;
+}
+.service-info.data-v-3554e5f0 {
+  display: flex;
+  align-items: baseline;
+  flex: 1;
+}
+.service-name.data-v-3554e5f0 {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #1a1a1a;
+  margin-right: 16rpx;
+}
+.service-price.data-v-3554e5f0 {
+  font-size: 28rpx;
+  color: #606266;
+}
+.service-edit.data-v-3554e5f0 {
+  font-size: 28rpx;
+  color: #2b7de9;
+  flex-shrink: 0;
+}
+
+/* ══ 通用卡片 ═══ */
+.card.data-v-3554e5f0 {
+  margin: 20rpx 24rpx 0;
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 28rpx;
+}
+.card-title.data-v-3554e5f0 {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #1a1a1a;
+  display: block;
+  margin-bottom: 24rpx;
+}
+.card-subtitle.data-v-3554e5f0 {
+  font-size: 24rpx;
+  color: #e6a23c;
+  display: block;
+  margin: -12rpx 0 20rpx;
+}
+
+/* ─ 日期滚动 ── */
+.date-scroll.data-v-3554e5f0 {
+  white-space: nowrap;
+}
+.date-list.data-v-3554e5f0 {
+  display: flex;
+  gap: 20rpx;
+}
+.date-item.data-v-3554e5f0 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 120rpx;
+  padding: 16rpx 0;
+  border-bottom: 4rpx solid transparent;
+}
+.date-item.active.data-v-3554e5f0 {
+  border-bottom-color: #2b7de9;
+}
+.date-mmdd.data-v-3554e5f0 {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.date-item.active .date-mmdd.data-v-3554e5f0 {
+  color: #2b7de9;
+}
+.date-label.data-v-3554e5f0 {
+  font-size: 24rpx;
+  color: #909399;
+  margin-top: 8rpx;
+}
+.date-label.active.data-v-3554e5f0 {
+  color: #2b7de9;
+}
+
+/* ── 时段网格 ── */
+.slot-grid.data-v-3554e5f0 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+.slot-btn.data-v-3554e5f0 {
+  width: calc((100% - 64rpx) / 5);
+  text-align: center;
+  padding: 18rpx 0;
+  border: 2rpx solid #dcdfe6;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  color: #606266;
+  box-sizing: border-box;
+}
+.slot-btn.active.data-v-3554e5f0 {
+  border-color: #2b7de9;
+  color: #2b7de9;
+  background: #f0f6ff;
+  font-weight: 600;
+}
+.slot-btn.disabled.data-v-3554e5f0 {
+  color: #c0c4cc;
+  background: #f5f5f5;
+  border-color: #ebeef5;
+  text-decoration: line-through;
+}
+.slot-btn.data-v-3554e5f0:active {
+  transform: scale(0.95);
+}
+
+/* ── 计数器行 ── */
+.counter-row.data-v-3554e5f0 {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+.counter-label.data-v-3554e5f0 {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #1a1a1a;
+  margin-right: 8rpx;
+}
+.counter-hint.data-v-3554e5f0 {
+  font-size: 26rpx;
+  color: #909399;
+  flex: 1;
+}
+.counter-controls.data-v-3554e5f0 {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+.counter-btn.data-v-3554e5f0 {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx solid #dcdfe6;
+  background: #fff;
+}
+.counter-btn.plus.data-v-3554e5f0 {
+  background: #2b7de9;
+  border-color: #2b7de9;
+}
+.counter-btn.plus .counter-btn-text.data-v-3554e5f0 {
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+.counter-btn.minus .counter-btn-text.data-v-3554e5f0 {
+  color: #606266;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+.counter-btn.disabled.data-v-3554e5f0 {
+  opacity: 0.4;
+}
+.counter-btn.data-v-3554e5f0:active:not(.disabled) {
+  transform: scale(0.9);
+}
+.counter-value.data-v-3554e5f0 {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1a1a1a;
+  min-width: 120rpx;
+  text-align: center;
+}
+
+/* ═══ 费用明细 ═══ */
+.cost-card .cost-row.data-v-3554e5f0 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+.cost-card .cost-row.data-v-3554e5f0:last-of-type {
+  border-bottom: none;
+}
+.cost-label.data-v-3554e5f0 {
+  font-size: 28rpx;
+  color: #303133;
+}
+.cost-value.data-v-3554e5f0 {
+  font-size: 28rpx;
+  color: #1a1a1a;
+}
+.cost-divider.data-v-3554e5f0 {
+  height: 1rpx;
+  background: #f0f0f0;
+  margin: 8rpx 0;
+}
+.cost-total.data-v-3554e5f0 {
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
+  padding-top: 16rpx;
+}
+.cost-total-label.data-v-3554e5f0 {
+  font-size: 30rpx;
+  color: #303133;
+}
+.cost-total-value.data-v-3554e5f0 {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #2b7de9;
+}
+
+/* ★ 底部操作栏 */
+.bottom-bar.data-v-3554e5f0 {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 30rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  background: #fff;
+  box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.06);
+  z-index: 10;
+}
+.bar-cancel.data-v-3554e5f0 {
+  font-size: 28rpx;
+  color: #909399;
+}
+.bar-cancel.data-v-3554e5f0:active {
+  color: #606266;
+}
+.bar-confirm.data-v-3554e5f0 {
+  background: #2b7de9;
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 600;
+  padding: 22rpx 60rpx;
+  border-radius: 44rpx;
+}
+.bar-confirm.data-v-3554e5f0:active {
+  opacity: 0.85;
+}

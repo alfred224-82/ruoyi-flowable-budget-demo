@@ -144,6 +144,8 @@ security:
     - /openapi/gateway/**
     # M15 T15.28 小微版 lite 档活动浏览页（匿名只读，tenantId 参数 + TenantHelper.supply 显式限定门店，仅返回 PUBLISHED 活动）
     - /micro/activity/browse
+    # ★M31 活动详情页（扫码进入，匿名只读，按 activityId 返回公开活动信息 + 报名状态）
+    - /micro/activity/signupDetail
 
 # MyBatisPlus配置
 # https://baomidou.com/config/

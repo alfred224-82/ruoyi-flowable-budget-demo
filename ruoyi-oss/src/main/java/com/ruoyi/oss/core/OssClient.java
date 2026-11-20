@@ -156,15 +156,27 @@ public class OssClient {
         // 云服务商直接返回
         if (StringUtils.containsAny(endpoint, OssConstant.CLOUD_SERVICE)) {
             if (StringUtils.isNotBlank(domain)) {
-                return header + domain;
+                return withProtocol(domain, header);
             }
             return header + properties.getBucketName() + "." + endpoint;
         }
         // minio 单独处理
         if (StringUtils.isNotBlank(domain)) {
-            return header + domain + "/" + properties.getBucketName();
+            return withProtocol(domain, header) + "/" + properties.getBucketName();
         }
         return header + endpoint + "/" + properties.getBucketName();
+    }
+
+    /**
+     * domain 已带协议头（如 https://xiaozhangben.com.cn/oss）时原样使用，否则按 is_https 补协议头。
+     * <p>背景：is_https 同时控制 AWS SDK 连接 endpoint（MinIO 明文 HTTP）的协议，不能为公网 URL 的
+     * https 而置 Y；域名 + SSL 到位后公网链接必须走 https，否则 H5 HTTPS 页面混合内容被拦截。
+     */
+    private static String withProtocol(String domain, String fallbackHeader) {
+        if (domain.startsWith("http://") || domain.startsWith("https://")) {
+            return domain;
+        }
+        return fallbackHeader + domain;
     }
 
     public String getPath(String prefix, String suffix) {
@@ -246,7 +258,13 @@ public class OssClient {
         }
         builder.append("\"Effect\": \"Allow\",\n\"Principal\": \"*\",\n\"Resource\": \"arn:aws:s3:::");
         builder.append(bucketName);
-        builder.append("/*\"\n}\n],\n\"Version\": \"2012-10-17\"\n}\n");
+        builder.append("""
+            /*"
+            }
+            ],
+            "Version": "2012-10-17"
+            }
+            """);
         return builder.toString();
     }
 

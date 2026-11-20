@@ -1,0 +1,25 @@
+
+.page.data-v-b7d30e50 { padding: 24rpx;
+}
+.card.data-v-b7d30e50 { background: #fff; border-radius: 16rpx; padding: 32rpx; margin-bottom: 24rpx;
+}
+.status-bar.data-v-b7d30e50 { font-size: 36rpx; font-weight: bold; text-align: center; margin-bottom: 32rpx;
+}
+.info-row.data-v-b7d30e50 { display: flex; justify-content: space-between; padding: 16rpx 0; border-bottom: 1rpx solid #f0f2f5; font-size: 28rpx;
+}
+.info-row .label.data-v-b7d30e50 { color: #909399;
+}
+.amount.data-v-b7d30e50 { font-weight: bold; color: #409eff;
+}
+.actions.data-v-b7d30e50 { display: flex; flex-direction: column; gap: 20rpx;
+}
+.btn.data-v-b7d30e50 { border-radius: 12rpx; font-size: 30rpx; border: none;
+}
+.btn.primary.data-v-b7d30e50 { background: #409eff; color: #fff;
+}
+.btn.success.data-v-b7d30e50 { background: #67c23a; color: #fff;
+}
+.btn.warn.data-v-b7d30e50 { background: #f56c6c; color: #fff;
+}
+.loading.data-v-b7d30e50 { text-align: center; color: #909399; padding: 80rpx 0;
+}

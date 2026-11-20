@@ -1,0 +1,1 @@
+import{g as n,b as t}from"./index-DQC0ZMjr.js";let a=null;function e(){return a||(a=n(t.api.microRoleDisplayNames).then(n=>n&&n.data||{}).catch(()=>(a=null,{}))),a}function r(n,t){return e().then(a=>a[n]||t)}function s(n){return e().then(t=>t._space_||n||"房间")}export{s as a,r as g,e as l};

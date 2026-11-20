@@ -1,0 +1,95 @@
+===== 母目录脚本（70 个）=====
+脚本名 | 里程碑 | 注释T编号 | 归属包
+M10_01_biz_bundle_feature_flag_menu.sql | M10 | T10.2,T10.3 | 系统管理/专业版/高级版/基础版/小微版
+M11_01_project_container_menu.sql | M11 | T11.1,T11.2,T11.3,T11.5 | 专业版/高级版/基础版
+M12_01_activity_theme_live.sql | M12 | T12.1,T12.2,T12.3,T12.4,T12.5,T12.6,T12.7,T12.8,T14.4 | 专业版/高级版/基础版
+M13_01_access_channel.sql | M13 | T7.8,T13.1,T13.2,T13.3,T13.4,T13.5,T13.6 | 专业版/高级版
+M13_02_wecom_menu.sql | M13 | T13.2 | 专业版/高级版
+M14_01_billing_settlement.sql | M14 | T13.6,T14.1,T14.2,T14.3 | 专业版/高级版/基础版/小微版
+M14_02_compliance.sql | M14 | T14.4 | 专业版/高级版/基础版/小微版
+M14_03_xxl_job_billing_remind.sql | M14 | T13.3,T14.2 | 专业版/高级版/基础版/小微版
+M15_01_micro_identity_role_tables.sql | M15 | T15.1 | 小微版
+M15_02_industry_template.sql | M15 | T15.2 | 小微版
+M15_03_page_block_share_scene.sql | M15 | T15.16,T15.3 | 小微版
+M15_04_service_pricing.sql | M15 | T15.11,T15.4 | 小微版
+M15_05_booking_settlement_cashflow.sql | M15 | T15.12,T15.13,T15.14,T15.23,T15.5 | 小微版
+M15_06_sys_menu_client_type_micro.sql | M15 | T15.6 | 小微版
+M15_07_micro_role_template_init.sql | M15 | T15.7 | 小微版
+M15_08_xxl_job_micro_tasks.sql | M15 | T15.21,T15.22 | 小微版
+M15_09_micro_role_scope_hard_isolation.sql | M15 | T15.25 | 小微版
+M15_10_micro_edition_tier_role_template.sql | M15 | T15.26,T15.27 | 小微版
+M15_11_promotion_activity_browse.sql | M15 | T15.28 | 小微版
+M15_12_fund_platform_menu_edition.sql | M15 | T15.29 | 系统管理/专业版/高级版/基础版/小微版
+M15_13_customer_credit_no_show.sql | M15 | T15.31,T15.32 | 小微版
+M15_14_frontend_menu_gap_patch.sql | M15 | T15.16,T15.17,T15.29,T15.30,T15.6 | 小微版
+M16_01_promotion_code_attribution.sql | M16 | T16.1,T16.10,T16.11,T16.5,T16.6 | 小微版
+M16_02_promotion_reward_coupon.sql | M16 | T16.10,T16.2,T16.3,T16.7,T16.9 | 小微版
+M16_03_first_order_feature_flag.sql | M16 | T16.12,T16.4,T16.8 | 小微版
+M1_01_existing_tables_add_tenant_id.sql | M1 | T1.4 | 系统管理/专业版/高级版/基础版
+M1_02_create_tables_basic.sql | M1 | T1.1,T2.3,T5.1,T5.11,T5.2,T5.3,T5.4,T5.5,T5.6,T5.7,T5.8,T5.9 | 系统管理/专业版/高级版/基础版
+M1_03_create_tables_advanced_pro.sql | M1 | T1.2 | 系统管理/专业版/高级版
+M1_04_sys_menu.sql | M1 | T1.3 | 系统管理/专业版/高级版/基础版/小微版
+M1_05_platform_foundation_tables.sql | M1 | T1.7,T4.2,T10.3 | 系统管理/专业版/高级版/基础版/小微版
+M1_06_sys_tenant_biz_channel.sql | M1 | T1.8,T8.8,T10.1,T13.1 | 系统管理/专业版/高级版/基础版/小微版
+M1_07_project_container_tables.sql | M1 | T1.9,T11.2 | 系统管理/专业版/高级版/基础版
+M2_01_roles.sql | M2 | T2.1,T2.3 | 系统管理/专业版/高级版/基础版/小微版
+M2_02_role_menu_templates.sql | M2 | T2.2 | 系统管理/专业版/高级版/基础版
+M2_03_sys_role_menu_basic.sql | M2 | T2.3 | 系统管理/专业版/高级版/基础版
+M2_04_tenant_isolation.sql | M2 | T2.4 | 系统管理/专业版/高级版/基础版/小微版
+M2_05_platform_admin_upgrade.sql | M2 | T2.4 | 系统管理/专业版/高级版/基础版
+M2_06_user_tenant_fix.sql | M2 | (无) | 系统管理/专业版/高级版/基础版
+M2_07_tenant_root_dept_backfill.sql | M2 | (无) | 系统管理/专业版/高级版/基础版
+M2_08_tenant_role_clone_migration.sql | M2 | T2.5 | 系统管理/专业版/高级版/基础版
+M2_09_tenant_max_roles.sql | M2 | T2.5,T4.1,T10.7 | 系统管理/专业版/高级版/基础版
+M2_10_downshift_menu_templates.sql | M2 | T1.3,T2.2,T6.8 | 系统管理/专业版/高级版/基础版
+M2_11_basic_boss_menu_realign.sql | M2 | T2.2 | 系统管理/专业版/高级版/基础版
+M3_01_xxl_job_tenant_expire_check.sql | M3 | T3.4 | 系统管理/专业版/高级版/基础版/小微版
+M3_02_xxl_job_all_tasks.sql | M3 | (无) | 系统管理/专业版/高级版/基础版/小微版
+M3_05_license_tenant_association.sql | M3 | T3.10,T3.11,T3.12,T3.13,T3.16 | 系统管理/专业版/高级版/基础版/小微版
+M3_06_license_management_menu.sql | M3 | T3.14,T3.17 | 系统管理/专业版/高级版/基础版/小微版
+M4_01_edition_enterprise_to_professional.sql | M4 | T4.1 | 系统管理/专业版/高级版/基础版/小微版
+M5_01_alter_tables_audit_columns.sql | M5 | T5.7,T5.8,T5.9 | 专业版/高级版/基础版
+M5_02_create_tables_category.sql | M5 | T1.5,T2.4,T5.13,T5.14,T5.16 | 专业版/高级版
+M5_03_sys_menu_expense_category.sql | M5 | T5.13 | 专业版/高级版
+M5_04_boss_category_quota.sql | M5 | T5.14 | 专业版/高级版
+M5_05_budget_domain_enhance.sql | M5 | T5.14,T5.16,T5.17,T5.18 | 专业版/高级版
+M5_06_tenant_category_and_system_level.sql | M5 | T1.5,T5.13 | 专业版/高级版
+M5_07_tenant_category_menu.sql | M5 | T5.13 | 专业版/高级版
+M5_08_platform_admin_category_menu.sql | M5 | T5.13 | 专业版/高级版
+M5_09_platform_admin_category_fix.sql | M5 | T5.13 | 专业版/高级版
+M5_10_budget_dimension_upgrade.sql | M5 | T5.13,T5.14,T6.1 | 专业版/高级版
+M5_11_cleanup_historical_budget_records.sql | M5 | (无) | 专业版/高级版
+M5_12_fee_expense_bill_sync_columns.sql | M5 | (无) | 专业版/高级版/基础版
+M5_13_basic_category_subject_mapping.sql | M5 | T2.4 | 基础版
+M5_14_budget_subject_tenant_init.sql | M5 | (无) | 专业版/高级版/基础版
+M6_01_advanced_incremental.sql | M6 | T6.1,T6.2,T6.3,T6.4,T6.7 | 专业版/高级版
+M6_02_xxl_job_credit_score.sql | M6 | T6.3 | 专业版/高级版
+M6_03_downshift_menu_migration.sql | M6 | T6.8 | 专业版/高级版
+M7_01_incremental_professional.sql | M7 | T7.1,T7.6 | 专业版
+M7_02_multi_account_set.sql | M7 | T7.7 | 专业版
+M7_03_open_api.sql | M7 | T7.8,T10.1,T13.5 | 专业版
+M8_01_sys_tenant_store_profile.sql | M8 | T8.10 | 专业版/高级版/基础版/小微版
+M8_02_portal_store_search_and_audit.sql | M8 | T8.10,T8.8 | 专业版/高级版/基础版/小微版
+
+===== 非 M 命名脚本 =====
+
+===== 母文档相关行定位 =====
+  L21| > **四条交付赛道**：**SQL**（建表/菜单/数据脚本，母目录 `docs/newrequest/sql/`）、**BE**（后端 Java）、**PC**（`ruoyi-ui`）、**MP**（`ruoyi-app` 微信小程序）
+  L487| > **M15 建表/脚本交付清单（v1.14，母目录 `docs/newrequest/sql/`，与《小微版/sql/00_执行顺序.sql》同步）**：
+  L506| > **部署索引**：小微版自包含可独立部署脚本集见《小微版/sql/00_执行顺序.sql》（**v1.14 新增 M15_09~M15_14 六个脚本**：硬隔离/分档 role_template/活动浏览页/资金平台管理菜单/防爽约/
+  L518| > **状态（全 🆕 12 项）**：截至 v1.16，全仓无任何推广码/归因/拉新奖励/优惠券**业务代码**（`grep` `promotion_code`/`attribution`/`coupon` 后端 Controller/S
+  L535| > **M16 建表/脚本交付清单（v1.16，母目录 `docs/newrequest/sql/`，与《小微版/sql/00_执行顺序.sql》同步）**：
+  L543| > **部署索引**：M16 为小微版专属，上述三脚本仅归入《小微版/sql/》，基础版/高级版/专业版 **不部署、不开放入口**；操作手册见《小微版/04_小微版操作手册.md》。
+  L695| | SQL | M5_05 | `fee_expense_bill` 补 5 列（幂等存储过程）；菜单 3316~3322 先删后插；三版本模板登记；财务(9202)全量+老板(9201)只读授权 | `docs/newrequest/sq
+  L884| > 本章记录 **ruoyi-ui 小微版 PC 后台前端**的交付清单与三方核对结论。**小程序端（ruoyi-app / uni-app）本轮未开工**（T15.15 / T15.16②③④ / T15.18 / T15.19 / T1
+  L888| > **✔ v1.15 已闭环**：上述对账建议已于 **v1.15 第十三章「全文档状态对账（2026-09-09）」** 执行完毕，覆盖 M1~M15 全量 148 项 × 四赛道（SQL / BE / PC / MP）。**M15 现
+  L902| | **SQL 修补** | `docs/最新整理好的需求/小微版/sql/M15_14_frontend_menu_gap_patch.sql`（190 行，含 9 条验收查询）+ `00_执行顺序.sql` 同步登记为 [29] | T
+  L964| | 数据库脚本 | **SQL** | `docs/newrequest/sql/`、`docs/最新整理好的需求/小微版/sql/` | 脚本文件存在性 + 表/列/菜单/perms 登记项逐条比对 |
+  L1028| | ★M16 推广分销与激励（仅小微版） | 12 | 0 | 0 | 0 | 12 | ◐ | ✘ | ✘ | ✘ | **v1.16 增补**：M16_01~M16_03 建表脚本已落盘（7 表 + 推广菜单 7180~7188 / 7
+  L1152| ### 14.3 M16 建表脚本交付清单（已落盘）
+  L1160| > **落盘位置与幂等**：三脚本母目录 `docs/newrequest/sql/` 与《小微版/sql/》**双份落盘、MD5 一致**；均遵循「先删后建 / 先删后插」幂等规范，可重复执行；仅归入《小微版/sql/00_执行顺序.sq
+  L1183| **变更记录**：v1.16 推广分销与激励整合（2026-09-10）：依据《推广分销与激励方案》v1.0，**新增 M16 推广分销与激励里程碑（T16.1~T16.12 共 12 项 🆕 任务，仅小微版启用）**：推广码（门店码 `
+
+===== 小微版索引计数（用于修正 L506 stale 数值）=====
+  source 条数 = 33
+  验收检查项数 = 14

@@ -1,0 +1,15 @@
+
+.page.data-v-d6ae4fb5 { padding: 24rpx;
+}
+.card.data-v-d6ae4fb5 { background: #fff; border-radius: 16rpx; padding: 32rpx; margin-bottom: 24rpx;
+}
+.card-title.data-v-d6ae4fb5 { font-size: 30rpx; font-weight: bold; display: block; margin-bottom: 20rpx;
+}
+.form-item.data-v-d6ae4fb5 { margin-bottom: 16rpx;
+}
+.form-label.data-v-d6ae4fb5 { font-size: 26rpx; color: #606266; display: block; margin-bottom: 12rpx;
+}
+.form-textarea.data-v-d6ae4fb5 { background: #f5f7fa; border-radius: 8rpx; padding: 20rpx; font-size: 28rpx; width: 100%; height: 160rpx; box-sizing: border-box;
+}
+.btn-save.data-v-d6ae4fb5 { background: #409eff; color: #fff; border-radius: 12rpx; margin-top: 20rpx; font-size: 30rpx;
+}

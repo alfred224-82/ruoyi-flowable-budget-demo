@@ -1,5 +1,6 @@
 package com.ruoyi.system.service;
 
+import com.ruoyi.system.domain.vo.MicroSceneVo;
 import com.ruoyi.system.domain.vo.PortalStoreVo;
 import com.ruoyi.system.domain.vo.PortalTenantVo;
 
@@ -45,4 +46,34 @@ public interface IPortalService {
      * @return 门店公开列表
      */
     List<PortalStoreVo> searchStores(String keyword, String city, BigDecimal userLng, BigDecimal userLat, int limit);
+
+    /**
+     * T29.2 按租户号查询门店列表（Boss 手动输租户号登录，匿名端点）：
+     * 校验租户号合法性（存在/未停用/未过期）后返回其门店公开展示信息；非法租户号抛 {@code ServiceException}。
+     * <p>本系统租户即门店（sys_tenant 含企业名/城市/地址），故通常返回单元素列表；
+     * 前端门店列表页需主动点选，不做自动跳转。
+     *
+     * @param tenantNo 平台提供的租户号（sys_tenant.tenant_code）
+     * @return 门店公开列表
+     */
+    List<PortalStoreVo> listStoresByTenantNo(String tenantNo);
+
+    /**
+     * T29.2 租户号合法性校验（匿名端点）：命中且状态正常/未到期返回门店公开信息，
+     * 未命中/停用/到期抛 {@code ServiceException}（供前端提示「租户不存在或已停用」）。
+     *
+     * @param tenantNo 平台提供的租户号（sys_tenant.tenant_code）
+     * @return 门店公开信息
+     */
+    PortalStoreVo resolveTenantNo(String tenantNo);
+
+    /**
+     * T29.3 扫码 scene 解析 + 校验（员工/顾客扫码带租户直接登录，匿名端点）：
+     * scene 编码 {@code t={tenantId}&s={storeId}&r={role}}；校验租户存在/未停用/未过期、门店归属该租户，
+     * 非法抛 {@code ServiceException}（前端提示「二维码无效」并回退租户号输入页）。
+     *
+     * @param scene 二维码 scene 字符串（前端已 decodeURIComponent）
+     * @return scene 解析结果（tenantId/storeId/role + 门店公开信息）
+     */
+    MicroSceneVo resolveScene(String scene);
 }

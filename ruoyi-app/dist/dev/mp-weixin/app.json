@@ -1,0 +1,103 @@
+{
+  "pages": [
+    "pages/micro/tenant/input",
+    "pages/store/select",
+    "pages/login/index",
+    "pages/tab-home/index",
+    "pages/tab-work/index",
+    "pages/tab-approve/index",
+    "pages/tab-mine/index",
+    "pages/dashboard/category",
+    "pages/project/list",
+    "pages/project/detail",
+    "pages/project/income",
+    "pages/project/incomeCreate",
+    "pages/approval/list",
+    "pages/approval/detail",
+    "pages/expense/create",
+    "pages/expense/mine",
+    "pages/expense/supplement",
+    "pages/micro/bossHome/index",
+    "pages/micro/bossTodo/index",
+    "pages/micro/bossPromo/index",
+    "pages/micro/bossBook/list",
+    "pages/micro/booking/list",
+    "pages/micro/booking/detail",
+    "pages/micro/booking/add",
+    "pages/micro/report/index",
+    "pages/micro/report/trend",
+    "pages/micro/shop/config",
+    "pages/micro/mine/index",
+    "pages/micro/staffHome/index",
+    "pages/micro/staffIncome/index",
+    "pages/micro/staffIncome/detail",
+    "pages/micro/staffMine/index",
+    "pages/micro/staffBook/list",
+    "pages/micro/customerHome/index",
+    "pages/micro/customerBook/submit",
+    "pages/micro/customerBook/list",
+    "pages/micro/customerBook/detail",
+    "pages/micro/customerBook/seat",
+    "pages/micro/customerMine/index",
+    "pages/micro/activity/browse",
+    "pages/micro/activity/detail",
+    "pages/micro/activity/history",
+    "pages/micro/cost/list",
+    "pages/micro/cost/edit",
+    "pages/micro/staff/promo",
+    "pages/micro/customer/promo",
+    "pages/micro/customer/coupon",
+    "pages/micro/customer/records",
+    "pages/micro/customer/consent",
+    "pages/micro/activity/stats",
+    "pages/micro/staff/customers",
+    "pages/micro/staff/mine",
+    "pages/micro/rating/submit",
+    "pages/micro/tenant/select",
+    "pages/micro/account/settings",
+    "pages/micro/selfBooking/index",
+    "pages/micro/selfBooking/confirm",
+    "pages/micro/checkIn/index",
+    "pages/micro/complaint/index",
+    "pages/micro/agreement/sign"
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "小账本",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F5F6F8"
+  },
+  "tabBar": {
+    "color": "#909399",
+    "selectedColor": "#409EFF",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/tab-home/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/tab-work/index",
+        "text": "工作台"
+      },
+      {
+        "pagePath": "pages/tab-approve/index",
+        "text": "审批"
+      },
+      {
+        "pagePath": "pages/tab-mine/index",
+        "text": "我的"
+      }
+    ]
+  },
+  "requiredPrivateInfos": [
+    "getLocation"
+  ],
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于门店就近推荐与高级版报销打卡考勤校验，需要获取您的位置信息"
+    }
+  },
+  "usingComponents": {}
+}

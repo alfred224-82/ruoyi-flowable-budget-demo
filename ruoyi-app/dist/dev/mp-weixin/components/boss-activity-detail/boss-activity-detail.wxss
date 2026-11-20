@@ -1,0 +1,106 @@
+
+.detail-page.data-v-a42ac4ce { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 998; display: flex; flex-direction: column;
+}
+.detail-scroll.data-v-a42ac4ce { flex: 1; min-height: 0;
+}
+/* 头部大图 */
+.hero.data-v-a42ac4ce { position: relative; height: 600rpx;
+}
+.hero-img.data-v-a42ac4ce { width: 100%; height: 600rpx; display: block;
+}
+/* 无封面时主题渐变兜底，居中展示活动标题（与旧版详情默认海报口径一致） */
+.hero-img-default.data-v-a42ac4ce { display: flex; align-items: center; justify-content: center;
+}
+.hero-title.data-v-a42ac4ce { font-size: 40rpx; font-weight: bold; text-align: center; padding: 0 48rpx;
+}
+.hero-shade.data-v-a42ac4ce { position: absolute; left: 0; right: 0; bottom: 0; height: 160rpx; background: linear-gradient(to top, rgba(0, 0, 0, 0.25), transparent);
+}
+/* ★V3.9 §一.3 海报多图横滑 */
+.hero-swiper.data-v-a42ac4ce { width: 100%; height: 600rpx;
+}
+.hero-pager.data-v-a42ac4ce { position: absolute; right: 20rpx; top: calc(env(safe-area-inset-top) + 96rpx); z-index: 3; background: rgba(0, 0, 0, 0.35); color: #fff; font-size: 22rpx; padding: 4rpx 16rpx; border-radius: 20rpx;
+}
+/* 悬浮导航 */
+.hero-nav.data-v-a42ac4ce { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: center;
+}
+.hero-nav-title.data-v-a42ac4ce { color: #fff; font-size: 34rpx; font-weight: bold; text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.35);
+}
+.hero-nav-close.data-v-a42ac4ce { position: absolute; right: 24rpx; width: 64rpx; height: 64rpx; border-radius: 50%; background: rgba(0, 0, 0, 0.35); color: #fff; font-size: 30rpx; display: flex; align-items: center; justify-content: center;
+}
+.detail-body.data-v-a42ac4ce { padding: 0 24rpx 24rpx; margin-top: -72rpx; position: relative;
+}
+/* 已报名人数卡 */
+.count-card.data-v-a42ac4ce { background: var(--card-bg, #fff); border-radius: var(--radius-card, 20rpx); padding: 28rpx 32rpx; box-shadow: var(--shadow-card, 0 8rpx 24rpx rgba(0, 0, 0, 0.08)); margin-bottom: 20rpx;
+}
+.count-label.data-v-a42ac4ce { display: block; font-size: 30rpx; font-weight: bold; color: var(--text, #303133);
+}
+.count-row.data-v-a42ac4ce { display: flex; align-items: flex-end; justify-content: space-between; margin-top: 12rpx;
+}
+.count-main.data-v-a42ac4ce { display: flex; align-items: baseline;
+}
+.count-num.data-v-a42ac4ce { font-size: 72rpx; font-weight: bold; line-height: 1;
+}
+.count-quota.data-v-a42ac4ce { font-size: 40rpx; font-weight: bold; color: var(--text, #303133);
+}
+.count-side.data-v-a42ac4ce { text-align: right;
+}
+.count-remaining.data-v-a42ac4ce { font-size: 26rpx; color: var(--text-sub, #606266);
+}
+.count-remaining-num.data-v-a42ac4ce { font-size: 32rpx; font-weight: bold;
+}
+.count-waitlist.data-v-a42ac4ce { display: block; font-size: 24rpx; color: #e6a23c; margin-top: 6rpx;
+}
+/* 报名名单卡 */
+.roster-card.data-v-a42ac4ce { background: var(--card-bg, #fff); border-radius: var(--radius-card, 20rpx); padding: 28rpx 24rpx; box-shadow: var(--shadow-card, 0 2rpx 12rpx rgba(0, 0, 0, 0.04)); margin-bottom: 20rpx; position: relative;
+}
+.card-title.data-v-a42ac4ce { display: block; font-size: 30rpx; font-weight: bold; color: var(--text, #303133); margin-bottom: 24rpx; padding-left: 8rpx;
+}
+.roster-empty.data-v-a42ac4ce { text-align: center; color: var(--text-sub, #909399); font-size: 26rpx; padding: 40rpx 0;
+}
+.roster-grid.data-v-a42ac4ce { display: flex; flex-wrap: wrap;
+}
+.roster-cell.data-v-a42ac4ce { width: 20%; display: flex; flex-direction: column; align-items: center; margin-bottom: 24rpx;
+}
+.roster-avatar.data-v-a42ac4ce { width: 88rpx; height: 88rpx; border-radius: 50%; background: var(--brand-weak, #f0f2f5);
+}
+.roster-avatar-none.data-v-a42ac4ce { display: flex; align-items: center; justify-content: center;
+}
+.roster-avatar-none.is-empty.data-v-a42ac4ce { background: transparent; border: 2rpx dashed #c0c4cc;
+}
+.roster-avatar-char.data-v-a42ac4ce { font-size: 36rpx; color: var(--text-sub, #909399);
+}
+.roster-tag.data-v-a42ac4ce { font-size: 20rpx; padding: 2rpx 14rpx; border-radius: var(--radius-tag, 8rpx); margin-top: 10rpx; border: 1rpx solid transparent;
+}
+.tag-host.data-v-a42ac4ce { color: #fff;
+}
+.tag-member.data-v-a42ac4ce { background: var(--card-bg, #fff); color: var(--text-sub, #606266); border-color: var(--border, #dcdfe6);
+}
+.tag-wait.data-v-a42ac4ce { background: #fdf6ec; color: #e6a23c; border-color: #f5dab1;
+}
+.roster-tag-placeholder.data-v-a42ac4ce { height: 34rpx; margin-top: 10rpx;
+}
+.roster-name.data-v-a42ac4ce { font-size: 22rpx; color: var(--text-sub, #606266); margin-top: 6rpx; max-width: 120rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* ★手绘主题装饰贴纸 */
+.roster-sticker.data-v-a42ac4ce { width: 56rpx; height: 56rpx; position: absolute; opacity: .75;
+}
+.roster-sticker-tr.data-v-a42ac4ce { top: 16rpx; right: 20rpx; transform: rotate(8deg);
+}
+.roster-sticker-bl.data-v-a42ac4ce { bottom: 16rpx; left: 16rpx; transform: rotate(-10deg);
+}
+/* 活动介绍卡 */
+.intro-card.data-v-a42ac4ce { background: var(--card-bg, #fff); border-radius: var(--radius-card, 20rpx); padding: 28rpx 32rpx; box-shadow: var(--shadow-card, 0 2rpx 12rpx rgba(0, 0, 0, 0.04));
+}
+.intro-time.data-v-a42ac4ce { display: block; font-size: 24rpx; color: var(--text-sub, #909399); margin-bottom: 16rpx;
+}
+.intro-content.data-v-a42ac4ce { display: block; font-size: 28rpx; color: var(--text-sub, #606266); line-height: 1.8; white-space: pre-wrap; word-break: break-all;
+}
+.intro-remark.data-v-a42ac4ce { display: block; font-size: 26rpx; color: #e6a23c; margin-top: 16rpx;
+}
+/* 底部关闭 */
+.detail-footer.data-v-a42ac4ce { flex-shrink: 0; padding: 16rpx 32rpx calc(env(safe-area-inset-bottom) + 16rpx); background: var(--card-bg, #fff); box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.06);
+}
+.close-btn.data-v-a42ac4ce { color: #fff; border-radius: 44rpx; font-size: 32rpx; font-weight: 600;
+}
+.close-btn.data-v-a42ac4ce::after { border: none;
+}

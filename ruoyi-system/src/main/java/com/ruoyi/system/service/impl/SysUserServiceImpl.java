@@ -95,6 +95,12 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
             if (tenantId != null) {
                 wrapper.eq("u.tenant_id", tenantId);
             }
+            // ★隐藏同租户下的租户管理员账号（platform_admin），避免租户管理员在人员管理中看到自己角色对应的账号
+            // 通过子查询排除持有 platform_admin 角色的用户
+            wrapper.notInSql("u.user_id",
+                "SELECT sur.user_id FROM sys_user_role sur " +
+                "INNER JOIN sys_role sr ON sur.role_id = sr.role_id " +
+                "WHERE sr.role_key = 'platform_admin' AND sr.del_flag = '0'");
         }
         return wrapper;
     }
@@ -113,6 +119,13 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
             .like(StringUtils.isNotBlank(user.getUserName()), "u.user_name", user.getUserName())
             .eq(StringUtils.isNotBlank(user.getStatus()), "u.status", user.getStatus())
             .like(StringUtils.isNotBlank(user.getPhonenumber()), "u.phonenumber", user.getPhonenumber());
+        // ★隐藏同租户下的租户管理员账号（platform_admin）
+        if (!LoginHelper.isAdmin()) {
+            wrapper.notInSql("u.user_id",
+                "SELECT sur.user_id FROM sys_user_role sur " +
+                "INNER JOIN sys_role sr ON sur.role_id = sr.role_id " +
+                "WHERE sr.role_key = 'platform_admin' AND sr.del_flag = '0'");
+        }
         Page<SysUser> page = baseMapper.selectAllocatedList(pageQuery.build(), wrapper);
         return TableDataInfo.build(page);
     }
@@ -132,6 +145,13 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
             .notIn(CollUtil.isNotEmpty(userIds), "u.user_id", userIds)
             .like(StringUtils.isNotBlank(user.getUserName()), "u.user_name", user.getUserName())
             .like(StringUtils.isNotBlank(user.getPhonenumber()), "u.phonenumber", user.getPhonenumber());
+        // ★隐藏同租户下的租户管理员账号（platform_admin）
+        if (!LoginHelper.isAdmin()) {
+            wrapper.notInSql("u.user_id",
+                "SELECT sur.user_id FROM sys_user_role sur " +
+                "INNER JOIN sys_role sr ON sur.role_id = sr.role_id " +
+                "WHERE sr.role_key = 'platform_admin' AND sr.del_flag = '0'");
+        }
         Page<SysUser> page = baseMapper.selectUnallocatedList(pageQuery.build(), wrapper);
         return TableDataInfo.build(page);
     }

@@ -1,0 +1,17 @@
+
+.page.data-v-156d4bcc { padding: 24rpx; min-height: 100vh; background: #f5f6f8;
+}
+.card.data-v-156d4bcc { background: #fff; border-radius: 16rpx; padding: 28rpx; margin-bottom: 24rpx;
+}
+.form-item.data-v-156d4bcc { display: flex; align-items: center; justify-content: space-between; padding: 24rpx 0; border-bottom: 1rpx solid #f0f2f5;
+}
+.form-item.data-v-156d4bcc:last-child { border-bottom: none;
+}
+.label.data-v-156d4bcc { font-size: 28rpx; color: #606266; width: 180rpx; flex-shrink: 0;
+}
+.input.data-v-156d4bcc { flex: 1; font-size: 28rpx; text-align: right;
+}
+.picker.data-v-156d4bcc { flex: 1; font-size: 28rpx; text-align: right; color: #409eff;
+}
+.btn.data-v-156d4bcc { background: #409eff; color: #fff; border-radius: 12rpx; font-size: 32rpx; margin-top: 24rpx;
+}

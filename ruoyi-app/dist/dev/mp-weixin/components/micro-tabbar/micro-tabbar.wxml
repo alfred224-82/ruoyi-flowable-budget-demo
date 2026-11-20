@@ -1,0 +1,1 @@
+<view class="micro-tabbar data-v-30e0307a"><view wx:for="{{a}}" wx:for-item="tab" wx:key="c" class="{{['tab-item', 'data-v-30e0307a', tab.d && 'active']}}" bindtap="{{tab.e}}"><text class="tab-icon data-v-30e0307a">{{tab.a}}</text><text class="tab-text data-v-30e0307a">{{tab.b}}</text></view></view>

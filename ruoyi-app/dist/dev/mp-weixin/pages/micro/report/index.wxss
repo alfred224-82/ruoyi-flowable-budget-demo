@@ -1,0 +1,31 @@
+
+.page.data-v-bdf2289f { padding: 24rpx;
+}
+.tab-bar.data-v-bdf2289f { display: flex; background: #fff; border-radius: 12rpx; padding: 12rpx; margin-bottom: 24rpx;
+}
+.tab-item.data-v-bdf2289f { flex: 1; text-align: center; padding: 16rpx 0; font-size: 26rpx; color: #606266; border-radius: 8rpx;
+}
+.tab-item.active.data-v-bdf2289f { background: #409eff; color: #fff;
+}
+.card.data-v-bdf2289f { background: #fff; border-radius: 16rpx; padding: 32rpx; margin-bottom: 24rpx;
+}
+.grid.data-v-bdf2289f { display: flex; flex-wrap: wrap;
+}
+.stat.data-v-bdf2289f { width: 50%; box-sizing: border-box; padding: 16rpx 8rpx; text-align: center;
+}
+.num.data-v-bdf2289f { display: block; font-size: 36rpx; font-weight: bold;
+}
+.num.income.data-v-bdf2289f { color: #67c23a;
+}
+.num.expense.data-v-bdf2289f { color: #f56c6c;
+}
+.num.profit.data-v-bdf2289f { color: #409eff;
+}
+.label.data-v-bdf2289f { display: block; font-size: 24rpx; color: #909399; margin-top: 8rpx;
+}
+.period.data-v-bdf2289f { font-size: 24rpx; color: #909399; text-align: center; margin-top: 16rpx;
+}
+.link-text.data-v-bdf2289f { font-size: 28rpx; color: #409eff;
+}
+.loading.data-v-bdf2289f { text-align: center; color: #909399; padding: 80rpx 0;
+}

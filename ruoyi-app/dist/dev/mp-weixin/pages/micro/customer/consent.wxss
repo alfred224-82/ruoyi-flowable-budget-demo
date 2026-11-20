@@ -1,0 +1,29 @@
+
+.page.data-v-94f8bbd4 { padding: 24rpx; min-height: 100vh; background: #f5f6f8;
+}
+.card.data-v-94f8bbd4 { background: #fff; border-radius: 16rpx; padding: 32rpx 28rpx; margin-bottom: 24rpx;
+}
+.header.data-v-94f8bbd4 { display: flex; align-items: center; justify-content: center; margin-bottom: 32rpx; padding-bottom: 24rpx; border-bottom: 1rpx solid #f0f2f5;
+}
+.header-icon.data-v-94f8bbd4 { font-size: 40rpx; margin-right: 12rpx;
+}
+.header-title.data-v-94f8bbd4 { font-size: 34rpx; font-weight: bold; color: #303133;
+}
+.section.data-v-94f8bbd4 { margin-bottom: 28rpx;
+}
+.section-title.data-v-94f8bbd4 { font-size: 28rpx; font-weight: bold; color: #303133; display: block; margin-bottom: 12rpx;
+}
+.section-body.data-v-94f8bbd4 { font-size: 26rpx; color: #606266; line-height: 1.8; display: block;
+}
+.section-item.data-v-94f8bbd4 { font-size: 26rpx; color: #606266; line-height: 1.8; display: block; padding-left: 16rpx;
+}
+.agree-area.data-v-94f8bbd4 { padding: 20rpx 0 60rpx;
+}
+.btn-agree.data-v-94f8bbd4 { background: #409eff; color: #fff; border-radius: 12rpx; font-size: 30rpx; height: 88rpx; line-height: 88rpx;
+}
+.agreed-tip.data-v-94f8bbd4 { display: flex; align-items: center; justify-content: center; padding: 24rpx 0;
+}
+.agreed-icon.data-v-94f8bbd4 { font-size: 32rpx; margin-right: 12rpx;
+}
+.agreed-text.data-v-94f8bbd4 { font-size: 30rpx; color: #67c23a; font-weight: bold;
+}

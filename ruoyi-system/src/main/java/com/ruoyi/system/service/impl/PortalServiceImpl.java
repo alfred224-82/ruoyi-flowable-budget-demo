@@ -4,16 +4,19 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.ServletUtils;
 import com.ruoyi.system.domain.PortalAccessLog;
 import com.ruoyi.system.domain.SysTenant;
 import com.ruoyi.system.domain.UserTenantBind;
+import com.ruoyi.system.domain.vo.MicroSceneVo;
 import com.ruoyi.system.domain.vo.PortalStoreVo;
 import com.ruoyi.system.domain.vo.PortalTenantVo;
 import com.ruoyi.system.mapper.PortalAccessLogMapper;
 import com.ruoyi.system.mapper.SysTenantMapper;
 import com.ruoyi.system.mapper.UserTenantBindMapper;
 import com.ruoyi.system.service.IPortalService;
+import com.ruoyi.system.service.TenantStatusChecker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,6 +27,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -48,6 +52,8 @@ public class PortalServiceImpl implements IPortalService {
     private final UserTenantBindMapper userTenantBindMapper;
     private final SysTenantMapper tenantMapper;
     private final PortalAccessLogMapper accessLogMapper;
+    /** 租户状态校验器（T29.2/T29.3 复用登录同源的存在/停用/到期拦截逻辑） */
+    private final TenantStatusChecker tenantStatusChecker;
 
     /** 正常状态租户 */
     private static final String STATUS_NORMAL = "NORMAL";
@@ -147,6 +153,133 @@ public class PortalServiceImpl implements IPortalService {
         }
         recordAccess(null, null, true, null);
         return list;
+    }
+
+    @Override
+    public List<PortalStoreVo> listStoresByTenantNo(String tenantNo) {
+        // 校验通过后返回门店公开信息；本系统租户即门店，故为单元素列表（前端仍需主动点选）
+        return Collections.singletonList(resolveTenantNo(tenantNo));
+    }
+
+    @Override
+    public PortalStoreVo resolveTenantNo(String tenantNo) {
+        if (StrUtil.isBlank(tenantNo)) {
+            recordAccess(null, null, false, "tenantNo 为空");
+            throw new ServiceException("请输入租户号");
+        }
+        String no = tenantNo.trim();
+        // ★优先按 tenant_code 精确匹配（如 T杰杰旅游社-7324）
+        SysTenant tenant = tenantMapper.selectOne(
+            Wrappers.<SysTenant>lambdaQuery()
+                .eq(SysTenant::getTenantCode, no)
+                .last("limit 1"));
+        // ★降级：纯数字时按 tenant_id（主键）查找，兼容用户输入数字 ID 的场景
+        if (tenant == null && no.matches("\\d+")) {
+            try {
+                tenant = tenantMapper.selectById(Long.parseLong(no));
+            } catch (NumberFormatException e) {
+                // 数值溢出，忽略
+            }
+        }
+        // ★降级：按租户名称（company_name）精确匹配，Boss 可直接输门店名（如「杰杰旅行社」）代替数字租户号；页面不做可输名称的提示
+        if (tenant == null) {
+            tenant = tenantMapper.selectOne(
+                Wrappers.<SysTenant>lambdaQuery()
+                    .eq(SysTenant::getCompanyName, no)
+                    .last("limit 1"));
+        }
+        // ★再降级：租户名称模糊匹配且仅唯一命中时采用，容忍「杰杰旅行社」vs「杰杰旅行社有限公司」类差异；
+        //   命中多条视为未命中（走下方统一报错），避免相似名门店误选
+        if (tenant == null) {
+            List<SysTenant> hits = tenantMapper.selectList(
+                Wrappers.<SysTenant>lambdaQuery()
+                    .like(SysTenant::getCompanyName, no)
+                    .last("limit 2"));
+            if (hits.size() == 1) {
+                tenant = hits.get(0);
+            }
+        }
+        if (tenant == null) {
+            recordAccess(null, null, false, "租户号未命中：" + StrUtil.maxLength(no, 100));
+            throw new ServiceException("租户不存在或已停用，请确认租户号是否正确");
+        }
+        // 状态/到期校验（复用登录同源拦截：停用/到期/待启用抛业务异常）
+        tenantStatusChecker.checkTenant(tenant.getId());
+        recordAccess(null, tenant.getId(), true, null);
+        return toStoreVo(tenant);
+    }
+
+    @Override
+    public MicroSceneVo resolveScene(String scene) {
+        if (StrUtil.isBlank(scene)) {
+            recordAccess(null, null, false, "scene 为空");
+            throw new ServiceException("二维码无效");
+        }
+        Map<String, String> params = parseScene(scene);
+        Long tenantId = parseLong(params.get("t"));
+        if (tenantId == null) {
+            recordAccess(null, null, false, "scene 缺少合法租户标识");
+            throw new ServiceException("二维码无效");
+        }
+        SysTenant tenant = tenantMapper.selectById(tenantId);
+        if (tenant == null) {
+            recordAccess(null, tenantId, false, "scene 租户不存在");
+            throw new ServiceException("二维码无效：租户不存在");
+        }
+        // 状态/到期校验（复用登录同源拦截，非法抛业务异常）
+        tenantStatusChecker.checkTenant(tenantId);
+        // 门店归属校验：本系统租户即门店，s 存在时必须与 t 一致，否则视为跨租户伪造
+        Long storeId = tenantId;
+        String s = params.get("s");
+        if (StrUtil.isNotBlank(s)) {
+            Long parsedStore = parseLong(s);
+            if (parsedStore == null || !parsedStore.equals(tenantId)) {
+                recordAccess(null, tenantId, false, "scene 门店与租户不匹配");
+                throw new ServiceException("二维码无效：门店不属于该租户");
+            }
+            storeId = parsedStore;
+        }
+        MicroSceneVo vo = new MicroSceneVo();
+        vo.setTenantId(tenantId);
+        vo.setTenantCode(tenant.getTenantCode());
+        vo.setTenantName(tenant.getCompanyName());
+        vo.setStoreId(storeId);
+        vo.setRole(params.get("r"));
+        vo.setLogoUrl(tenant.getLogoUrl());
+        vo.setCity(tenant.getCity());
+        recordAccess(null, tenantId, true, null);
+        return vo;
+    }
+
+    /**
+     * 解析 scene 字符串（{@code t=1&s=1&r=customer}）为键值对；空段/无等号段忽略。
+     */
+    private Map<String, String> parseScene(String scene) {
+        Map<String, String> map = new HashMap<>(4);
+        for (String seg : scene.split("&")) {
+            if (StrUtil.isBlank(seg)) {
+                continue;
+            }
+            int idx = seg.indexOf('=');
+            if (idx > 0) {
+                map.put(seg.substring(0, idx).trim(), seg.substring(idx + 1).trim());
+            }
+        }
+        return map;
+    }
+
+    /**
+     * 安全解析 Long（非数字/空返回 null，避免 NumberFormatException 泄漏为系统异常）。
+     */
+    private Long parseLong(String value) {
+        if (StrUtil.isBlank(value)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private PortalTenantVo toVo(SysTenant tenant, Integer isDefault) {

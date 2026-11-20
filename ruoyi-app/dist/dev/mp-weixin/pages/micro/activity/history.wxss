@@ -1,0 +1,77 @@
+
+.page.data-v-091d2cb5 { padding: 24rpx; padding-bottom: 40rpx; min-height: 100vh; background: #f5f6f8;
+}
+
+/* ★搜索栏 */
+.search-bar.data-v-091d2cb5 { background: #fff; border-radius: 16rpx; padding: 20rpx 24rpx; margin-bottom: 24rpx;
+}
+.search-input.data-v-091d2cb5 { height: 68rpx; background: #f5f6f8; border-radius: 34rpx; padding: 0 28rpx; font-size: 28rpx;
+}
+.date-row.data-v-091d2cb5 { display: flex; align-items: center; margin-top: 16rpx;
+}
+.date-pick.data-v-091d2cb5 { flex: 1; height: 60rpx; line-height: 60rpx; text-align: center; background: #f5f6f8; border-radius: 8rpx; font-size: 26rpx; color: #606266; padding: 0 16rpx;
+}
+.date-sep.data-v-091d2cb5 { margin: 0 16rpx; color: #909399; font-size: 26rpx;
+}
+.search-actions.data-v-091d2cb5 { display: flex; margin-top: 16rpx;
+}
+.search-btn.data-v-091d2cb5 { flex: 1; text-align: center; height: 64rpx; line-height: 64rpx; background: #409eff; color: #fff; border-radius: 8rpx; font-size: 28rpx; margin-right: 16rpx;
+}
+.reset-btn.data-v-091d2cb5 { flex: 1; text-align: center; height: 64rpx; line-height: 64rpx; background: #f0f2f5; color: #606266; border-radius: 8rpx; font-size: 28rpx;
+}
+
+/* 活动卡片 */
+.activity-card.data-v-091d2cb5 { display: flex; flex-direction: column; background: #fff; border-radius: 16rpx; padding: 0; margin-bottom: 24rpx; overflow: hidden;
+}
+.cover.data-v-091d2cb5 { width: 100%; height: 320rpx;
+}
+.cover-default.data-v-091d2cb5 { display: flex; align-items: center; justify-content: center;
+}
+.info.data-v-091d2cb5 { padding: 24rpx 28rpx;
+}
+.title-row.data-v-091d2cb5 { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12rpx;
+}
+.logo.data-v-091d2cb5 { width: 56rpx; height: 56rpx; border-radius: 8rpx; margin-right: 12rpx; flex-shrink: 0;
+}
+.title.data-v-091d2cb5 { font-size: 32rpx; font-weight: bold; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.status-badge.data-v-091d2cb5 { font-size: 22rpx; padding: 4rpx 16rpx; border-radius: 6rpx; margin-left: 16rpx; white-space: nowrap;
+}
+.status-badge.st-done.data-v-091d2cb5 { background: #f0f9eb; color: #67c23a;
+}
+.status-badge.st-cancel.data-v-091d2cb5 { background: #fef0f0; color: #f56c6c;
+}
+.time.data-v-091d2cb5 { font-size: 24rpx; color: #909399; display: block; margin-bottom: 8rpx;
+}
+.content.data-v-091d2cb5 { font-size: 26rpx; color: #606266; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.6; margin-top: 8rpx;
+}
+
+/* 通用 */
+.loading.data-v-091d2cb5 { text-align: center; color: #909399; padding: 120rpx 0;
+}
+.empty.data-v-091d2cb5 { text-align: center; padding: 120rpx 0;
+}
+.empty-text.data-v-091d2cb5 { color: #909399; font-size: 28rpx;
+}
+
+/* ★手绘主题装饰贴纸 */
+.page.data-v-091d2cb5 { position: relative;
+}
+.sticker.data-v-091d2cb5 { position: absolute; opacity: .8; pointer-events: none; z-index: 0;
+}
+.search-bar.data-v-091d2cb5, .activity-list.data-v-091d2cb5 { position: relative; z-index: 1;
+}
+.sticker-bubble-tr.data-v-091d2cb5 { top: 16rpx; right: 16rpx; width: 56rpx; height: 56rpx; transform: rotate(8deg);
+}
+.sticker-sparkle-tr.data-v-091d2cb5 { top: 40rpx; right: 60rpx; width: 32rpx; height: 32rpx; transform: rotate(-12deg);
+}
+.sticker-bubble-tab-l.data-v-091d2cb5 { top: 100rpx; left: 10rpx; width: 48rpx; height: 48rpx; transform: rotate(-6deg);
+}
+.sticker-star-tab-r.data-v-091d2cb5 { top: 100rpx; right: 10rpx; width: 44rpx; height: 44rpx; transform: rotate(10deg);
+}
+.sticker-bubble-bl.data-v-091d2cb5 { bottom: 120rpx; left: 16rpx; width: 56rpx; height: 56rpx; transform: rotate(-8deg);
+}
+.sticker-star-bl.data-v-091d2cb5 { bottom: 140rpx; left: 70rpx; width: 40rpx; height: 40rpx; transform: rotate(12deg);
+}
+.sticker-cloud-br.data-v-091d2cb5 { bottom: 100rpx; right: 16rpx; width: 80rpx; height: 64rpx; transform: rotate(5deg);
+}

@@ -35,6 +35,12 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- 阿里云号码认证（H5 一键登录取号，NumberAuthService 硬依赖不可 optional） -->
+        <dependency>
+            <groupId>com.aliyun</groupId>
+            <artifactId>dypnsapi20170525</artifactId>
+        </dependency>
+
     </dependencies>
 
 </project>

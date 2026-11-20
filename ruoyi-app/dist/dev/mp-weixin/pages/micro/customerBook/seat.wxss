@@ -1,0 +1,228 @@
+
+.page.data-v-33c32ee1 { padding: 24rpx; padding-bottom: 160rpx; background: var(--page-bg, #f5f6f8);
+}
+.loading.data-v-33c32ee1 { text-align: center; color: var(--text-sub, #909399); padding: 80rpx 0;
+}
+
+/* 头部卡片 */
+.header-card.data-v-33c32ee1 { background: var(--card-bg, #fff); border-radius: var(--radius-card, 16rpx); padding: 24rpx 32rpx; margin-bottom: 24rpx; box-shadow: var(--shadow-card, none);
+}
+.activity-title.data-v-33c32ee1 { font-size: 34rpx; font-weight: bold; display: block; margin-bottom: 16rpx; color: var(--text, #303133);
+}
+.stats-row.data-v-33c32ee1 { display: flex; gap: 24rpx; flex-wrap: wrap;
+}
+.stat.data-v-33c32ee1 { font-size: 24rpx; color: var(--text-sub, #606266);
+}
+.stat.free.data-v-33c32ee1 { color: var(--brand, #409eff);
+}
+.stat.occupied.data-v-33c32ee1 { color: #67c23a;
+}
+.stat.preset.data-v-33c32ee1 { color: #ff9800;
+}
+.locked-banner.data-v-33c32ee1 { background: #fef0f0; border-radius: 8rpx; padding: 12rpx 20rpx; margin-top: 16rpx;
+}
+.locked-text.data-v-33c32ee1 { font-size: 24rpx; color: #f56c6c;
+}
+
+/* 画布区 */
+.canvas-wrap.data-v-33c32ee1 { background: var(--card-bg, #fff); border-radius: var(--radius-card, 16rpx); padding: 20rpx; margin-bottom: 24rpx; overflow: hidden; box-shadow: var(--shadow-card, none);
+}
+.canvas-with-bg.data-v-33c32ee1 {
+    position: relative;
+    width: 100%;
+    border-radius: 12rpx;
+}
+/* ★背景图流内等比缩放（宽撑满、高按比例）：容器高度自适应图片比例，座位百分比坐标精准落在图片上 */
+.canvas-bg.data-v-33c32ee1 {
+    display: block;
+    width: 100%;
+    border-radius: 12rpx;
+}
+/* M27 T27.3：PRESET 默认图（透明底线条 SVG）叠加主题主色内描边，与自传图区分 */
+.canvas-preset.data-v-33c32ee1 { box-shadow: inset 0 0 0 3rpx var(--brand-weak, rgba(74,144,226,0.2));
+}
+.canvas-grid.data-v-33c32ee1 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16rpx;
+    padding: 20rpx 0;
+    min-height: 200rpx;
+}
+.empty-tip.data-v-33c32ee1 { width: 100%; text-align: center; color: var(--text-sub, #909399); font-size: 26rpx; padding: 60rpx 0;
+}
+
+/* 座位标记（绝对定位；★直径取容器 --ss 变量随画布宽度等比缩放，与背景图座位同大小；--ss 未注入时回落 80rpx） */
+.seat-marker.data-v-33c32ee1 {
+    position: absolute;
+    width: var(--ss, 80rpx);
+    height: var(--ss, 80rpx);
+    margin-left: calc(var(--ss, 80rpx) / -2);
+    margin-top: calc(var(--ss, 80rpx) / -2);
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 3rpx solid #dcdfe6;
+    box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.1);
+    transition: transform 0.15s;
+}
+.seat-marker.data-v-33c32ee1:active { transform: scale(1.1);
+}
+.seat-icon.data-v-33c32ee1 { font-size: calc(var(--ss, 80rpx) * 0.45); color: var(--brand, #409eff); line-height: 1;
+}
+.seat-icon.occupied-icon.data-v-33c32ee1 { color: #67c23a;
+}
+.seat-avatar.data-v-33c32ee1 { width: calc(var(--ss, 80rpx) * 0.7); height: calc(var(--ss, 80rpx) * 0.7); border-radius: 50%;
+}
+.seat-no.data-v-33c32ee1 { font-size: calc(var(--ss, 80rpx) * 0.24); color: #909399; margin-top: 2rpx; line-height: 1;
+}
+.preset-badge.data-v-33c32ee1 {
+    position: absolute;
+    top: calc(var(--ss, 80rpx) * -0.1);
+    right: calc(var(--ss, 80rpx) * -0.1);
+    background: #ff9800;
+    color: #fff;
+    font-size: calc(var(--ss, 80rpx) * 0.24);
+    width: calc(var(--ss, 80rpx) * 0.36);
+    height: calc(var(--ss, 80rpx) * 0.36);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+/* 座位状态色（★不使用颜色区分状态，用图标+文字表达；空闲边框跟随主题主色 M27 T27.3，预置人员固定橙色） */
+.seat-free.data-v-33c32ee1 { border-color: var(--brand, #409eff);
+}
+.seat-occupied.data-v-33c32ee1 { border-color: #67c23a;
+}
+.seat-preset.data-v-33c32ee1 { border-color: #ff9800; background: #fff8e7;
+}
+.seat-mine.data-v-33c32ee1 { border-color: #f56c6c; border-width: 4rpx; box-shadow: 0 0 12rpx rgba(245,108,108,0.4);
+}
+.seat-readonly.data-v-33c32ee1 { opacity: 0.7;
+}
+
+/* 网格降级渲染（无背景图时） */
+.grid-seat.data-v-33c32ee1 {
+    width: 120rpx;
+    height: 120rpx;
+    border-radius: 12rpx;
+    background: #fff;
+    border: 3rpx solid #dcdfe6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+.grid-icon.data-v-33c32ee1 { font-size: 40rpx; color: var(--brand, #409eff);
+}
+.grid-icon.occupied-icon.data-v-33c32ee1 { color: #67c23a;
+}
+.grid-avatar.data-v-33c32ee1 { width: 72rpx; height: 72rpx; border-radius: 50%;
+}
+.grid-no.data-v-33c32ee1 { font-size: 20rpx; color: #909399; margin-top: 4rpx;
+}
+.grid-seat.seat-free.data-v-33c32ee1 { border-color: var(--brand, #409eff);
+}
+.grid-seat.seat-occupied.data-v-33c32ee1 { border-color: #67c23a;
+}
+.grid-seat.seat-preset.data-v-33c32ee1 { border-color: #ff9800; background: #fff8e7;
+}
+.grid-seat.seat-mine.data-v-33c32ee1 { border-color: #f56c6c; border-width: 4rpx;
+}
+
+/* 图例 */
+.legend.data-v-33c32ee1 { display: flex; gap: 24rpx; flex-wrap: wrap; background: var(--card-bg, #fff); border-radius: var(--radius-card, 16rpx); padding: 20rpx 32rpx; margin-bottom: 24rpx; box-shadow: var(--shadow-card, none);
+}
+.legend-item.data-v-33c32ee1 { display: flex; align-items: center; gap: 8rpx; font-size: 24rpx; color: var(--text-sub, #606266);
+}
+.legend-dot.data-v-33c32ee1 { width: 20rpx; height: 20rpx; border-radius: 50%; border: 2rpx solid;
+}
+.legend-dot.free.data-v-33c32ee1 { border-color: var(--brand, #409eff); background: var(--brand-weak, #ecf5ff);
+}
+.legend-dot.occupied.data-v-33c32ee1 { border-color: #67c23a; background: #f0f9eb;
+}
+.legend-dot.preset.data-v-33c32ee1 { border-color: #ff9800; background: #fff8e7;
+}
+.legend-dot.mine.data-v-33c32ee1 { border-color: #f56c6c; background: #fef0f0;
+}
+
+/* 底部操作栏 */
+.footer.data-v-33c32ee1 {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    background: var(--card-bg, #fff);
+    padding: 20rpx 32rpx;
+    box-shadow: 0 -2rpx 12rpx rgba(0,0,0,0.06);
+    z-index: 10;
+}
+.my-seat-info.data-v-33c32ee1 { display: flex; align-items: center; gap: 16rpx;
+}
+.my-seat-label.data-v-33c32ee1 { font-size: 26rpx; color: var(--text-sub, #606266);
+}
+.my-seat-no.data-v-33c32ee1 { font-size: 30rpx; font-weight: bold; color: #f56c6c; flex: 1;
+}
+.btn-release.data-v-33c32ee1 { background: #fff; color: #f56c6c; border: 2rpx solid #f56c6c; border-radius: 8rpx; font-size: 24rpx;
+}
+.tip.data-v-33c32ee1 { text-align: center;
+}
+.tip-text.data-v-33c32ee1 { font-size: 26rpx; color: var(--text-sub, #909399);
+}
+
+/* 弹窗 */
+.modal-mask.data-v-33c32ee1 {
+    position: fixed;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+.modal-card.data-v-33c32ee1 {
+    background: var(--card-bg, #fff);
+    border-radius: var(--radius-card, 16rpx);
+    padding: 40rpx;
+    width: 560rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16rpx;
+}
+.modal-avatar.data-v-33c32ee1 { width: 120rpx; height: 120rpx; border-radius: 50%;
+}
+.modal-name.data-v-33c32ee1 { font-size: 32rpx; font-weight: bold; color: var(--text, #303133);
+}
+.modal-seat-no.data-v-33c32ee1 { font-size: 26rpx; color: var(--text-sub, #606266);
+}
+.modal-preset.data-v-33c32ee1 { font-size: 24rpx; color: #ff9800;
+}
+.modal-close.data-v-33c32ee1 { background: #f5f7fa; color: #606266; border-radius: 8rpx; margin-top: 12rpx;
+}
+
+/* ★手绘主题装饰贴纸 */
+.page.data-v-33c32ee1 { position: relative;
+}
+.sticker.data-v-33c32ee1 { position: absolute; opacity: .8; pointer-events: none; z-index: 0;
+}
+.header-card.data-v-33c32ee1, .canvas-wrap.data-v-33c32ee1, .legend.data-v-33c32ee1, .footer.data-v-33c32ee1 { position: relative; z-index: 1;
+}
+.sticker-star-tr.data-v-33c32ee1 { top: 20rpx; right: 20rpx; width: 48rpx; height: 48rpx; transform: rotate(10deg);
+}
+.sticker-cloud-stats.data-v-33c32ee1 { top: 60rpx; right: 16rpx; width: 52rpx; height: 42rpx; transform: rotate(-5deg);
+}
+.sticker-star-bl.data-v-33c32ee1 { bottom: 200rpx; left: 20rpx; width: 48rpx; height: 48rpx; transform: rotate(-12deg);
+}
+.sticker-bubble-bl.data-v-33c32ee1 { bottom: 160rpx; left: 16rpx; width: 64rpx; height: 64rpx; transform: rotate(6deg);
+}
+.sticker-sparkle-bl.data-v-33c32ee1 { bottom: 180rpx; left: 80rpx; width: 36rpx; height: 36rpx; transform: rotate(20deg);
+}
+.sticker-sparkle-br.data-v-33c32ee1 { bottom: 200rpx; right: 40rpx; width: 36rpx; height: 36rpx; transform: rotate(-15deg);
+}
+.sticker-cloud-br.data-v-33c32ee1 { bottom: 160rpx; right: 16rpx; width: 80rpx; height: 64rpx; transform: rotate(5deg);
+}

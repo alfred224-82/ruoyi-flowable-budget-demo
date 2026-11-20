@@ -12,13 +12,26 @@
         <settings/>
       </right-panel>
     </div>
+    <!-- T25.5 合规协议登录签署守卫：租户管理员未签署时强制弹窗 -->
+    <compliance-sign/>
+    <!-- ★ 备案信息（ICP + 公安备案徽章，管理后台底部居中展示） -->
+    <div v-if="beian.icpNumber || beian.policeNumber" class="icp-footer">
+      <a v-if="beian.icpNumber" :href="beian.icpLink" target="_blank" rel="noopener noreferrer">{{ beian.icpNumber }}</a>
+      <template v-if="beian.icpNumber && beian.policeNumber"> | </template>
+      <a v-if="beian.policeNumber" class="police-link" :href="beian.policeLink" target="_blank" rel="noopener noreferrer">
+        <img v-if="beian.policeIcon" class="police-badge" :src="beian.policeIcon" alt="公安备案徽章">
+        <span>{{ beian.policeNumber }}</span>
+      </a>
+    </div>
   </div>
 </template>
 
 <script>
 import RightPanel from '@/components/RightPanel'
+import ComplianceSign from '@/components/ComplianceSign'
 import { AppMain, Navbar, Settings, Sidebar, TagsView } from './components'
 import ResizeMixin from './mixin/ResizeHandler'
+import { getBeianInfo } from '@/utils/beian'
 import { mapState } from 'vuex'
 import variables from '@/assets/styles/variables.scss'
 
@@ -26,6 +39,7 @@ export default {
   name: 'Layout',
   components: {
     AppMain,
+    ComplianceSign,
     Navbar,
     RightPanel,
     Settings,
@@ -52,7 +66,9 @@ export default {
     },
     variables() {
       return variables;
-    }
+    },
+    // ★ 备案信息（ICP + 公安备案，统一读 .env 配置，见 @/utils/beian）
+    beian() { return getBeianInfo() }
   },
   methods: {
     handleClickOutside() {
@@ -107,5 +123,41 @@ export default {
 
   .mobile .fixed-header {
     width: 100%;
+  }
+
+  /* ★ 备案信息底部展示 */
+  .icp-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #909399;
+    background: #f5f7fa;
+    border-top: 1px solid #ebeef5;
+    z-index: 99;
+  }
+  .icp-footer a {
+    color: #909399;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .icp-footer a:hover {
+    color: #409eff;
+    text-decoration: underline;
+  }
+  /* 公安备案：官方徽章 + 备案号同行居中 */
+  .icp-footer .police-link {
+    display: inline-flex;
+    align-items: center;
+  }
+  .icp-footer .police-badge {
+    width: 16px;
+    height: 17px;
+    margin-right: 4px;
   }
 </style>

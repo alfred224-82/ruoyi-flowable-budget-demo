@@ -1,0 +1,25 @@
+
+.page.data-v-020a8211 { padding: 24rpx; padding-bottom: 140rpx; background: var(--page-bg, #f5f6f8);
+}
+.card.data-v-020a8211 { background: var(--card-bg, #fff); border-radius: var(--radius-card, 16rpx); padding: 32rpx; margin-bottom: 24rpx; box-shadow: var(--shadow-card, none);
+}
+.user-card.data-v-020a8211 { display: flex; align-items: center;
+}
+.avatar-img.data-v-020a8211 { width: 96rpx; height: 96rpx; border-radius: 50%;
+}
+.avatar.data-v-020a8211 { width: 96rpx; height: 96rpx; border-radius: 50%; background: var(--brand, #67c23a); color: #fff; font-size: 40rpx; display: flex; align-items: center; justify-content: center;
+}
+.user-info.data-v-020a8211 { margin-left: 24rpx;
+}
+.name.data-v-020a8211 { font-size: 32rpx; font-weight: bold; display: block; color: var(--text, #303133);
+}
+.role.data-v-020a8211 { font-size: 24rpx; color: #67c23a; margin-top: 8rpx; display: block;
+}
+.info-row.data-v-020a8211 { display: flex; justify-content: space-between; padding: 16rpx 0; font-size: 28rpx; color: var(--text, #303133);
+}
+.info-row .label.data-v-020a8211 { color: var(--text-sub, #909399);
+}
+.link-text.data-v-020a8211 { font-size: 28rpx; color: var(--brand, #409eff);
+}
+.btn-logout.data-v-020a8211 { background: var(--card-bg, #fff); color: #f56c6c; border: 2rpx solid #f56c6c; border-radius: var(--radius-btn, 12rpx); margin-top: 40rpx; font-size: 30rpx;
+}

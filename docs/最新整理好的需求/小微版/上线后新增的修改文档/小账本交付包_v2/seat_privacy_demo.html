@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="t4">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>选座页 · 其他顾客显示方式对比</title>
+<link rel="stylesheet" href="theme_tokens.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  body{margin:0;background:var(--page-bg)}
+  .wrap{max-width:430px;margin:0 auto;padding:14px calc(var(--gutter) - 4px) 30px}
+  h1{font-size:var(--font-title);font-weight:700;margin:0 0 4px;text-align:center}
+  .sub{font-size:11.5px;color:var(--text-sub);text-align:center;margin-bottom:16px;line-height:1.6}
+
+  .mode{background:var(--card-bg);border-radius:var(--radius-card);
+    box-shadow:var(--shadow-card);padding:13px;margin-bottom:11px}
+  .mode.cur{border:2px solid var(--brand)}
+  .mode h2{font-size:13.5px;margin:0 0 3px;display:flex;align-items:center;gap:6px}
+  .mode h2 .bd{font-size:9.5px;padding:2px 7px;border-radius:5px;font-weight:600}
+  .bd-now{background:var(--brand-weak);color:var(--brand)}
+  .bd-rec{background:rgba(24,180,120,.14);color:#18B478}
+  .mode .dsc{font-size:11px;color:var(--text-sub);line-height:1.7;margin-bottom:10px}
+
+  /* 座位图 */
+  .bus{background:var(--brand-weak);border-radius:14px;padding:12px 10px;text-align:center}
+  .bus .body{border:2px solid var(--border);border-radius:16px;padding:10px 8px;
+    background:var(--card-bg);position:relative}
+  .bus .front{font-size:9.5px;color:var(--text-sub);margin-bottom:7px;letter-spacing:2px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .st{border-radius:8px;padding:6px 3px;font-size:10px;min-height:38px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    border:1.5px solid var(--border);color:var(--text-sub);background:var(--card-bg)}
+  .st.free{border-style:dashed}
+  .st.mine{border-color:var(--danger);color:var(--danger);background:rgba(229,69,69,.06);font-weight:600}
+  .st.taken{border-color:#18B478;color:#18B478;background:rgba(24,180,120,.07)}
+  .st.host{border-color:#F5A623;color:#B7791F;background:rgba(245,166,35,.1)}
+  .st img{width:22px;height:22px;border-radius:50%;object-fit:cover}
+  .st .nm{font-size:9.5px;font-weight:600;line-height:1.2}
+
+  .lg{display:flex;gap:12px;justify-content:center;margin-top:9px;
+    font-size:9.5px;color:var(--text-sub)}
+  .lg i{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:3px}
+
+  .risk{font-size:11px;line-height:1.75;background:rgba(229,69,69,.07);
+    border-radius:var(--radius-card);padding:10px 12px;margin-top:9px;color:var(--text)}
+  .risk b{color:var(--danger)}
+  .safe{font-size:11px;line-height:1.75;background:rgba(24,180,120,.1);
+    border-radius:var(--radius-card);padding:10px 12px;margin-top:9px;color:var(--text)}
+  .safe b{color:#18B478}
+
+  .btn{width:100%;height:44px;border-radius:var(--radius-btn);font-size:14.5px;font-weight:600;
+    display:flex;align-items:center;justify-content:center;background:var(--brand);color:#fff;
+    box-shadow:var(--shadow-btn);margin-bottom:7px}
+  .btn:active{transform:scale(.97)}
+  .btn-g{border:1px solid var(--border);color:var(--text-sub);background:transparent;box-shadow:none}
+
+  table{width:100%;border-collapse:collapse;font-size:11.5px}
+  th,td{padding:6px 3px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+  th{font-size:10.5px;color:var(--text-sub);font-weight:600}
+  td:first-child{width:88px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>选座页显示方式</h1>
+  <div class="sub">顾客能看到其他顾客的唯一位置<br>三档方案对比</div>
+
+  <!-- 模式A 现状 -->
+  <div class="mode cur">
+    <h2>A　全名 + 真实头像 <span class="bd bd-now">现状</span></h2>
+    <div class="dsc">已占座位显示头像和完整姓名</div>
+    <div class="bus">
+      <div class="body">
+        <div class="front">— 车头 —</div>
+        <div class="grid">
+          <div class="st host"><img src="avatars_out/a2_male_street_md.webp"><span class="nm">黄导游</span></div>
+          <div class="st host"><img src="avatars_out/a4_female_grass_md.webp"><span class="nm">刘司机</span></div>
+          <div class="st mine"><span class="nm">我的座位</span><span style="font-size:8.5px">A3</span></div>
+          <div class="st taken"><img src="avatars_out/a3_male_suit_md.webp"><span class="nm">张伟</span></div>
+          <div class="st taken"><img src="avatars_out/a1_female_sea_md.webp"><span class="nm">李静</span></div>
+          <div class="st free"><span class="nm">空闲</span></div>
+        </div>
+      </div>
+      <div class="lg"><span><i style="background:#18B478"></i>已占</span>
+        <span><i style="background:var(--danger)"></i>我的</span>
+        <span><i style="background:#F5A623"></i>主持</span></div>
+    </div>
+    <div class="risk">
+      <b>风险：</b>陌生人提前知道你的长相和姓名。上车后被直接叫出名字会不适；
+      截图外传可曝光「某某也在这个团」；真人头像可被下载另作他用。
+    </div>
+  </div>
+
+  <!-- 模式B 推荐 -->
+  <div class="mode">
+    <h2>B　姓氏 + 占位头像 <span class="bd bd-rec">推荐</span></h2>
+    <div class="dsc">已占座位显示「张**」，头像用统一灰色占位</div>
+    <div class="bus">
+      <div class="body">
+        <div class="front">— 车头 —</div>
+        <div class="grid">
+          <div class="st host"><span class="nm">黄导游</span></div>
+          <div class="st host"><span class="nm">刘司机</span></div>
+          <div class="st mine"><span class="nm">我的座位</span><span style="font-size:8.5px">A3</span></div>
+          <div class="st taken"><span class="nm">张**</span></div>
+          <div class="st taken"><span class="nm">李**</span></div>
+          <div class="st free"><span class="nm">空闲</span></div>
+        </div>
+      </div>
+      <div class="lg"><span><i style="background:#18B478"></i>已占</span>
+        <span><i style="background:var(--danger)"></i>我的</span>
+        <span><i style="background:#F5A623"></i>主持</span></div>
+    </div>
+    <div class="safe">
+      <b>优点：</b>仍知道哪个座位有人，还能感觉到「认识的人大概在不在」，
+      但无法精确认出是谁。主持位保持显示全名——他们本来就是要被联系的人。
+    </div>
+  </div>
+
+  <!-- 模式C 最保守 -->
+  <div class="mode">
+    <h2>C　只显示「已占」 <span class="bd">最保守</span></h2>
+    <div class="dsc">已占座位不显示任何身份信息</div>
+    <div class="bus">
+      <div class="body">
+        <div class="front">— 车头 —</div>
+        <div class="grid">
+          <div class="st host"><span class="nm">黄导游</span></div>
+          <div class="st host"><span class="nm">刘司机</span></div>
+          <div class="st mine"><span class="nm">我的座位</span><span style="font-size:8.5px">A3</span></div>
+          <div class="st taken"><span class="nm">已占</span></div>
+          <div class="st taken"><span class="nm">已占</span></div>
+          <div class="st free"><span class="nm">空闲</span></div>
+        </div>
+      </div>
+      <div class="lg"><span><i style="background:#18B478"></i>已占</span>
+        <span><i style="background:var(--danger)"></i>我的</span>
+        <span><i style="background:#F5A623"></i>主持</span></div>
+    </div>
+    <div class="safe">
+      <b>优点：</b>零信息泄露，行业主流做法（携程、飞猪的选座多为此模式）。
+      <b>代价：</b>想和同行的朋友坐一起时，无法从座位图确认对方坐哪。
+    </div>
+  </div>
+
+  <div class="mode">
+    <h2>建议：做成开关</h2>
+    <table>
+      <tr><th>模式</th><th>适用</th></tr>
+      <tr><td>B 姓氏</td><td>默认推荐，兼顾可用与隐私</td></tr>
+      <tr><td>C 已占</td><td>老板注重隐私，或团里都是散客</td></tr>
+      <tr><td>A 全名</td><td>熟人团、社区团，大家本来就认识</td></tr>
+    </table>
+    <div class="safe" style="margin-top:9px">
+      开关放在<b>老板端活动设置</b>里，每个活动单独设。
+      熟人团可以放开，散客团收紧——不同活动需求本来就不同。
+    </div>
+  </div>
+</div>
+</body>
+</html>
